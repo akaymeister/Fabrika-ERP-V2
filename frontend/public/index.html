@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="dashboard.pageTitle">Gösterge paneli — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="dashboard.title">Fabrika ERP</h1>
+        <p class="subtitle">
+          <span data-i18n="dashboard.subLine">Merkezi yönetim paneli —</span>
+          <span id="sessionInfo" data-i18n="dashboard.sessionLoading">Oturum yükleniyor…</span>
+        </p>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-badge" data-i18n="dashboard.badge">ERP V2</div>
+
+        <div class="user-info-box">
+          <span class="user-name" id="userFullName" data-i18n="dashboard.userLoading">Yükleniyor…</span>
+          <span class="user-role" id="userRole" data-i18n="dashboard.roleLoading">Rol yükleniyor…</span>
+        </div>
+
+        <div class="language-box">
+          <label for="languageSelect" id="languageLabel" data-i18n="lang.label">Dil</label>
+          <select id="languageSelect" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <a href="/admin.html" class="version-btn" id="adminLink" style="display: none" data-i18n="dashboard.adminLink"
+          >Süper yönetim</a>
+        <a href="/" class="version-btn" id="versionSwitchBtn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+
+    <section class="hero-panel premium-hero">
+      <div class="hero-text">
+        <span class="hero-mini-badge" data-i18n="dashboard.liveBadge">Canlı özet</span>
+        <h2 data-i18n="dashboard.heroTitle">Modüler Fabrika Yönetim Sistemi</h2>
+        <p data-i18n="dashboard.heroP">
+          Stok, proje, insan kaynakları, satınalma ve kullanıcı yönetimini tek merkezden yönetin.
+        </p>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-box">
+          <span class="stat-label" data-i18n="dashboard.kpiEnv">Ortam</span>
+          <strong id="heroEnv" data-i18n="dashboard.kpiEnvVal">Çok kullanıcılı</strong>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label" data-i18n="dashboard.kpiData">Son veri</span>
+          <strong id="heroDataHint" data-i18n="dashboard.kpiDataVal">API</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="summary-section" id="dashboardKpiRow">
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="dashboard.kpiStockValue">Toplam stok değeri</span>
+        <strong id="kpiStockValue">—</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="dashboard.kpiProducts">Toplam ürün</span>
+        <strong id="kpiProductCount">—</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="dashboard.kpiProjects">Aktif proje</span>
+        <strong id="kpiActiveProjects">—</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="dashboard.kpiPurchases">Bekleyen satınalma talebi</span>
+        <strong id="kpiPendingPurchases">—</strong>
+      </div>
+    </div>
+
+    <section class="card" style="margin-bottom: 30px;">
+      <div class="section-header">
+        <h3 data-i18n="dashboard.recentMov">Son stok hareketleri</h3>
+        <p data-i18n="dashboard.recentMovSub">Depo giriş/çıkış kayıtları (veri yoksa boş liste)</p>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="dashboard.colDate">Tarih</th>
+              <th data-i18n="dashboard.colCode">Ürün kodu</th>
+              <th data-i18n="dashboard.colProduct">Ürün</th>
+              <th data-i18n="dashboard.colType">Tip</th>
+              <th data-i18n="dashboard.colQty">Miktar</th>
+              <th data-i18n="dashboard.colUser">Kullanıcı</th>
+            </tr>
+          </thead>
+          <tbody id="recentMovementsBody">
+            <tr><td colspan="6" data-i18n="dashboard.movLoading">Yükleniyor…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="module-section">
+      <div class="section-header">
+        <h3 data-i18n="dashboard.modules">Ana modüller</h3>
+        <p data-i18n="dashboard.modulesSub">Sisteme giriş noktaları (geliştirme sırasına göre aktifleşecek)</p>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dashboard-card primary-card">
+          <div class="card-head">
+            <div class="card-title-wrap">
+              <div class="module-icon" aria-hidden="true">📦</div>
+              <h2 data-i18n="dashboard.modStock">Stok yönetimi</h2>
+            </div>
+            <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
+          </div>
+          <p data-i18n="dashboard.modStockSub">Marka, ürün (STK kodu), stok giriş/çıkış, hareket listesi. Yetki: modül stok.</p>
+          <div class="sub-links">
+            <a href="/stock.html" data-i18n="dashboard.modStockPanel">Stok paneli</a>
+            <a href="/stock-products.html" data-i18n="nav.stock.products">Ürünler</a>
+            <a href="/goods-receipt.html" data-i18n="nav.stock.receipt">Mal kabul</a>
+            <a href="/stock-movements.html" data-i18n="nav.stock.mov">Hareketler</a>
+          </div>
+          <div class="card-footer">
+            <a class="module-button" href="/stock.html" data-i18n="dashboard.modStockLink">Stok modülüne gir</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card primary-card">
+          <div class="card-head">
+            <div class="card-title-wrap">
+              <div class="module-icon" aria-hidden="true">🧾</div>
+              <h2 data-i18n="dashboard.modPurch">Satınalma</h2>
+            </div>
+            <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
+          </div>
+          <p data-i18n="dashboard.modPurchSub">Talep, onay, sipariş (finansal) ve mal kabul ile depo girişi; stok sadece mal kabulde artar.</p>
+          <div class="sub-links">
+            <a href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
+            <a href="/purchase-requests.html" data-i18n="nav.purch.requests">Talepler</a>
+            <a href="/purchase-approvals.html" data-i18n="nav.purch.approvals">Onaylar</a>
+          </div>
+          <div class="card-footer">
+            <a class="module-button" href="/purchasing.html" data-i18n="nav.purch.hub">Satınalma paneli</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-head">
+            <div class="card-title-wrap">
+              <div class="module-icon" aria-hidden="true">📁</div>
+              <h2 data-i18n="dashboard.modProject">Proje yönetimi</h2>
+            </div>
+            <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
+          </div>
+          <p data-i18n="dashboard.modProjectSub">Özet pano, proje ekle (otomatik kod), ileride maliyet ve teklif.</p>
+          <div class="sub-links">
+            <a href="/projects.html" data-i18n="nav.project.hub">Özet</a>
+            <a href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
+          </div>
+          <div class="card-footer">
+            <a class="module-button" href="/projects.html" data-i18n="dashboard.modProjectLink">Proje modülüne gir</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-head">
+            <div class="card-title-wrap">
+              <div class="module-icon" aria-hidden="true">👥</div>
+              <h2 data-i18n="dashboard.modHr">İK</h2>
+            </div>
+            <span class="module-tag plan-tag" data-i18n="dashboard.tagArch">Mimari</span>
+          </div>
+          <p data-i18n="dashboard.modHrSub">Personel merkezli büyüme; kullanıcı–personel ilişkisi ileride.</p>
+          <div class="sub-links muted-links"><span data-i18n="dashboard.cardPlan">Şimdilik plan</span></div>
+          <div class="card-footer">
+            <span class="module-button disabled-button" aria-disabled="true" data-i18n="dashboard.soon">Yakında</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quick-section">
+      <div class="section-header">
+        <h3 data-i18n="dashboard.quick">Hızlı erişim</h3>
+        <p data-i18n="dashboard.quickSub">Modül paneline doğrudan geçiş</p>
+      </div>
+      <div class="quick-links quick-links-soft">
+        <a class="quick-link" href="/stock.html" data-i18n="nav.stock">Stok</a>
+        <a class="quick-link" href="/stock-brands.html" data-i18n="nav.stock.brands">Markalar</a>
+        <a class="quick-link" href="/stock-in.html" data-i18n="nav.stock.in">Stok giriş</a>
+        <a class="quick-link" href="/goods-receipt.html" data-i18n="nav.stock.receipt">Mal kabul</a>
+        <a class="quick-link" href="/stock-out.html" data-i18n="nav.stock.out">Stok çıkış</a>
+        <a class="quick-link" href="/projects.html" data-i18n="nav.project.hub">Özet</a>
+        <a class="quick-link" href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
+        <a class="quick-link" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
+        <a class="quick-link" href="/purchasing.html" data-i18n="nav.purch.hub">Satınalma</a>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/app.js" defer></script>
+  <footer class="site-footer">
+    <p>
+      Copyright © 2026 Made by
+      <a href="https://www.mcanerakay.com.tr" target="_blank" rel="noopener noreferrer">Mcanerakay</a>
+    </p>
+  </footer>
+</body>
+</html>

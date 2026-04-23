@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="purch.appr.title">Yönetici onayları</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .pur-list-actions a { text-decoration: none; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="container pur-wide">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="purch.appr.title">Yönetici onayları</h1>
+        <p class="subtitle" data-i18n="purch.appr.sub">Onay veya ret — yalnız onay bekleyen talepler</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <p id="msg" style="min-height:1.2em;margin:8px 0;color:#0f766e" role="status"></p>
+    <div class="pur-list-actions" style="margin-bottom:16px">
+      <a class="version-btn" href="/purchase-requisition-open.html" data-i18n="purch.open.title">Satınalma siparişi aç</a>
+      <a class="version-btn" href="/purchase-requests.html" data-i18n="nav.purch.requests">Talep listesi</a>
+    </div>
+    <section class="card">
+      <h3 data-i18n="purch.appr.queue">Onay kuyruğu</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="purch.req.lColCode">Talep no</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.req.lColUser">Talep eden</th>
+              <th data-i18n="purch.appr.lines">Satır özeti</th>
+              <th data-i18n="purch.req.lColAction">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="apprBody"><tr><td colspan="5" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/purchasing-common.js" defer></script>
+  <script>
+  function startAppr() {
+    const msg = document.getElementById('msg');
+    function tKey(k) { return window.i18n && window.i18n.t ? window.i18n.t(k) : k; }
+    async function load() {
+      const { ok, data } = await purApi('/api/purchasing/requests?status=pending');
+      const body = document.getElementById('apprBody');
+      if (!ok || !data || !data.ok) {
+        body.innerHTML = '<tr><td colspan="5">—</td></tr>';
+        return;
+      }
+      const list = (data.requests || []).filter((r) => r.pr_status === 'pending');
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="5">' + tKey('purch.appr.empty') + '</td></tr>';
+        return;
+      }
+      body.innerHTML = list.map((r) => {
+        const lineHint = (r.items || []).map((i) => i.product_name || '').filter(Boolean).join('; ').slice(0, 120);
+        return '<tr data-rid="' + r.id + '"><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td style="max-width:360px;font-size:13px">' + (lineHint || '—') + '</td><td><button type="button" class="a-ok" data-id="' + r.id + '">' + tKey('purch.req.approve') + '</button> <button type="button" class="a-no" data-id="' + r.id + '">' + tKey('purch.req.reject') + '</button></td></tr>';
+      }).join('');
+      body.querySelectorAll('.a-ok').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'approved')));
+      body.querySelectorAll('.a-no').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'rejected')));
+      if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+    }
+    async function setS(id, status) {
+      const { ok, data } = await purApi('/api/purchasing/requests/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) });
+      if (!ok) { msg.textContent = (window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : 'Hata'; msg.style.color = '#b91c1c'; return; }
+      msg.textContent = tKey('purch.appr.done');
+      msg.style.color = '#0f766e';
+      load();
+    }
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
+    });
+    (async function () {
+      if (window.initPurchasingPageNav) await initPurchasingPageNav('appr');
+      load();
+    })();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startAppr);
+  else startAppr();
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="stock.mov.title">Stok hareketleri</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.mov.title">Stok hareketleri</h1>
+        <p class="subtitle" data-i18n="stock.mov.sub">Giriş ve çıkış kayıtları</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <div class="card">
+      <div class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
+        <div class="form-field" style="margin: 0; min-width: 220px">
+          <label for="filterP" data-i18n="stock.mov.filterP">Ürün ID (opsiyonel)</label>
+          <input type="number" id="filterP" min="1" step="1" data-i18n-placeholder="stock.mov.filterAll" />
+        </div>
+        <button type="button" class="module-button" id="btnF" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.mov.refresh">Yenile</button>
+      </div>
+      <div style="overflow-x: auto; margin-top: 12px">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="stock.mov.colDate">Tarih</th>
+              <th data-i18n="stock.mov.colCode">Kod</th>
+              <th data-i18n="stock.mov.colProduct">Ürün</th>
+              <th data-i18n="stock.mov.colType">Tip</th>
+              <th data-i18n="stock.mov.colQty">Miktar (m²)</th>
+              <th data-i18n="stock.mov.colUser">Kullanıcı</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    function t(k) {
+      return window.i18n ? window.i18n.t(k) : k;
+    }
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    function tip(x) {
+      if (x === 'in') return t('dashboard.typeIn');
+      if (x === 'out') return t('dashboard.typeOut');
+      return x || '—';
+    }
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    async function load() {
+      const x = document.getElementById('filterP').value;
+      const qs = new URLSearchParams();
+      if (x) qs.set('productId', x);
+      qs.set('limit', '200');
+      const { data, ok } = await stockApi('/api/stock/movements?' + qs.toString());
+      if (!ok) return;
+      const rows = data.movements || [];
+      document.getElementById('tb').innerHTML = rows
+        .map(
+          (m) =>
+            `<tr>
+            <td>${fmtDate(m.created_at)}</td>
+            <td><code class="display-upper">${esc(m.product_code)}</code></td>
+            <td class="display-upper">${esc(m.product_name)}</td>
+            <td class="display-upper">${esc(tip(m.movement_type))}</td>
+            <td>${esc(String(m.qty))}</td>
+            <td class="display-upper">${esc(m.user_username || '—')}</td>
+          </tr>`
+        )
+        .join('') || `<tr><td colspan="6">${esc(t('stock.mov.empty'))}</td></tr>`;
+    }
+    document.getElementById('btnF')?.addEventListener('click', load);
+    function startStockMovementsPage() {
+      (async function () {
+        await initStockPageNav('mov');
+        await load();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockMovementsPage);
+    } else {
+      startStockMovementsPage();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="stock.out.title">Stok çıkış</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .product-dd-wrap {
+      position: relative;
+    }
+    .product-dd {
+      list-style: none;
+      margin: 4px 0 0 0;
+      padding: 0;
+      position: absolute;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    }
+    .product-dd li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .product-dd li:hover,
+    .product-dd li.active {
+      background: #f1f5f9;
+    }
+    .product-dd .frequent-tag {
+      flex-shrink: 0;
+      font-size: 11px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .stock-out-form-card {
+      max-width: 100%;
+    }
+    .qty-inline {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .qty-inline input[type="number"] {
+      min-width: 0;
+      flex: 1 1 72px;
+    }
+    .unit-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .btn-unit-toggle {
+      flex-shrink: 0;
+      white-space: nowrap;
+      width: auto;
+      padding: 6px 10px;
+      font-size: 13px;
+      background: #f1f5f9;
+      color: #1d4ed8;
+      border: 1px solid #cbd5e1;
+    }
+    .stock-out-qty-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      margin: 0 0 12px;
+      padding: 10px 0 0;
+      border-top: 1px solid #e2e8f0;
+    }
+    .m2m3-readout {
+      font-size: 13px;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .m2m3-readout span {
+      color: #64748b;
+      font-weight: 500;
+    }
+    .product-unit-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0;
+    }
+    .form-stock-out-r1,
+    .form-stock-out-r2 {
+      display: grid;
+      gap: 12px 16px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+    .form-stock-out-r1 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .form-stock-out-r2 {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.5fr) minmax(0, 1fr);
+    }
+    @media (max-width: 900px) {
+      .form-stock-out-r1,
+      .form-stock-out-r2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .stock-now-box {
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a;
+    }
+    .stock-now-box.warn {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+    .text-right-mov {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .stock-out-mov-card {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+    .mov-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+    .mov-filters .form-field {
+      margin: 0;
+      min-width: 140px;
+    }
+    .mov-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 0;
+    }
+    .mov-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.2;
+      font-family: inherit;
+    }
+    .mov-btn-edit {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+    .mov-btn-edit:hover {
+      background: #dbeafe;
+    }
+    .mov-btn-del {
+      background: #fef2f2;
+      border-color: #f87171;
+      color: #b91c1c;
+    }
+    .mov-btn-del:hover {
+      background: #fee2e2;
+    }
+    dialog.stock-dialog {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 440px;
+    }
+    dialog.stock-dialog.wide {
+      max-width: 480px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.out.title">Stok çıkış</h1>
+        <p class="subtitle" data-i18n="stock.out.sub">Proje, depo, ürün; önce proje stoku, sonra genel, sonra diğer (FIFO)</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <div class="card stock-out-form-card">
+      <form id="f">
+        <div class="form-stock-out-r1">
+          <div class="form-field">
+            <label for="projectId" data-i18n="stock.in.project">Proje</label>
+            <select id="projectId" required>
+              <option value="" data-i18n="stock.in.projectPick">Proje seçin</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="wid" data-i18n="stock.in.selectWh">Depo</label>
+            <select id="wid" required></select>
+          </div>
+          <div class="form-field">
+            <label for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
+            <select id="scid" required disabled></select>
+          </div>
+        </div>
+        <div class="form-stock-out-r2">
+          <div class="form-field product-pick">
+            <label for="productQ" data-i18n="common.product">Ürün</label>
+            <div class="product-dd-wrap">
+              <input
+                type="text"
+                id="productQ"
+                class="input-upper"
+                autocomplete="off"
+                data-i18n-placeholder="stock.in.productQPh"
+                style="width: 100%; box-sizing: border-box"
+              />
+              <input type="hidden" id="pid" name="productId" />
+              <ul id="productDd" class="product-dd" hidden></ul>
+            </div>
+          </div>
+          <div class="form-field">
+            <label data-i18n="stock.out.colStockM2" style="font-weight: 600">Güncel stok</label>
+            <div id="currentStockM2" class="stock-now-box" role="status">—</div>
+            <p class="product-unit-hint" id="stockM2Sub" data-i18n="stock.out.colStockHint" style="display: none; margin-top: 4px"></p>
+          </div>
+          <div class="form-field">
+            <label for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
+            <div class="qty-inline">
+              <input type="number" id="qtyInput" min="0.0001" step="any" required />
+              <span id="qtyUnitBadge" class="unit-badge">—</span>
+              <button type="button" class="btn-unit-toggle" id="btnQtyUnitToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
+            </div>
+            <input type="hidden" id="qtyMode" value="pieces" />
+          </div>
+        </div>
+        <div class="stock-out-qty-meta" aria-live="polite">
+          <p id="m2m3Readout" class="m2m3-readout">—</p>
+          <p id="productUnitHint" class="product-unit-hint" data-i18n="stock.in.productUnitHint">—</p>
+        </div>
+        <div class="form-field form-field-wide">
+          <label for="note" data-i18n="common.note">Not</label>
+          <textarea id="note" class="input-upper" rows="2"></textarea>
+        </div>
+        <div class="form-actions-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px">
+          <button
+            type="submit"
+            id="btnSubmit"
+            class="module-button"
+            style="width: auto; padding: 10px 16px; background: #7c2d12"
+            data-i18n="stock.out.submit"
+          >
+            Çıkış kaydet
+          </button>
+        </div>
+        <p id="msg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+        <p id="ok" style="display: none; margin-top: 10px; color: #166534; font-weight: 700"></p>
+      </form>
+    </div>
+
+    <dialog id="outVoidDialog" class="stock-dialog">
+      <h4 style="margin: 0 0 8px" data-i18n="stock.out.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
+      <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="stock.out.voidDlgHint">Hareket silinir; stok ve maliyet geri yüklenir.</p>
+      <textarea id="outVoidReason" class="input-upper" style="width: 100%; box-sizing: border-box" rows="3"></textarea>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px">
+        <button type="button" class="module-button btn-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="module-button" id="outVoidOk" style="background: #b91c1c" data-i18n="stock.out.voidDlgConfirm">Sil</button>
+      </div>
+    </dialog>
+
+    <dialog id="outEditDialog" class="stock-dialog wide">
+      <h4 style="margin: 0 0 10px" data-i18n="stock.out.editDlgTitle">Hareketi düzenle</h4>
+      <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="stock.out.editDlgHint">Önce açıklama, sonra yeni değerler. Eski hareket iptal, yeni çıkış kaydedilir.</p>
+      <div class="form-field" style="margin-bottom: 10px">
+        <label for="outEditReason" data-i18n="stock.out.editReasonLabel">Düzenleme açıklaması (zorunlu)</label>
+        <textarea id="outEditReason" class="input-upper" style="width: 100%; box-sizing: border-box" rows="2"></textarea>
+      </div>
+      <div class="form-field" style="margin-bottom: 10px">
+        <label for="outEditProductId" data-i18n="stock.out.editProductId">Ürün ID</label>
+        <input type="number" id="outEditProductId" min="1" step="1" class="input-upper" style="width: 100%; box-sizing: border-box" />
+      </div>
+      <div class="form-field" style="margin-bottom: 10px">
+        <label for="outEditProjectId" data-i18n="stock.in.project">Proje</label>
+        <select id="outEditProjectId" style="width: 100%; box-sizing: border-box"></select>
+      </div>
+      <div class="form-field" style="margin-bottom: 10px">
+        <label for="outEditQty" data-i18n="stock.in.qty">Miktar</label>
+        <div class="qty-inline">
+          <input type="number" id="outEditQty" min="0.0001" step="any" class="input-upper" style="min-width: 0; flex: 1" />
+          <span id="outEditQtyUnit" class="unit-badge">—</span>
+          <button type="button" class="btn-unit-toggle" id="outEditQtyToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
+        </div>
+        <input type="hidden" id="outEditQtyMode" value="pieces" />
+        <input type="hidden" id="outEditM2p" value="0" />
+      </div>
+      <div class="form-field" style="margin-bottom: 10px">
+        <label for="outEditNote" data-i18n="common.note">Not</label>
+        <textarea id="outEditNote" class="input-upper" style="width: 100%; box-sizing: border-box" rows="2"></textarea>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px">
+        <button type="button" class="module-button btn-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="module-button" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
+      </div>
+    </dialog>
+
+    <div class="card stock-out-mov-card">
+      <h3 style="margin-top: 0" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
+      <div class="mov-filters">
+        <div class="form-field">
+          <label for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
+          <select id="movFilterProject">
+            <option value="" data-i18n="stock.in.movAllProjects">Tümü</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
+          <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" />
+        </div>
+        <button
+          type="button"
+          class="module-button"
+          id="btnMovRefresh"
+          style="width: auto; padding: 8px 14px; height: 42px"
+          data-i18n="stock.in.movRefresh"
+        >
+          Yenile
+        </button>
+      </div>
+      <div style="overflow-x: auto">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="stock.mov.colDate">Tarih</th>
+              <th data-i18n="stock.in.movColProject">Proje</th>
+              <th data-i18n="stock.mov.colCode">Kod</th>
+              <th data-i18n="stock.mov.colProduct">Ürün</th>
+              <th data-i18n="stock.mov.colQty">Miktar</th>
+              <th data-i18n="stock.mov.colBirim">Birim</th>
+              <th data-i18n="common.note">Not</th>
+              <th data-i18n="stock.mov.colUser">Kullanıcı</th>
+              <th data-i18n="stock.out.movColActions" style="min-width: 8rem">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="movTb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    const FREQ_KEY = 'erp_stock_out_freq';
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    const productM2p = new Map();
+    const movOutById = new Map();
+    let whData = [];
+    let inProducts = [];
+    let activeDdIndex = -1;
+    let selectedProduct = null;
+    let voidOutTargetMid = 0;
+    let editOutMovementId = 0;
+    function getFreqIds() {
+      try {
+        const r = localStorage.getItem(FREQ_KEY);
+        const a = r ? JSON.parse(r) : [];
+        return Array.isArray(a) ? a.map((x) => +x).filter((x) => x > 0) : [];
+      } catch {
+        return [];
+      }
+    }
+    function pushFrequentId(productId) {
+      const id = +productId;
+      if (id < 1) return;
+      const next = [id, ...getFreqIds().filter((x) => x !== id)];
+      localStorage.setItem(FREQ_KEY, JSON.stringify(next.slice(0, 20)));
+    }
+    function mergeProductView(all, q) {
+      const qLower = (q || '').trim().toLowerCase();
+      let pool = all;
+      if (qLower) {
+        pool = all.filter(
+          (p) =>
+            String(p.name).toLowerCase().includes(qLower) ||
+            String(p.product_code).toLowerCase().includes(qLower) ||
+            String(p.material_label || '')
+              .toLowerCase()
+              .includes(qLower)
+        );
+      }
+      const byId = new Map(pool.map((p) => [p.id, p]));
+      const freq = [];
+      for (const fid of getFreqIds()) {
+        if (freq.length >= 2) break;
+        const pr = byId.get(fid);
+        if (pr) freq.push({ p: pr, isFreq: true });
+      }
+      const fset = new Set(freq.map((x) => x.p.id));
+      const rest = pool.filter((p) => !fset.has(p.id)).map((p) => ({ p, isFreq: false }));
+      return [...freq, ...rest].slice(0, 15);
+    }
+    function labelProduct(p) {
+      const pc = p.product_code || '';
+      const n = p.name || '';
+      return (pc + ' — ' + n).trim() || n || '#' + p.id;
+    }
+    /** Ürün giriş birimi m² (alan) mı? Aksi halde adet/plaka vb. */
+    function entryUnitIsM2(p) {
+      const u = String((p && (p.unit_code || p.unit_legacy)) || '')
+        .trim()
+        .toLowerCase();
+      return u === 'm2' || u === 'm²' || u === 'sqm' || u === 'mt2';
+    }
+    function plakaCountFromProduct(p) {
+      if (!p) return 0;
+      const raw = p.stock_pieces;
+      const fromDb = raw != null && raw !== '' ? Number(raw) : NaN;
+      if (Number.isFinite(fromDb) && fromDb >= 0) {
+        return fromDb;
+      }
+      const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
+      const m2 = Number(p.stock_m2) || 0;
+      if (m2p > 0.0001 && m2 > 0) {
+        return m2 / m2p;
+      }
+      return 0;
+    }
+    function entryUnitLabelUpper(p) {
+      const s = String((p && (p.unit_code || p.unit_legacy)) || '')
+        .trim();
+      if (!s) {
+        return tLoc('stock.in.unitPiece', 'ADET');
+      }
+      return s.toLocaleUpperCase('tr-TR');
+    }
+    /**
+     * Güncel stok: sadece giriş biriminde (örn. 50 ADET veya 12,5 M²)
+     */
+    function formatStockInEntryUnit(p) {
+      if (!p) return '—';
+      const m2 = Number(p.stock_m2) || 0;
+      if (m2 < 0.0001) {
+        if (entryUnitIsM2(p)) {
+          return tLoc('stock.out.noStock', '0 m²');
+        }
+        return '0 ' + entryUnitLabelUpper(p);
+      }
+      if (entryUnitIsM2(p)) {
+        const q =
+          typeof window.fmtQty === 'function' ? window.fmtQty(m2) : String(m2);
+        return q + ' M²';
+      }
+      const n = plakaCountFromProduct(p);
+      const q = typeof window.fmtQty === 'function' ? window.fmtQty(n) : String(n);
+      return q + ' ' + entryUnitLabelUpper(p);
+    }
+    function updateStockM2Box() {
+      const el = document.getElementById('currentStockM2');
+      const sub = document.getElementById('stockM2Sub');
+      if (!el) return;
+      if (!selectedProduct) {
+        el.classList.remove('warn');
+        el.textContent = '—';
+        if (sub) {
+          sub.style.display = 'none';
+        }
+        return;
+      }
+      const m2 = Number(selectedProduct.stock_m2) || 0;
+      if (m2 < 0.0001) {
+        el.classList.add('warn');
+        el.textContent = formatStockInEntryUnit(selectedProduct);
+        if (sub) {
+          sub.style.display = 'block';
+          sub.textContent = tLoc('stock.out.noStockMsg', 'Bu ürün için çıkış yapılamaz');
+        }
+        return;
+      }
+      el.classList.remove('warn');
+      el.textContent = formatStockInEntryUnit(selectedProduct);
+      if (sub) {
+        sub.style.display = 'none';
+      }
+    }
+    function renderProductDd() {
+      const q = document.getElementById('productQ');
+      const ul = document.getElementById('productDd');
+      if (!q || !ul) return;
+      const v = (q.value || '').trim();
+      if (!inProducts.length) {
+        ul.innerHTML = '';
+        ul.hidden = true;
+        return;
+      }
+      const rows = mergeProductView(inProducts, v);
+      if (!rows.length) {
+        const empty = window.i18n ? window.i18n.t('stock.in.emptySubProducts') : 'Bu alt kategoride eşleşen ürün yok';
+        ul.innerHTML = '<li style="cursor:default;color:#64748b;padding:10px">' + empty + '</li>';
+        ul.hidden = false;
+        return;
+      }
+      const fTag = window.i18n ? window.i18n.t('stock.in.frequent') : 'Sık';
+      ul.innerHTML = rows
+        .map(
+          (row, i) =>
+            '<li data-idx="' +
+            i +
+            '" data-pid="' +
+            row.p.id +
+            '" class="product-dd-item">' +
+            '<span><span class="pcode">' +
+            (row.p.product_code || '') +
+            '</span> ' +
+            (row.p.name || '') +
+            '<span class="pcode" style="margin-left:6px">| ' +
+            tLoc('stock.out.dropdownStockPrefix', 'stok:') +
+            ' ' +
+            formatStockInEntryUnit(row.p) +
+            '</span></span>' +
+            (row.isFreq ? '<span class="frequent-tag">' + fTag + '</span>' : '<span></span>') +
+            '</li>'
+        )
+        .join('');
+      ul.hidden = false;
+      activeDdIndex = 0;
+      highlightDdItem();
+    }
+    function highlightDdItem() {
+      const ul = document.getElementById('productDd');
+      if (!ul) return;
+      const items = ul.querySelectorAll('li.product-dd-item');
+      items.forEach((el, j) => el.classList.toggle('active', j === activeDdIndex));
+    }
+    function tLoc(k, fb) {
+      return window.i18n && window.i18n.t(k) !== k ? window.i18n.t(k) : fb || k;
+    }
+    function fmtDateSafe(s) {
+      if (typeof window.fmtDate === 'function') return window.fmtDate(s);
+      const d = s ? new Date(s) : null;
+      return d && !Number.isNaN(d.getTime()) ? d.toLocaleString() : String(s ?? '—');
+    }
+    function updateQtyBadge() {
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const el = document.getElementById('qtyUnitBadge');
+      if (!el) return;
+      el.textContent = mode === 'm2' ? 'M²' : tLoc('stock.in.unitPiece', 'ADET');
+    }
+    function updateProductHint(p) {
+      const hint = document.getElementById('productUnitHint');
+      if (!hint) return;
+      if (!p) {
+        hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');
+        return;
+      }
+      const uc = p.unit_code || p.unit_legacy || '—';
+      hint.textContent = tLoc('stock.in.productUnitHintVal', 'Ürün birimi: {u}').replace('{u}', String(uc));
+    }
+    function updateM2M3Readout() {
+      const el = document.getElementById('m2m3Readout');
+      if (!el) return;
+      const m2 = getM2In();
+      const d = selectedProduct != null && selectedProduct.depth_mm != null ? Number(selectedProduct.depth_mm) : 0;
+      const m3 = d > 0 && Number.isFinite(m2) && m2 > 0 ? m2 * (d / 1000) : null;
+      const m2s = Number.isFinite(m2) && m2 > 0 ? Number(m2).toFixed(4) : '—';
+      const m3s = m3 != null && Number.isFinite(m3) ? Number(m3).toFixed(4) : '—';
+      el.innerHTML =
+        '<span>' +
+        tLoc('stock.in.sysM2', 'Sistem m²') +
+        '</span>: ' +
+        m2s +
+        ' &nbsp;|&nbsp; <span>' +
+        tLoc('stock.in.sysM3', 'Sistem m³') +
+        '</span>: ' +
+        m3s;
+    }
+    function selectProductById(pPid) {
+      const p = inProducts.find((x) => +x.id === +pPid);
+      if (!p) return;
+      selectedProduct = p;
+      document.getElementById('pid').value = String(p.id);
+      document.getElementById('productQ').value = labelProduct(p);
+      const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
+      productM2p.set(p.id, m2p);
+      document.getElementById('productDd').hidden = true;
+      const qm = document.getElementById('qtyMode');
+      if (qm) qm.value = m2p > 0 ? 'pieces' : 'm2';
+      updateQtyBadge();
+      updateProductHint(p);
+      updateStockM2Box();
+      updateM2M3Readout();
+    }
+    function getM2In() {
+      const pPid = +document.getElementById('pid').value;
+      const m2p = productM2p.get(pPid) || 0;
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const q = +document.getElementById('qtyInput')?.value;
+      if (mode === 'm2') {
+        return Number.isFinite(q) && q > 0 ? q : 0;
+      }
+      if (Number.isFinite(q) && q > 0 && m2p > 0) {
+        return q * m2p;
+      }
+      return 0;
+    }
+    ['qtyInput'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        updateM2M3Readout();
+      });
+    });
+    document.getElementById('btnQtyUnitToggle')?.addEventListener('click', () => {
+      const qm = document.getElementById('qtyMode');
+      if (!qm) return;
+      qm.value = qm.value === 'm2' ? 'pieces' : 'm2';
+      updateQtyBadge();
+      updateM2M3Readout();
+    });
+    function fillWh() {
+      const wid = document.getElementById('wid');
+      const sc = document.getElementById('scid');
+      wid.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.warehouse.selectWh') : '—') + '</option>';
+      whData.forEach((w) => wid.add(new Option(w.name, w.id)));
+      sc.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.in.subPick') : 'Seçin') + '</option>';
+      sc.disabled = true;
+    }
+    function onWhChange() {
+      const w = whData.find((x) => +x.id === +document.getElementById('wid').value);
+      const sc = document.getElementById('scid');
+      sc.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.in.subPick') : 'Seçin') + '</option>';
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      updateStockM2Box();
+      inProducts = [];
+      if (!w) {
+        sc.disabled = true;
+        return;
+      }
+      (w.subcategories || []).forEach((s) => sc.add(new Option(s.name, s.id)));
+      sc.disabled = (w.subcategories || []).length === 0;
+    }
+    async function onSubChange() {
+      const wcid = +document.getElementById('wid').value;
+      const scid = +document.getElementById('scid').value;
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      inProducts = [];
+      updateStockM2Box();
+      if (!wcid || !scid) return;
+      productM2p.clear();
+      const { data, ok } = await stockApi(
+        '/api/stock/products?warehouseId=' + wcid + '&warehouseSubcategoryId=' + scid
+      );
+      if (!ok) return;
+      inProducts = data.products || [];
+      inProducts.forEach((p) => {
+        const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
+        productM2p.set(p.id, m2p);
+      });
+    }
+    const productQ = document.getElementById('productQ');
+    const productDd = document.getElementById('productDd');
+    productQ?.addEventListener('focus', () => {
+      if (inProducts.length) renderProductDd();
+    });
+    productQ?.addEventListener('input', () => {
+      document.getElementById('pid').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      updateStockM2Box();
+      if (inProducts.length) renderProductDd();
+      updateM2M3Readout();
+    });
+    productDd?.addEventListener('click', (e) => {
+      const li = e.target && e.target.closest('li.product-dd-item');
+      if (li) selectProductById(+li.getAttribute('data-pid'));
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target || !e.target.closest || !e.target.closest('.product-dd-wrap')) {
+        if (productDd) productDd.hidden = true;
+      }
+    });
+    productQ?.addEventListener('keydown', (e) => {
+      const ul = document.getElementById('productDd');
+      if (!ul || ul.hidden) {
+        if (e.key === 'Enter') e.preventDefault();
+        return;
+      }
+      const items = ul.querySelectorAll('li.product-dd-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeDdIndex = Math.min(activeDdIndex + 1, items.length - 1);
+        highlightDdItem();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeDdIndex = Math.max(0, activeDdIndex - 1);
+        highlightDdItem();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const one = items[activeDdIndex];
+        if (one) selectProductById(+one.getAttribute('data-pid'));
+      } else if (e.key === 'Escape') {
+        ul.hidden = true;
+      }
+    });
+    document.getElementById('wid')?.addEventListener('change', onWhChange);
+    document.getElementById('scid')?.addEventListener('change', onSubChange);
+    function escMov(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    function movNum(x) {
+      if (x == null || x === '') return NaN;
+      if (typeof x === 'string' || typeof x === 'number') return Number(x);
+      if (typeof x === 'object' && x != null && typeof x.toString === 'function') {
+        return Number(String(x).replace(/,/g, ''));
+      }
+      return Number(x);
+    }
+    async function fillProjectSelects() {
+      const { data, ok } = await stockApi('/api/stock/active-projects');
+      const sel = document.getElementById('projectId');
+      const movSel = document.getElementById('movFilterProject');
+      if (!ok || !data || !data.projects) return;
+      const cur = sel?.value || '';
+      const curM = movSel?.value || '';
+      if (sel) {
+        const ph = tLoc('stock.in.projectPick', 'Proje seçin');
+        sel.innerHTML = '<option value="">' + escMov(ph) + '</option>';
+        data.projects.forEach((p) => {
+          const codeOnly = (p.project_code || '').trim() || '#' + p.id;
+          sel.add(new Option(codeOnly, p.id));
+        });
+        if (cur) sel.value = cur;
+      }
+      if (movSel) {
+        const all = tLoc('stock.in.movAllProjects', 'Tümü');
+        movSel.innerHTML = '<option value="">' + escMov(all) + '</option>';
+        data.projects.forEach((p) => {
+          const codeOnly = (p.project_code || '').trim() || '#' + p.id;
+          movSel.add(new Option(codeOnly, p.id));
+        });
+        if (curM) movSel.value = curM;
+      }
+    }
+    function movQtyDisplay(m) {
+      const dm = Number(m.direct_m2_entry);
+      if (dm === 1) {
+        return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
+      }
+      if (m.qty_pieces != null && m.qty_pieces !== '' && Number.isFinite(+m.qty_pieces)) {
+        return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty_pieces) : String(m.qty_pieces);
+      }
+      return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
+    }
+    function movBirimDisplay(m) {
+      const dm = Number(m.direct_m2_entry);
+      if (dm === 1) {
+        return tLoc('stock.mov.birimM2', 'M²');
+      }
+      const u = (m.unit_code || m.p_unit || '').trim();
+      return u ? u.toLocaleUpperCase('tr-TR') : '—';
+    }
+    async function loadMovementsList() {
+      const tb = document.getElementById('movTb');
+      if (!tb) return;
+      const qs = new URLSearchParams();
+      qs.set('limit', '80');
+      qs.set('movementType', 'out');
+      const mp = document.getElementById('movFilterProject')?.value;
+      const mid = document.getElementById('movFilterProductId')?.value;
+      if (mp) qs.set('projectId', mp);
+      if (mid) qs.set('productId', mid);
+      const { data, ok } = await stockApi('/api/stock/movements?' + qs.toString());
+      if (!ok) {
+        const em =
+          (data && (data.message || (data.error && (data.error + (data.message || ''))))) || 'Hata';
+        movOutById.clear();
+        tb.innerHTML = '<tr><td colspan="9" style="color:#b91c1c">' + escMov(String(em)) + '</td></tr>';
+        return;
+      }
+      const rows = data.movements || [];
+      movOutById.clear();
+      if (!rows.length) {
+        tb.innerHTML =
+          '<tr><td colspan="9" class="muted">' + escMov(tLoc('stock.mov.empty', 'Kayıt yok')) + '</td></tr>';
+        return;
+      }
+      rows.forEach((m) => {
+        if (m && m.id != null) movOutById.set(+m.id, m);
+      });
+      const lblEdit = tLoc('stock.out.movActEdit', 'Düzenle');
+      const lblDel = tLoc('stock.out.movActDelete', 'Sil');
+      tb.innerHTML = rows
+        .map((m) => {
+          const codeRaw = (m.project_code || '').trim();
+          const proj = escMov(codeRaw || '—');
+          const mid = +m.id;
+          return (
+            '<tr data-mid="' +
+            mid +
+            '"><td>' +
+            escMov(fmtDateSafe(m.created_at)) +
+            '</td><td class="display-upper">' +
+            proj +
+            '</td><td><code>' +
+            escMov(m.product_code) +
+            '</code></td><td class="display-upper">' +
+            escMov(m.product_name) +
+            '</td><td class="text-right-mov">' +
+            escMov(movQtyDisplay(m)) +
+            '</td><td class="display-upper">' +
+            escMov(movBirimDisplay(m)) +
+            '</td><td class="display-upper">' +
+            escMov(m.note || '—') +
+            '</td><td>' +
+            escMov(m.user_username || '—') +
+            '</td><td class="mov-actions"><button type="button" class="mov-btn mov-btn-edit" data-mid="' +
+            mid +
+            '" data-mov-act="edit">' +
+            escMov(lblEdit) +
+            '</button><button type="button" class="mov-btn mov-btn-del" data-mid="' +
+            mid +
+            '" data-mov-act="delete">' +
+            escMov(lblDel) +
+            '</button></td></tr>'
+          );
+        })
+        .join('');
+    }
+    function copyProjectOptionsToOutEdit() {
+      const from = document.getElementById('projectId');
+      const to = document.getElementById('outEditProjectId');
+      if (!from || !to) return;
+      to.innerHTML = from.innerHTML;
+    }
+    function updateOutEditQtyBadge() {
+      const m2p = +document.getElementById('outEditM2p')?.value || 0;
+      const mode = document.getElementById('outEditQtyMode')?.value || 'pieces';
+      const b = document.getElementById('outEditQtyUnit');
+      if (!b) return;
+      if (m2p <= 0) {
+        b.textContent = tLoc('stock.mov.birimM2', 'M²');
+        return;
+      }
+      b.textContent = mode === 'm2' ? 'M²' : tLoc('stock.in.unitPiece', 'ADET');
+    }
+    function openOutVoidFromRow(mid) {
+      voidOutTargetMid = +mid;
+      const t = document.getElementById('outVoidReason');
+      if (t) t.value = '';
+      const d = document.getElementById('outVoidDialog');
+      if (d && typeof d.showModal === 'function') d.showModal();
+    }
+    function openOutEditFromRow(m) {
+      if (!m) return;
+      editOutMovementId = +m.id;
+      copyProjectOptionsToOutEdit();
+      const m2p = m.m2_per_piece != null ? Number(m.m2_per_piece) : 0;
+      const m2pEl = document.getElementById('outEditM2p');
+      if (m2pEl) m2pEl.value = String(m2p);
+      const dm = m.direct_m2_entry != null ? Number(m.direct_m2_entry) : 0;
+      const qm = document.getElementById('outEditQtyMode');
+      if (qm) {
+        if (m2p <= 0) {
+          qm.value = 'm2';
+        } else if (dm === 1) {
+          qm.value = 'm2';
+        } else {
+          qm.value = 'pieces';
+        }
+      }
+      const qty = document.getElementById('outEditQty');
+      if (qty) {
+        if (qm && qm.value === 'm2') {
+          qty.value = m.qty != null ? String(m.qty) : '';
+        } else if (m2p > 0 && m.qty_pieces != null && m.qty_pieces !== '' && Number.isFinite(+m.qty_pieces)) {
+          qty.value = String(m.qty_pieces);
+        } else {
+          qty.value = m.qty != null ? String(m.qty) : '';
+        }
+      }
+      const pid = document.getElementById('outEditProductId');
+      if (pid) pid.value = m.product_id != null ? String(m.product_id) : '';
+      const pr = document.getElementById('outEditProjectId');
+      if (pr) {
+        const r = m.ref_id != null && m.ref_id !== '' ? String(m.ref_id) : '';
+        pr.value = r;
+      }
+      const note = document.getElementById('outEditNote');
+      if (note) note.value = m.note != null && m.note !== '' ? String(m.note) : '';
+      const re = document.getElementById('outEditReason');
+      if (re) re.value = '';
+      updateOutEditQtyBadge();
+      const d = document.getElementById('outEditDialog');
+      if (d && typeof d.showModal === 'function') d.showModal();
+    }
+    function outEditM2FromInputs() {
+      const m2p = +document.getElementById('outEditM2p')?.value || 0;
+      const mode = document.getElementById('outEditQtyMode')?.value || 'pieces';
+      const qv = +document.getElementById('outEditQty')?.value;
+      if (mode === 'm2') {
+        return Number.isFinite(qv) && qv > 0 ? qv : 0;
+      }
+      if (Number.isFinite(qv) && qv > 0 && m2p > 0) {
+        return qv * m2p;
+      }
+      return 0;
+    }
+    document.getElementById('movTb')?.addEventListener('click', (e) => {
+      const b = e.target && e.target.closest('button[data-mov-act]');
+      if (!b) return;
+      e.preventDefault();
+      const act = b.getAttribute('data-mov-act');
+      const mid = +b.getAttribute('data-mid');
+      const row = movOutById.get(mid);
+      if ((act === 'delete' || act === 'void') && mid > 0) {
+        openOutVoidFromRow(mid);
+      } else if (act === 'edit' && row) {
+        openOutEditFromRow(row);
+      }
+    });
+    document.getElementById('outVoidCancel')?.addEventListener('click', () => {
+      const d = document.getElementById('outVoidDialog');
+      if (d) d.close();
+      voidOutTargetMid = 0;
+    });
+    document.getElementById('outVoidOk')?.addEventListener('click', async () => {
+      const t = document.getElementById('outVoidReason')?.value?.trim();
+      if (!t) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = tLoc('stock.in.voidReasonRequired', 'Açıklama zorunludur');
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const id = voidOutTargetMid;
+      if (id < 1) return;
+      const { data, ok } = await stockApi('/api/stock/movements/' + id + '/void', {
+        method: 'POST',
+        body: JSON.stringify({ reason: toUpperTrClient(t) }),
+      });
+      const d = document.getElementById('outVoidDialog');
+      if (d) d.close();
+      voidOutTargetMid = 0;
+      if (!ok) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data?.message || 'Hata';
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const o = document.getElementById('ok');
+      if (o) {
+        o.textContent = tLoc('stock.out.voidOk', 'Hareket silindi.');
+        o.style.display = 'block';
+      }
+      await onSubChange();
+      updateStockM2Box();
+      await loadMovementsList();
+    });
+    document.getElementById('outEditCancel')?.addEventListener('click', () => {
+      const d = document.getElementById('outEditDialog');
+      if (d) d.close();
+      editOutMovementId = 0;
+    });
+    document.getElementById('outEditQtyToggle')?.addEventListener('click', () => {
+      const m2p = +document.getElementById('outEditM2p')?.value || 0;
+      if (m2p <= 0) return;
+      const qm = document.getElementById('outEditQtyMode');
+      if (!qm) return;
+      qm.value = qm.value === 'm2' ? 'pieces' : 'm2';
+      updateOutEditQtyBadge();
+    });
+    document.getElementById('outEditSave')?.addEventListener('click', async () => {
+      const reason = document.getElementById('outEditReason')?.value?.trim();
+      if (!reason) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = tLoc('stock.in.voidReasonRequired', 'Açıklama zorunludur');
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const productId = +document.getElementById('outEditProductId')?.value;
+      const projectId = +document.getElementById('outEditProjectId')?.value;
+      if (productId < 1 || projectId < 1) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = tLoc('stock.out.editIdsRequired', 'Ürün ve proje gerekli');
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const m2p = +document.getElementById('outEditM2p')?.value || 0;
+      const mode = document.getElementById('outEditQtyMode')?.value || 'pieces';
+      const qv = +document.getElementById('outEditQty')?.value;
+      let body = {
+        reason: toUpperTrClient(reason),
+        productId,
+        projectId,
+        note: toUpperTrClient(document.getElementById('outEditNote')?.value?.trim() || '') || null,
+      };
+      if (m2p <= 0) {
+        body.qtyM2 = qv;
+        body.qtyPieces = null;
+      } else if (mode === 'm2') {
+        body.qtyM2 = qv;
+        body.qtyPieces = null;
+      } else {
+        body.qtyM2 = null;
+        body.qtyPieces = qv;
+      }
+      const m2 = outEditM2FromInputs();
+      if (!Number.isFinite(m2) || m2 <= 0) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin');
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const oid = editOutMovementId;
+      if (oid < 1) return;
+      const { data, ok } = await stockApi('/api/stock/movements/' + oid + '/replace-out', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      const d = document.getElementById('outEditDialog');
+      if (d) d.close();
+      editOutMovementId = 0;
+      if (!ok) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data?.message || 'Hata';
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const o = document.getElementById('ok');
+      if (o) {
+        o.textContent = tLoc('stock.out.editOk', 'Hareket güncellendi.');
+        o.style.display = 'block';
+      }
+      await onSubChange();
+      updateStockM2Box();
+      await loadMovementsList();
+    });
+    document.getElementById('f')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('msg').style.display = 'none';
+      document.getElementById('ok').style.display = 'none';
+      const productId = +document.getElementById('pid').value;
+      if (productId < 1) {
+        const m = document.getElementById('msg');
+        m.textContent = window.i18n ? window.i18n.t('api.stock.product_required_in') : 'Ürün seçin';
+        m.style.display = 'block';
+        return;
+      }
+      const projectId = +document.getElementById('projectId').value;
+      if (projectId < 1) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.projectRequiredMsg', 'Proje seçin');
+        m.style.display = 'block';
+        return;
+      }
+      const sm2 = Number(selectedProduct && selectedProduct.stock_m2) || 0;
+      if (sm2 < 0.0001) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.out.noStockBlock', 'Stokta olmayan ürün için çıkış yapılamaz');
+        m.style.display = 'block';
+        return;
+      }
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const qv = +document.getElementById('qtyInput').value;
+      const m2 = getM2In();
+      if (!Number.isFinite(m2) || m2 <= 0) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem m²)');
+        m.style.display = 'block';
+        return;
+      }
+      if (m2 - sm2 > 0.0001) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.out.exceedsStock', 'Miktar mevcut stoktan büyük olamaz');
+        m.style.display = 'block';
+        return;
+      }
+      const body = {
+        productId,
+        projectId,
+        movementType: 'out',
+        qtyPieces: mode === 'pieces' ? qv : null,
+        qtyM2: mode === 'm2' ? qv : null,
+        note: toUpperTrClient(document.getElementById('note').value.trim()) || null,
+      };
+      const { data, ok } = await stockApi('/api/stock/movements', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (!ok) {
+        const m = document.getElementById('msg');
+        m.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data.message || 'Hata';
+        m.style.display = 'block';
+        return;
+      }
+      pushFrequentId(productId);
+      const o = document.getElementById('ok');
+      o.textContent = tLoc('stock.out.okShort', 'Tamam. Kalan m²: {m}').replace(
+        '{m}',
+        data.newStockM2 != null ? String(data.newStockM2) : '—'
+      );
+      o.style.display = 'block';
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('note').value = '';
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      await onSubChange();
+      if (productId) {
+        const reSel = inProducts.find((p) => +p.id === +productId);
+        if (reSel) selectProductById(productId);
+        else {
+          selectedProduct = null;
+          updateStockM2Box();
+        }
+      }
+      updateM2M3Readout();
+      await loadMovementsList();
+    });
+    document.getElementById('btnMovRefresh')?.addEventListener('click', () => loadMovementsList());
+    document.getElementById('movFilterProject')?.addEventListener('change', () => loadMovementsList());
+    document.getElementById('movFilterProductId')?.addEventListener('change', () => loadMovementsList());
+    function startStockOutPage() {
+      (async function () {
+        await initStockPageNav('out');
+        updateQtyBadge();
+        const hint = document.getElementById('productUnitHint');
+        if (hint) hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');
+        const { data, ok } = await stockApi('/api/stock/warehouses');
+        if (ok && data.warehouses) {
+          whData = data.warehouses;
+        }
+        fillWh();
+        await fillProjectSelects();
+        updateM2M3Readout();
+        updateStockM2Box();
+        await loadMovementsList();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockOutPage);
+    } else {
+      startStockOutPage();
+    }
+  </script>
+</body>
+</html>

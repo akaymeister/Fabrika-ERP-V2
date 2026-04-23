@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="login.pageTitle">Giriş — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="login-body">
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h1 data-i18n="login.appName">Fabrika ERP V2</h1>
+      <p data-i18n="login.sub">Modüler fabrika yönetim paneline giriş yapın</p>
+      <div class="form-field" style="text-align: left; margin-bottom: 12px">
+        <label for="languageSelect" data-i18n="lang.label">Dil</label>
+        <select id="languageSelect" style="width: 100%; padding: 8px; border-radius: 8px; margin-top: 4px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="form-field" style="text-align:left;">
+          <label for="username" data-i18n="login.user">Kullanıcı adı</label>
+          <input type="text" id="username" name="username" autocomplete="username" required />
+        </div>
+        <div class="form-field" style="text-align:left;">
+          <label for="password" data-i18n="login.pass">Şifre</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" id="loginBtn" data-i18n="login.submit">Giriş Yap</button>
+        <p id="loginError" class="login-error" style="display:none; margin:0;"></p>
+      </form>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/login.js" defer></script>
+</body>
+</html>

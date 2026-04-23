@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="stock.in.title">Stok giriş</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .product-dd-wrap {
+      position: relative;
+    }
+    .product-dd {
+      list-style: none;
+      margin: 4px 0 0 0;
+      padding: 0;
+      position: absolute;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    }
+    .product-dd li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .product-dd li:hover,
+    .product-dd li.active {
+      background: #f1f5f9;
+    }
+    .product-dd li:last-child {
+      border-bottom: none;
+    }
+    .product-dd li .pcode {
+      color: #64748b;
+      font-size: 12px;
+    }
+    .product-dd .frequent-tag {
+      flex-shrink: 0;
+      font-size: 11px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    /* Dashboard ile aynı: global .container (style.css max-width: 1380px) */
+    .stock-in-form-card {
+      max-width: 100%;
+    }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: end;
+    }
+    @media (max-width: 700px) {
+      .form-row-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .qty-inline {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .qty-inline input[type="number"] {
+      min-width: 0;
+      flex: 1 1 72px;
+      max-width: none;
+    }
+    .unit-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .btn-unit-toggle {
+      flex-shrink: 0;
+      white-space: nowrap;
+      width: auto;
+      padding: 6px 10px;
+      font-size: 13px;
+      background: #f1f5f9;
+      color: #1d4ed8;
+      border: 1px solid #cbd5e1;
+    }
+    .form-row-qty-price-fx {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px 16px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .form-row-qty-price-fx {
+        grid-template-columns: 1fr;
+      }
+      .qty-inline {
+        flex-wrap: wrap;
+      }
+    }
+    .stock-in-qty-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 20px;
+      row-gap: 6px;
+      margin: 0 0 12px;
+      padding: 10px 0 0;
+      border-top: 1px solid #e2e8f0;
+    }
+    .stock-in-qty-meta .m2m3-readout {
+      margin: 0;
+    }
+    .stock-in-qty-meta .product-unit-hint {
+      margin: 0;
+      flex: 1 1 200px;
+    }
+    .m2m3-readout {
+      font-size: 13px;
+      color: #0f172a;
+      font-weight: 600;
+      margin: 6px 0 0;
+    }
+    .m2m3-readout span {
+      color: #64748b;
+      font-weight: 500;
+    }
+    .line-uzs-readonly {
+      background: #f1f5f9;
+    }
+    .product-unit-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin: 4px 0 0;
+    }
+    .text-right-mov {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .stock-in-mov-card {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+    .mov-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+    .mov-filters .form-field {
+      margin: 0;
+      min-width: 140px;
+    }
+    .form-stock-in-r1,
+    .form-stock-in-r2,
+    .form-stock-in-r3 {
+      display: grid;
+      gap: 12px 16px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+    .form-stock-in-r1 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .form-stock-in-r2 {
+      grid-template-columns: 1.15fr 1fr;
+    }
+    .form-stock-in-r3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    @media (max-width: 900px) {
+      .form-stock-in-r1,
+      .form-stock-in-r2,
+      .form-stock-in-r3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-mov {
+      font-size: 12px;
+      padding: 4px 8px;
+      margin-right: 4px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      cursor: pointer;
+    }
+    .btn-mov-edit {
+      color: #1d4ed8;
+    }
+    .btn-mov-del {
+      color: #b91c1c;
+    }
+    .mov-actions {
+      white-space: nowrap;
+    }
+    dialog.stock-dialog {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 420px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.in.title">Stok giriş</h1>
+        <p class="subtitle" data-i18n="stock.in.sub">—</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <div class="card stock-in-form-card">
+      <form id="f">
+        <div class="form-stock-in-r1">
+          <div class="form-field">
+            <label for="projectId" data-i18n="stock.in.project">Proje</label>
+            <select id="projectId" required>
+              <option value="" data-i18n="stock.in.projectPick">Proje seçin</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="wid" data-i18n="stock.in.selectWh">Depo</label>
+            <select id="wid" required></select>
+          </div>
+          <div class="form-field">
+            <label for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
+            <select id="scid" required disabled></select>
+          </div>
+        </div>
+        <div class="form-stock-in-r2">
+          <div class="form-field product-pick">
+            <label for="productQ" data-i18n="common.product">Ürün</label>
+            <div class="product-dd-wrap">
+              <input
+                type="text"
+                id="productQ"
+                class="input-upper"
+                autocomplete="off"
+                data-i18n-placeholder="stock.in.productQPh"
+                style="width: 100%; box-sizing: border-box"
+              />
+              <input type="hidden" id="pid" name="productId" />
+              <ul id="productDd" class="product-dd" hidden></ul>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
+            <div class="qty-inline">
+              <input type="number" id="qtyInput" min="0.0001" step="any" required />
+              <span id="qtyUnitBadge" class="unit-badge">—</span>
+              <button type="button" class="btn-unit-toggle" id="btnQtyUnitToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
+            </div>
+            <input type="hidden" id="qtyMode" value="pieces" />
+          </div>
+        </div>
+        <div class="stock-in-qty-meta" aria-live="polite">
+          <p id="m2m3Readout" class="m2m3-readout">—</p>
+          <p id="productUnitHint" class="product-unit-hint" data-i18n="stock.in.productUnitHint">—</p>
+        </div>
+        <div class="form-stock-in-r3">
+          <div class="form-field">
+            <label for="unitPriceSysM2" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / m²)</label>
+            <input type="number" id="unitPriceSysM2" min="0" step="0.0001" required />
+          </div>
+          <div class="form-field">
+            <label for="fxUzsInput" data-i18n="stock.in.fxInputLabel">Güncel kur (1 USD = … UZS)</label>
+            <input type="number" id="fxUzsInput" min="1" step="1" required />
+          </div>
+          <div class="form-field">
+            <label for="lineUzs" data-i18n="stock.in.totalUzs">Toplam (sistem parası)</label>
+            <input type="number" id="lineUzs" class="line-uzs-readonly" min="0" step="0.01" required readonly />
+            <p id="lineUsdReadout" class="product-unit-hint" data-i18n="stock.in.lineUsdReadout" aria-live="polite">—</p>
+          </div>
+        </div>
+        <div id="editReasonBlock" class="form-field form-field-wide" style="display: none" hidden>
+          <label for="actionReason" data-i18n="stock.in.actionReasonLabel">Düzenleme açıklaması (zorunlu)</label>
+          <textarea id="actionReason" class="input-upper" rows="2"></textarea>
+        </div>
+        <input type="hidden" id="editingMovId" value="" />
+        <div class="form-field form-field-wide">
+          <label for="note" data-i18n="common.note">Not</label>
+          <textarea id="note" class="input-upper" rows="2"></textarea>
+        </div>
+        <div class="form-actions-row">
+          <button type="submit" id="btnSubmit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="stock.in.btnSave">Kaydet</button>
+          <button
+            type="button"
+            id="btnCancelEdit"
+            class="module-button btn-secondary"
+            style="display: none; width: auto; padding: 10px 16px"
+            data-i18n="stock.in.btnCancelEdit"
+          >
+            Düzenlemeyi iptal
+          </button>
+        </div>
+        <p id="msg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+        <p id="ok" style="display: none; margin-top: 10px; color: #166534; font-weight: 700"></p>
+      </form>
+    </div>
+
+    <dialog id="voidReasonDlg" class="stock-dialog">
+      <h4 style="margin: 0 0 8px" data-i18n="stock.in.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
+      <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="stock.in.voidDlgHint">Bu kayıt silinecek; stok geri alınır.</p>
+      <textarea id="voidReasonText" class="input-upper" style="width: 100%; box-sizing: border-box" rows="3"></textarea>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px">
+        <button type="button" class="module-button btn-secondary" id="voidDlgCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="module-button" id="voidDlgOk" data-i18n="stock.in.voidDlgConfirm">Sil</button>
+      </div>
+    </dialog>
+
+    <div class="card stock-in-mov-card">
+      <h3 style="margin-top: 0" data-i18n="stock.in.movSectionTitle">Stok hareketleri (giriş)</h3>
+      <div class="mov-filters">
+        <div class="form-field">
+          <label for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
+          <select id="movFilterProject">
+            <option value="" data-i18n="stock.in.movAllProjects">Tümü</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
+          <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" />
+        </div>
+        <button type="button" class="module-button" id="btnMovRefresh" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.in.movRefresh">Yenile</button>
+      </div>
+      <div style="overflow-x: auto">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="stock.mov.colDate">Tarih</th>
+              <th data-i18n="stock.in.movColProject">Proje</th>
+              <th data-i18n="stock.mov.colCode">Kod</th>
+              <th data-i18n="stock.mov.colProduct">Ürün</th>
+              <th data-i18n="stock.mov.colQty">Miktar</th>
+              <th data-i18n="stock.mov.colBirim">Birim</th>
+              <th id="movThUnitPriceSys">Birim fiyat</th>
+              <th id="movThTotalSys">Toplam</th>
+              <th data-i18n="stock.mov.colKur">Kur</th>
+              <th data-i18n="stock.mov.colUnitPriceUsdMov">Birim fiyat (USD)</th>
+              <th data-i18n="stock.mov.colTotalUsdMov">Toplam (USD)</th>
+              <th data-i18n="common.note">Not</th>
+              <th data-i18n="stock.mov.colUser">Kullanıcı</th>
+              <th data-i18n="stock.in.movColActions">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="movTb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    const FREQ_KEY = 'erp_stock_in_freq';
+    const movById = new Map();
+    let voidTargetMid = 0;
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    const productM2p = new Map();
+    let whData = [];
+    let inProducts = [];
+    let activeDdIndex = -1;
+    let selectedProduct = null;
+    function getFreqIds() {
+      try {
+        const r = localStorage.getItem(FREQ_KEY);
+        const a = r ? JSON.parse(r) : [];
+        return Array.isArray(a) ? a.map((x) => +x).filter((x) => x > 0) : [];
+      } catch {
+        return [];
+      }
+    }
+    function pushFrequentId(productId) {
+      const id = +productId;
+      if (id < 1) {
+        return;
+      }
+      const next = [id, ...getFreqIds().filter((x) => x !== id)];
+      localStorage.setItem(FREQ_KEY, JSON.stringify(next.slice(0, 20)));
+    }
+    function mergeProductView(all, q) {
+      const qLower = (q || '').trim().toLowerCase();
+      let pool = all;
+      if (qLower) {
+        pool = all.filter(
+          (p) =>
+            String(p.name).toLowerCase().includes(qLower) ||
+            String(p.product_code).toLowerCase().includes(qLower) ||
+            String(p.material_label || '')
+              .toLowerCase()
+              .includes(qLower)
+        );
+      }
+      const byId = new Map(pool.map((p) => [p.id, p]));
+      const freq = [];
+      for (const fid of getFreqIds()) {
+        if (freq.length >= 2) {
+          break;
+        }
+        const pr = byId.get(fid);
+        if (pr) {
+          freq.push({ p: pr, isFreq: true });
+        }
+      }
+      const fset = new Set(freq.map((x) => x.p.id));
+      const rest = pool
+        .filter((p) => !fset.has(p.id))
+        .map((p) => ({ p, isFreq: false }));
+      const out = [...freq, ...rest].slice(0, 15);
+      return out;
+    }
+    function labelProduct(p) {
+      const pc = p.product_code || '';
+      const n = p.name || '';
+      return (pc + ' — ' + n).trim() || n || '#' + p.id;
+    }
+    function renderProductDd() {
+      const q = document.getElementById('productQ');
+      const ul = document.getElementById('productDd');
+      if (!q || !ul) {
+        return;
+      }
+      const v = (q.value || '').trim();
+      if (!inProducts.length) {
+        ul.innerHTML = '';
+        ul.hidden = true;
+        return;
+      }
+      const rows = mergeProductView(inProducts, v);
+      if (!rows.length) {
+        const empty = window.i18n
+          ? window.i18n.t('stock.in.emptySubProducts')
+          : 'Bu alt kategoride eşleşen ürün yok';
+        ul.innerHTML = '<li style="cursor:default;color:#64748b;padding:10px">' + empty + '</li>';
+        ul.hidden = false;
+        return;
+      }
+      const fTag = window.i18n ? window.i18n.t('stock.in.frequent') : 'Sık';
+      ul.innerHTML = rows
+        .map((row, i) => {
+          const p = row.p;
+          return (
+            '<li data-idx="' +
+            i +
+            '" data-pid="' +
+            p.id +
+            '" class="product-dd-item">' +
+            '<span><span class="pcode">' +
+            (p.product_code || '') +
+            '</span> ' +
+            (p.name || '') +
+            '</span>' +
+            (row.isFreq ? '<span class="frequent-tag">' + fTag + '</span>' : '<span></span>') +
+            '</li>'
+          );
+        })
+        .join('');
+      ul.hidden = false;
+      activeDdIndex = 0;
+      highlightDdItem();
+    }
+    function highlightDdItem() {
+      const ul = document.getElementById('productDd');
+      if (!ul) {
+        return;
+      }
+      const items = ul.querySelectorAll('li.product-dd-item');
+      items.forEach((el, j) => {
+        el.classList.toggle('active', j === activeDdIndex);
+      });
+    }
+    function tLoc(k, fb) {
+      return window.i18n && window.i18n.t(k) !== k ? window.i18n.t(k) : fb || k;
+    }
+    function fmtDateSafe(s) {
+      if (typeof window.fmtDate === 'function') {
+        return window.fmtDate(s);
+      }
+      const d = s ? new Date(s) : null;
+      return d && !Number.isNaN(d.getTime()) ? d.toLocaleString() : String(s ?? '—');
+    }
+    function updateQtyBadge() {
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const el = document.getElementById('qtyUnitBadge');
+      if (!el) {
+        return;
+      }
+      if (mode === 'm2') {
+        el.textContent = 'M²';
+      } else {
+        el.textContent = tLoc('stock.in.unitPiece', 'ADET');
+      }
+    }
+    function updateProductHint(p) {
+      const hint = document.getElementById('productUnitHint');
+      if (!hint) {
+        return;
+      }
+      if (!p) {
+        hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');
+        return;
+      }
+      const uc = (p.unit_code || p.unit_legacy) || '—';
+      hint.textContent = tLoc('stock.in.productUnitHintVal', 'Ürün birimi: {u}').replace('{u}', String(uc));
+    }
+    function updateM2M3Readout() {
+      const el = document.getElementById('m2m3Readout');
+      if (!el) {
+        return;
+      }
+      const m2 = getM2In();
+      const d = selectedProduct != null && selectedProduct.depth_mm != null ? Number(selectedProduct.depth_mm) : 0;
+      const m3 = d > 0 && Number.isFinite(m2) && m2 > 0 ? m2 * (d / 1000) : null;
+      const m2s = Number.isFinite(m2) && m2 > 0 ? Number(m2).toFixed(4) : '—';
+      const m3s = m3 != null && Number.isFinite(m3) ? Number(m3).toFixed(4) : '—';
+      el.innerHTML =
+        '<span>' +
+        escMov(tLoc('stock.in.sysM2', 'Sistem m²')) +
+        '</span>: ' +
+        m2s +
+        ' &nbsp;|&nbsp; <span>' +
+        escMov(tLoc('stock.in.sysM3', 'Sistem m³')) +
+        '</span>: ' +
+        m3s;
+    }
+    function updateLineUsdReadout(uzsLine, fx) {
+      const el = document.getElementById('lineUsdReadout');
+      if (!el) {
+        return;
+      }
+      if (!Number.isFinite(uzsLine) || uzsLine <= 0) {
+        el.textContent = tLoc('stock.in.lineUsdEmpty', 'USD tutarı (kayıt) hesaplanınca gösterilir');
+        return;
+      }
+      if (!Number.isFinite(fx) || fx <= 0) {
+        el.textContent = tLoc('stock.in.lineUsdNeedFx', 'Kur girilince USD tutarı (kayıt) hesaplanır');
+        return;
+      }
+      const usd = uzsLine / fx;
+      const s =
+        tLoc('stock.in.lineUsdReadoutVal', 'Kayıt USD: {n}  (kurla UZS toplamına uyar)').replace(
+          '{n}',
+          typeof window.fmtUsd === 'function' ? window.fmtUsd(usd) : Number(usd).toFixed(2) + ' USD'
+        );
+      el.textContent = s;
+    }
+    function recalcLineTotals() {
+      const m2 = getM2In();
+      const sysPerM2 = +document.getElementById('unitPriceSysM2')?.value;
+      const fx = +document.getElementById('fxUzsInput')?.value;
+      const lineEl = document.getElementById('lineUzs');
+      if (!lineEl) {
+        return;
+      }
+      if (!Number.isFinite(m2) || m2 <= 0 || !Number.isFinite(sysPerM2) || sysPerM2 < 0) {
+        lineEl.value = '';
+        updateLineUsdReadout(0, fx);
+        updateM2M3Readout();
+        return;
+      }
+      const lineUzs = sysPerM2 * m2;
+      lineEl.value = String(lineUzs.toFixed(2));
+      updateLineUsdReadout(lineUzs, fx);
+      updateM2M3Readout();
+    }
+    function selectProductById(pid) {
+      const p = inProducts.find((x) => +x.id === +pid);
+      if (!p) {
+        return;
+      }
+      selectedProduct = p;
+      document.getElementById('pid').value = String(p.id);
+      document.getElementById('productQ').value = labelProduct(p);
+      const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
+      productM2p.set(p.id, m2p);
+      document.getElementById('productDd').hidden = true;
+      const qm = document.getElementById('qtyMode');
+      if (qm) {
+        qm.value = m2p > 0 ? 'pieces' : 'm2';
+      }
+      updateQtyBadge();
+      updateProductHint(p);
+      recalcLineTotals();
+    }
+    function getM2In() {
+      const pid = +document.getElementById('pid').value;
+      const m2p = productM2p.get(pid) || 0;
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const q = +document.getElementById('qtyInput')?.value;
+      if (mode === 'm2') {
+        return Number.isFinite(q) && q > 0 ? q : 0;
+      }
+      if (Number.isFinite(q) && q > 0 && m2p > 0) {
+        return q * m2p;
+      }
+      return 0;
+    }
+    ['qtyInput', 'unitPriceSysM2', 'fxUzsInput'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', recalcLineTotals);
+    });
+    document.getElementById('btnQtyUnitToggle')?.addEventListener('click', () => {
+      const qm = document.getElementById('qtyMode');
+      if (!qm) {
+        return;
+      }
+      qm.value = qm.value === 'm2' ? 'pieces' : 'm2';
+      updateQtyBadge();
+      recalcLineTotals();
+    });
+    function fillWh() {
+      const wid = document.getElementById('wid');
+      const sc = document.getElementById('scid');
+      wid.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.warehouse.selectWh') : '—') + '</option>';
+      whData.forEach((w) => {
+        wid.add(new Option(w.name, w.id));
+      });
+      sc.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.in.subPick') : 'Seçin') + '</option>';
+      sc.disabled = true;
+    }
+    function onWhChange() {
+      const w = whData.find((x) => +x.id === +document.getElementById('wid').value);
+      const sc = document.getElementById('scid');
+      sc.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.in.subPick') : 'Seçin') + '</option>';
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      inProducts = [];
+      if (!w) {
+        sc.disabled = true;
+        return;
+      }
+      (w.subcategories || []).forEach((s) => {
+        sc.add(new Option(s.name, s.id));
+      });
+      sc.disabled = (w.subcategories || []).length === 0;
+    }
+    async function onSubChange() {
+      const wid = +document.getElementById('wid').value;
+      const scid = +document.getElementById('scid').value;
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      inProducts = [];
+      if (!wid || !scid) {
+        return;
+      }
+      productM2p.clear();
+      const { data, ok } = await stockApi(
+        '/api/stock/products?warehouseId=' + wid + '&warehouseSubcategoryId=' + scid
+      );
+      if (!ok) {
+        return;
+      }
+      inProducts = data.products || [];
+      inProducts.forEach((p) => {
+        const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
+        productM2p.set(p.id, m2p);
+      });
+    }
+    const productQ = document.getElementById('productQ');
+    const productDd = document.getElementById('productDd');
+    productQ?.addEventListener('focus', () => {
+      if (inProducts.length) {
+        renderProductDd();
+      }
+    });
+    productQ?.addEventListener('input', () => {
+      document.getElementById('pid').value = '';
+      selectedProduct = null;
+      updateProductHint(null);
+      if (inProducts.length) {
+        renderProductDd();
+      }
+      recalcLineTotals();
+    });
+    productDd?.addEventListener('click', (e) => {
+      const li = e.target && e.target.closest('li.product-dd-item');
+      if (li) {
+        selectProductById(+li.getAttribute('data-pid'));
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target || !e.target.closest || !e.target.closest('.product-dd-wrap')) {
+        if (productDd) {
+          productDd.hidden = true;
+        }
+      }
+    });
+    productQ?.addEventListener('keydown', (e) => {
+      const ul = document.getElementById('productDd');
+      if (!ul || ul.hidden) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+        }
+        return;
+      }
+      const items = ul.querySelectorAll('li.product-dd-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeDdIndex = Math.min(activeDdIndex + 1, items.length - 1);
+        highlightDdItem();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeDdIndex = Math.max(0, activeDdIndex - 1);
+        highlightDdItem();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const one = items[activeDdIndex];
+        if (one) {
+          selectProductById(+one.getAttribute('data-pid'));
+        }
+      } else if (e.key === 'Escape') {
+        ul.hidden = true;
+      }
+    });
+    document.getElementById('wid')?.addEventListener('change', onWhChange);
+    document.getElementById('scid')?.addEventListener('change', onSubChange);
+    function escMov(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    function fmtMovUzs(n) {
+      if (n == null || n === '' || !Number.isFinite(Number(n)) || Number(n) <= 0) {
+        return '—';
+      }
+      if (typeof window.fmtMoney === 'function') {
+        return window.fmtMoney(n);
+      }
+      return String(Number(n).toFixed(2));
+    }
+    function fmtMovFx(n) {
+      const v = movNum(n);
+      if (!Number.isFinite(v) || v <= 0) {
+        return '—';
+      }
+      return String(Math.round(v));
+    }
+    function fmtMovUsdCol(n) {
+      if (n == null || n === '' || !Number.isFinite(Number(n)) || Number(n) <= 0) {
+        return '—';
+      }
+      if (typeof window.fmtUsd === 'function') {
+        return window.fmtUsd(n);
+      }
+      return String(Number(n).toFixed(2)) + ' USD';
+    }
+    async function fillProjectSelects() {
+      const { data, ok } = await stockApi('/api/stock/active-projects');
+      const sel = document.getElementById('projectId');
+      const movSel = document.getElementById('movFilterProject');
+      if (!ok || !data || !data.projects) {
+        return;
+      }
+      const cur = sel?.value || '';
+      const curM = movSel?.value || '';
+      if (sel) {
+        const ph = tLoc('stock.in.projectPick', 'Proje seçin');
+        sel.innerHTML = '<option value="">' + escMov(ph) + '</option>';
+        data.projects.forEach((p) => {
+          const codeOnly = (p.project_code || '').trim() || '#' + p.id;
+          sel.add(new Option(codeOnly, p.id));
+        });
+        if (cur) {
+          sel.value = cur;
+        }
+      }
+      if (movSel) {
+        const all = tLoc('stock.in.movAllProjects', 'Tümü');
+        movSel.innerHTML = '<option value="">' + escMov(all) + '</option>';
+        data.projects.forEach((p) => {
+          const codeOnly = (p.project_code || '').trim() || '#' + p.id;
+          movSel.add(new Option(codeOnly, p.id));
+        });
+        if (curM) {
+          movSel.value = curM;
+        }
+      }
+    }
+    function movQtyDisplay(m) {
+      const dm = Number(m.direct_m2_entry);
+      if (dm === 1) {
+        return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
+      }
+      if (m.qty_pieces != null && m.qty_pieces !== '' && Number.isFinite(+m.qty_pieces)) {
+        return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty_pieces) : String(m.qty_pieces);
+      }
+      return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
+    }
+    function movBirimDisplay(m) {
+      const dm = Number(m.direct_m2_entry);
+      if (dm === 1) {
+        return tLoc('stock.mov.birimM2', 'M²');
+      }
+      const u = (m.unit_code || m.p_unit || '').trim();
+      return u ? u.toLocaleUpperCase('tr-TR') : '—';
+    }
+    function updateMovTableHeadersI18n() {
+      const cur = (window.__erpCurrency || 'UZS').toString().toUpperCase();
+      const thU = document.getElementById('movThUnitPriceSys');
+      const thT = document.getElementById('movThTotalSys');
+      if (thU) {
+        thU.textContent = tLoc('stock.mov.colUnitPriceSys', 'Birim fiyat ({c})').replace(/\{c\}/g, cur);
+      }
+      if (thT) {
+        thT.textContent = tLoc('stock.mov.colTotalSys', 'Toplam ({c})').replace(/\{c\}/g, cur);
+      }
+    }
+    /** MySQL DECIMAL alanları JSON’da string gelebilir; sayıya çevir. */
+    function movNum(x) {
+      if (x == null || x === '') {
+        return NaN;
+      }
+      if (typeof x === 'string' || typeof x === 'number') {
+        return Number(x);
+      }
+      if (typeof x === 'object' && x != null && typeof x.toString === 'function') {
+        return Number(String(x).replace(/,/g, ''));
+      }
+      return Number(x);
+    }
+    function fmtMovPerM2Sys(uzsLine, qtyM2) {
+      const u = movNum(uzsLine);
+      const q = movNum(qtyM2);
+      if (!Number.isFinite(u) || u <= 0 || !Number.isFinite(q) || q <= 0) {
+        return '—';
+      }
+      const v = u / q;
+      if (typeof window.fmtMoney === 'function') {
+        return window.fmtMoney(v);
+      }
+      return String(v.toFixed(4));
+    }
+    function fmtMovPerM2Usd(usdLine, qtyM2) {
+      const usd = movNum(usdLine);
+      const q = movNum(qtyM2);
+      if (!Number.isFinite(usd) || usd <= 0 || !Number.isFinite(q) || q <= 0) {
+        return '—';
+      }
+      const v = usd / q;
+      if (typeof window.fmtUsd === 'function') {
+        return window.fmtUsd(v);
+      }
+      return String(v.toFixed(4)) + ' USD';
+    }
+    async function loadMovementsList() {
+      const tb = document.getElementById('movTb');
+      if (!tb) {
+        return;
+      }
+      updateMovTableHeadersI18n();
+      const qs = new URLSearchParams();
+      qs.set('limit', '80');
+      qs.set('movementType', 'in');
+      const mp = document.getElementById('movFilterProject')?.value;
+      const mid = document.getElementById('movFilterProductId')?.value;
+      if (mp) {
+        qs.set('projectId', mp);
+      }
+      if (mid) {
+        qs.set('productId', mid);
+      }
+      const { data, ok } = await stockApi('/api/stock/movements?' + qs.toString());
+      if (!ok) {
+        const em =
+          (data && (data.message || (data.error && (data.error + (data.message || ''))))) || 'Hata';
+        tb.innerHTML =
+          '<tr><td colspan="14" style="color:#b91c1c">' + escMov(String(em)) + '</td></tr>';
+        return;
+      }
+      const rows = data.movements || [];
+      movById.clear();
+      if (!rows.length) {
+        tb.innerHTML =
+          '<tr><td colspan="14" class="muted">' + escMov(tLoc('stock.mov.empty', 'Kayıt yok')) + '</td></tr>';
+        return;
+      }
+      tb.innerHTML = rows
+        .map((m) => {
+          movById.set(+m.id, m);
+          const lineUzs = m.line_total_uzs != null ? m.line_total_uzs : m.lineTotalUzs;
+          const lineUsd = m.line_total_usd != null ? m.line_total_usd : m.lineTotalUsd;
+          const qM2 = m.qty;
+          const codeRaw = (m.project_code || '').trim();
+          const proj = escMov(codeRaw || '—');
+          const qtyC = escMov(movQtyDisplay(m));
+          const brC = escMov(movBirimDisplay(m));
+          const upSys = escMov(fmtMovPerM2Sys(lineUzs, qM2));
+          const totSys = escMov(fmtMovUzs(lineUzs));
+          const fxC = escMov(fmtMovFx(m.fx_uzs_per_usd != null ? m.fx_uzs_per_usd : m.fxUzsPerUsd));
+          const upUsd = escMov(fmtMovPerM2Usd(lineUsd, qM2));
+          const totUsd = escMov(fmtMovUsdCol(lineUsd));
+          const mid = +m.id;
+          const btnEditL = tLoc('stock.in.btnMovEdit', 'Düzenle');
+          const btnDelL = tLoc('stock.in.btnMovDelete', 'Sil');
+          return (
+            '<tr data-mov-row="' +
+            mid +
+            '">' +
+            '<td>' +
+            escMov(fmtDateSafe(m.created_at)) +
+            '</td>' +
+            '<td class="display-upper">' +
+            proj +
+            '</td>' +
+            '<td><code>' +
+            escMov(m.product_code) +
+            '</code></td>' +
+            '<td class="display-upper">' +
+            escMov(m.product_name) +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            qtyC +
+            '</td>' +
+            '<td class="display-upper">' +
+            brC +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            upSys +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            totSys +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            fxC +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            upUsd +
+            '</td>' +
+            '<td class="text-right-mov">' +
+            totUsd +
+            '</td>' +
+            '<td class="display-upper">' +
+            escMov(m.note || '—') +
+            '</td>' +
+            '<td>' +
+            escMov(m.user_username || '—') +
+            '</td>' +
+            '<td class="mov-actions-cell">' +
+            '<button type="button" class="btn-mov btn-mov-edit" data-mov-act="edit" data-mid="' +
+            mid +
+            '">' +
+            escMov(btnEditL) +
+            '</button> ' +
+            '<button type="button" class="btn-mov btn-mov-del" data-mov-act="void" data-mid="' +
+            mid +
+            '">' +
+            escMov(btnDelL) +
+            '</button>' +
+            '</td>' +
+            '</tr>'
+          );
+        })
+        .join('');
+    }
+    function cancelEditMov() {
+      document.getElementById('editingMovId').value = '';
+      const erb = document.getElementById('editReasonBlock');
+      if (erb) {
+        erb.style.display = 'none';
+      }
+      const ar = document.getElementById('actionReason');
+      if (ar) {
+        ar.value = '';
+      }
+      const bce = document.getElementById('btnCancelEdit');
+      if (bce) {
+        bce.style.display = 'none';
+      }
+      const bs = document.getElementById('btnSubmit');
+      if (bs) {
+        bs.textContent = tLoc('stock.in.btnSave', 'Kaydet');
+      }
+    }
+    async function startEditMov(m) {
+      if (!m || !m.id) {
+        return;
+      }
+      const whR = m.warehouse_id;
+      if (!whR) {
+        const msg = document.getElementById('msg');
+        if (msg) {
+          msg.textContent = tLoc('stock.in.movNoWarehouse', 'Harekette depo bilgisi yok');
+          msg.style.display = 'block';
+        }
+        return;
+      }
+      document.getElementById('editingMovId').value = String(m.id);
+      const erb = document.getElementById('editReasonBlock');
+      if (erb) {
+        erb.style.display = 'block';
+        erb.removeAttribute('hidden');
+      }
+      const ar = document.getElementById('actionReason');
+      if (ar) {
+        ar.value = '';
+      }
+      const bce = document.getElementById('btnCancelEdit');
+      if (bce) {
+        bce.style.display = 'inline-block';
+      }
+      const bs = document.getElementById('btnSubmit');
+      if (bs) {
+        bs.textContent = tLoc('stock.in.btnUpdate', 'Güncelle');
+      }
+      if (m.ref_id) {
+        const pj = document.getElementById('projectId');
+        if (pj) {
+          pj.value = String(m.ref_id);
+        }
+      }
+      const wid = document.getElementById('wid');
+      if (wid) {
+        wid.value = String(whR);
+      }
+      onWhChange();
+      const sc = document.getElementById('scid');
+      if (sc && m.warehouse_subcategory_id) {
+        sc.value = String(m.warehouse_subcategory_id);
+      }
+      await onSubChange();
+      selectProductById(m.product_id);
+      const dm = Number(m.direct_m2_entry) === 1;
+      const qm = document.getElementById('qtyMode');
+      if (dm) {
+        if (qm) {
+          qm.value = 'm2';
+        }
+        const qi = document.getElementById('qtyInput');
+        if (qi) {
+          const qvM = movNum(m.qty);
+          qi.value = Number.isFinite(qvM) && qvM > 0 ? String(qvM) : '';
+        }
+      } else {
+        if (qm) {
+          qm.value = 'pieces';
+        }
+        const qp = m.qty_pieces != null && m.qty_pieces !== '' ? movNum(m.qty_pieces) : null;
+        const qi = document.getElementById('qtyInput');
+        if (qi) {
+          if (qp != null && Number.isFinite(qp) && qp > 0) {
+            qi.value = String(qp);
+          } else {
+            const qf = movNum(m.qty);
+            qi.value = Number.isFinite(qf) && qf > 0 ? String(qf) : '';
+          }
+        }
+      }
+      updateQtyBadge();
+      const lineUzsV = movNum(m.line_total_uzs != null ? m.line_total_uzs : m.lineTotalUzs);
+      const m2i = getM2In();
+      const ups = m2i > 0 && Number.isFinite(lineUzsV) ? lineUzsV / m2i : 0;
+      const fxR = movNum(m.fx_uzs_per_usd != null ? m.fx_uzs_per_usd : m.fxUzsPerUsd);
+      const upEl = document.getElementById('unitPriceSysM2');
+      const fxEl = document.getElementById('fxUzsInput');
+      if (upEl) {
+        upEl.value = Number.isFinite(ups) && ups > 0 ? String(ups) : '';
+      }
+      if (fxEl) {
+        fxEl.value = Number.isFinite(fxR) && fxR > 0 ? String(Math.round(fxR)) : '';
+      }
+      const noteEl = document.getElementById('note');
+      if (noteEl) {
+        noteEl.value = m.note != null ? String(m.note) : '';
+      }
+      recalcLineTotals();
+      const msg = document.getElementById('msg');
+      if (msg) {
+        msg.style.display = 'none';
+      }
+      const okp = document.getElementById('ok');
+      if (okp) {
+        okp.style.display = 'none';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    document.getElementById('f')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('msg').style.display = 'none';
+      document.getElementById('ok').style.display = 'none';
+      const editId = +document.getElementById('editingMovId')?.value;
+      if (editId > 0) {
+        const ar = document.getElementById('actionReason')?.value?.trim();
+        if (!ar) {
+          const m = document.getElementById('msg');
+          m.textContent = tLoc('stock.in.actionReasonRequired', 'Düzenleme açıklaması zorunludur');
+          m.style.display = 'block';
+          return;
+        }
+      }
+      const productId = +document.getElementById('pid').value;
+      if (productId < 1) {
+        const m = document.getElementById('msg');
+        m.textContent = window.i18n ? window.i18n.t('api.stock.product_required_in') : 'Ürün seçin';
+        m.style.display = 'block';
+        return;
+      }
+      const projectId = +document.getElementById('projectId').value;
+      if (projectId < 1) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.projectRequiredMsg', 'Proje seçin');
+        m.style.display = 'block';
+        return;
+      }
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const qv = +document.getElementById('qtyInput').value;
+      const m2 = getM2In();
+      const sysPerM2 = +document.getElementById('unitPriceSysM2').value;
+      const fx = +document.getElementById('fxUzsInput').value;
+      const lineUzs = sysPerM2 * m2;
+      const lineUsd = !Number.isFinite(fx) || fx <= 0 ? 0 : lineUzs / fx;
+      if (!Number.isFinite(m2) || m2 <= 0) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem m²)');
+        m.style.display = 'block';
+        return;
+      }
+      if (!Number.isFinite(sysPerM2) || sysPerM2 < 0 || !Number.isFinite(fx) || fx <= 0) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Sistem birim fiyatı (m²) ve geçerli kur girin');
+        m.style.display = 'block';
+        return;
+      }
+      if (!Number.isFinite(lineUzs) || lineUzs <= 0 || !Number.isFinite(lineUsd) || lineUsd <= 0) {
+        const m = document.getElementById('msg');
+        m.textContent = tLoc('stock.in.systemFxInvalid', 'Tutar veya kur hesabı geçersiz');
+        m.style.display = 'block';
+        return;
+      }
+      const body = {
+        productId,
+        projectId,
+        movementType: 'in',
+        qtyPieces: mode === 'pieces' ? qv : null,
+        qtyM2: mode === 'm2' ? qv : null,
+        inputCurrency: 'USD',
+        lineTotalUzs: null,
+        lineTotalUsd: lineUsd,
+        fxUzsPerUsd: fx,
+        note: toUpperTrClient(document.getElementById('note').value.trim()) || null,
+      };
+      const isEdit = editId > 0;
+      const { data, ok } = isEdit
+        ? await stockApi('/api/stock/movements/' + editId + '/replace', {
+            method: 'POST',
+            body: JSON.stringify({
+              productId: body.productId,
+              projectId: body.projectId,
+              qtyPieces: body.qtyPieces,
+              qtyM2: body.qtyM2,
+              inputCurrency: body.inputCurrency,
+              lineTotalUzs: body.lineTotalUzs,
+              lineTotalUsd: body.lineTotalUsd,
+              fxUzsPerUsd: body.fxUzsPerUsd,
+              note: body.note,
+              reason: toUpperTrClient(document.getElementById('actionReason').value.trim()),
+            }),
+          })
+        : await stockApi('/api/stock/movements', {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+      if (!ok) {
+        const m = document.getElementById('msg');
+        m.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data.message || 'Hata';
+        m.style.display = 'block';
+        return;
+      }
+      pushFrequentId(productId);
+      const o = document.getElementById('ok');
+      o.textContent =
+        'Tamam. Yeni stok m²: ' + (data.newStockM2 != null ? data.newStockM2 : '') + ' / adet: ' + (data.newStockPieces || '');
+      o.style.display = 'block';
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('unitPriceSysM2').value = '';
+      document.getElementById('fxUzsInput').value = '';
+      document.getElementById('lineUzs').value = '';
+      document.getElementById('note').value = '';
+      document.getElementById('pid').value = '';
+      document.getElementById('productQ').value = '';
+      if (isEdit) {
+        cancelEditMov();
+      }
+      await onSubChange();
+      recalcLineTotals();
+      await loadMovementsList();
+    });
+    document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
+      cancelEditMov();
+    });
+    document.getElementById('movTb')?.addEventListener('click', (ev) => {
+      const b = ev.target && ev.target.closest && ev.target.closest('[data-mov-act]');
+      if (!b) {
+        return;
+      }
+      const act = b.getAttribute('data-mov-act');
+      const mid = +b.getAttribute('data-mid');
+      const row = movById.get(mid);
+      if (act === 'edit' && row) {
+        void startEditMov(row);
+      } else if (act === 'void' && mid > 0) {
+        voidTargetMid = mid;
+        const t = document.getElementById('voidReasonText');
+        if (t) {
+          t.value = '';
+        }
+        const dlg = document.getElementById('voidReasonDlg');
+        if (dlg && typeof dlg.showModal === 'function') {
+          dlg.showModal();
+        }
+      }
+    });
+    document.getElementById('voidDlgCancel')?.addEventListener('click', () => {
+      const dlg = document.getElementById('voidReasonDlg');
+      if (dlg) {
+        dlg.close();
+      }
+      voidTargetMid = 0;
+    });
+    document.getElementById('voidDlgOk')?.addEventListener('click', async () => {
+      const t = document.getElementById('voidReasonText')?.value?.trim();
+      if (!t) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = tLoc('stock.in.voidReasonRequired', 'Silme açıklaması zorunludur');
+          m.style.display = 'block';
+        }
+        return;
+      }
+      const voidedId = voidTargetMid;
+      if (voidedId < 1) {
+        return;
+      }
+      const { data, ok } = await stockApi('/api/stock/movements/' + voidedId + '/void', {
+        method: 'POST',
+        body: JSON.stringify({ reason: toUpperTrClient(t) }),
+      });
+      const dlg = document.getElementById('voidReasonDlg');
+      if (dlg) {
+        dlg.close();
+      }
+      voidTargetMid = 0;
+      if (!ok) {
+        const m = document.getElementById('msg');
+        if (m) {
+          m.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data?.message || 'Hata';
+          m.style.display = 'block';
+        }
+        return;
+      }
+      if (+document.getElementById('editingMovId')?.value === voidedId) {
+        cancelEditMov();
+      }
+      const o = document.getElementById('ok');
+      if (o) {
+        o.textContent = tLoc('stock.in.voidOk', 'Kayıt silindi.');
+        o.style.display = 'block';
+      }
+      await loadMovementsList();
+    });
+    document.getElementById('btnMovRefresh')?.addEventListener('click', () => loadMovementsList());
+    document.getElementById('movFilterProject')?.addEventListener('change', () => loadMovementsList());
+    document.getElementById('movFilterProductId')?.addEventListener('change', () => loadMovementsList());
+    function startStockInPage() {
+      (async function () {
+        await initStockPageNav('in');
+        updateQtyBadge();
+        const hint = document.getElementById('productUnitHint');
+        if (hint) {
+          hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');
+        }
+        const { data, ok } = await stockApi('/api/stock/warehouses');
+        if (ok && data.warehouses) {
+          whData = data.warehouses;
+        }
+        fillWh();
+        await fillProjectSelects();
+        recalcLineTotals();
+        await loadMovementsList();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockInPage);
+    } else {
+      startStockInPage();
+    }
+  </script>
+</body>
+</html>

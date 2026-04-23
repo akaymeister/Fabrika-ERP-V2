@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="stock.product.title">Ürünler</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.product.title">Ürünler</h1>
+        <p class="subtitle" data-i18n="stock.product.sub">En × boy × yükseklik; marka; depo ve alt kategori. Maliyet: stok girişi.</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="lang" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+
+    <div class="card">
+      <h3 id="formCardTitle" data-i18n="stock.product.formNew">Yeni ürün</h3>
+      <p id="editCodeLine" style="display: none; font-size: 13px; color: #64748b; margin: 0 0 4px">Düzenlenen kod: —</p>
+      <p style="font-size:13px;margin:0 0 8px">
+        <a href="/stock-warehouses.html" data-i18n="stock.product.manageWarehouses">Depo / kategori yönetimi</a>
+      </p>
+      <p id="previewName" style="color:#475569;font-size:14px"><span data-i18n="stock.product.sysname">Sistem adı</span>: —</p>
+      <form id="fProd" class="product-form-grid">
+        <div class="product-form-warehouse-row">
+          <div class="form-field">
+            <label for="warehouseId" data-i18n="stock.product.warehouse">Depo</label>
+            <select id="warehouseId" required></select>
+          </div>
+          <div class="form-field">
+            <label for="warehouseSubId" data-i18n="stock.product.subcategory">Alt kategori</label>
+            <select id="warehouseSubId" required></select>
+          </div>
+        </div>
+        <div class="product-form-warehouse-row">
+          <div class="form-field">
+            <label for="materialLabel" data-i18n="stock.product.material">Malzeme</label>
+            <input type="text" id="materialLabel" class="input-upper" required maxlength="280" data-i18n-placeholder="stock.product.material" />
+          </div>
+          <div class="form-field">
+            <label for="pbrand" data-i18n="stock.product.brand">Marka</label>
+            <select id="pbrand"><option value="" data-i18n="stock.product.brandNone">— Markasız —</option></select>
+          </div>
+        </div>
+        <div class="product-form-dims-row">
+          <div class="form-field">
+            <label for="widthMm" data-i18n="stock.product.width">En (mm)</label>
+            <input type="number" id="widthMm" min="0" step="1" placeholder="2100" />
+          </div>
+          <div class="form-field">
+            <label for="heightMm" data-i18n="stock.product.height">Boy (mm)</label>
+            <input type="number" id="heightMm" min="0" step="1" placeholder="2800" />
+          </div>
+          <div class="form-field">
+            <label for="depthMm" data-i18n="stock.product.depth">Yükseklik / derinlik (mm)</label>
+            <input type="number" id="depthMm" min="0" step="1" placeholder="18" />
+          </div>
+          <div class="form-field">
+            <label for="unitId" data-i18n="stock.product.unit">Birim</label>
+            <select id="unitId" required></select>
+          </div>
+          <div class="form-field form-field-unit-btn">
+            <span class="dims-label-spacer" aria-hidden="true">&nbsp;</span>
+            <button type="button" class="secondary-btn" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
+          </div>
+        </div>
+        <p class="form-hint" style="grid-column:1/-1;font-size:13px;color:#64748b;margin:0" data-i18n="stock.product.priceOnStockIn">
+          Birim fiyat ve USD/UZS dönüşümü stok giriş ekranındadır.
+        </p>
+        <div class="form-field form-field-wide form-actions" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <button type="submit" id="btnSaveProduct" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="stock.product.save">Kaydet</button>
+          <button type="button" id="btnCancelEdit" class="secondary-btn" style="display: none" data-i18n="stock.product.cancelEdit">Vazgeç</button>
+        </div>
+      </form>
+      <p id="unitListMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="status"></p>
+      <p id="apiDataMsg" class="login-error" style="display: none; margin-top: 8px; color: #b91c1c; white-space: pre-wrap" role="alert"></p>
+      <p id="pmsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+    </div>
+
+    <div class="card" style="margin-top: 20px">
+      <h3 data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
+      <p style="font-size: 13px; color: #64748b; margin: 0 0 10px" data-i18n="stock.product.excelHint">
+        Şablonu indirin; depo, alt kategori, birim ve marka adları sistemdekilerle aynı olsun. En fazla 500 satır.
+      </p>
+      <div class="product-excel-bar">
+        <a href="/api/stock/products/import-template" class="excel-template-btn" data-i18n="stock.product.downloadTemplate" download>Şablon indir</a>
+        <input type="file" id="excelImportFile" class="product-excel-file" accept=".xlsx,.xls,.csv" />
+        <button type="button" class="module-button product-excel-upload" id="btnExcelImport" data-i18n="stock.product.uploadImport">
+          Yükle ve içe aktar
+        </button>
+      </div>
+      <p id="importMsg" style="display: none; margin-top: 10px; font-size: 14px; white-space: pre-wrap" role="status"></p>
+    </div>
+
+    <div class="card" style="margin-top: 20px">
+      <h3 data-i18n="stock.product.listTitle">Liste</h3>
+      <div class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
+        <div class="form-field" style="margin: 0; min-width: 200px">
+          <label for="filterWarehouse" data-i18n="stock.product.warehouse">Depo</label>
+          <select id="filterWarehouse"><option value="" data-i18n="stock.product.allWh">Tüm depolar</option></select>
+        </div>
+        <div class="form-field" style="margin: 0; min-width: 200px">
+          <label for="filterBrand" data-i18n="stock.product.brandFilter">Marka</label>
+          <select id="filterBrand"><option value="" data-i18n="stock.product.allBrands">Tümü</option></select>
+        </div>
+        <div class="form-field" style="margin: 0; min-width: 200px">
+          <label for="filterQ" data-i18n="stock.product.search">Ara</label>
+          <input type="search" id="filterQ" class="input-upper" data-i18n-placeholder="stock.product.searchPh" />
+        </div>
+        <button type="button" class="module-button" id="btnFilter" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.product.filter">Filtrele</button>
+      </div>
+      <div style="overflow-x: auto; margin-top: 12px">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="stock.product.colCode">Kod</th>
+              <th data-i18n="stock.product.sysname">Sistem adı</th>
+              <th data-i18n="stock.product.colWh">Depo</th>
+              <th data-i18n="stock.product.colSub">Alt kategori</th>
+              <th data-i18n="stock.product.colBrand">Marka</th>
+              <th data-i18n="stock.product.colPcs">Stok adet</th>
+              <th data-i18n="stock.product.colStockM2">Stok m²</th>
+              <th data-i18n="stock.product.colStockM3">Stok m³</th>
+              <th data-i18n="stock.product.colAction">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    let warehouseTree = [];
+    function refilterSubs() {
+      const wid = document.getElementById('warehouseId')?.value;
+      const sub = document.getElementById('warehouseSubId');
+      if (!sub) return;
+      const ph = window.i18n ? window.i18n.t('stock.product.selectSub') : '—';
+      sub.innerHTML = '<option value="">' + ph + '</option>';
+      if (!wid) return;
+      const w = warehouseTree.find((x) => String(x.id) === String(wid));
+      (w && w.subcategories ? w.subcategories : []).forEach((s) => sub.add(new Option(s.name, s.id)));
+    }
+    const apiDataLines = [];
+    function pushApiDataErr(line) {
+      const el = document.getElementById('apiDataMsg');
+      if (!el) return;
+      apiDataLines.push(line);
+      el.textContent = apiDataLines.join('\n');
+      el.style.display = 'block';
+    }
+    function clearApiDataErr() {
+      apiDataLines.length = 0;
+      const el = document.getElementById('apiDataMsg');
+      if (el) {
+        el.textContent = '';
+        el.style.display = 'none';
+      }
+    }
+    function errLine(label, { data, status }) {
+      const m = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || '';
+      return label + (status ? ' [' + status + ']' : '') + ': ' + (m || '—');
+    }
+    async function loadWarehousesForForm() {
+      const { data, ok, status } = await stockApi('/api/stock/warehouses');
+      if (!ok) {
+        pushApiDataErr(errLine(window.i18n ? window.i18n.t('stock.data.depots') : 'Depolar', { data, status }));
+        return;
+      }
+      warehouseTree = data.warehouses || [];
+      const wh = document.getElementById('warehouseId');
+      const fw = document.getElementById('filterWarehouse');
+      const fAll = window.i18n ? window.i18n.t('stock.product.allWh') : 'Tüm depolar';
+      wh.innerHTML = '<option value="">' + (window.i18n ? window.i18n.t('stock.product.selectWh') : '—') + '</option>';
+      fw.innerHTML = '<option value="">' + fAll + '</option>';
+      warehouseTree.forEach((w) => {
+        wh.add(new Option(w.name, w.id));
+        fw.add(new Option(w.name, w.id));
+      });
+      refilterSubs();
+    }
+    let productListById = {};
+    let editProductId = null;
+    function setFormNewMode() {
+      editProductId = null;
+      const t = document.getElementById('formCardTitle');
+      if (t) {
+        t.setAttribute('data-i18n', 'stock.product.formNew');
+        t.textContent = window.i18n ? window.i18n.t('stock.product.formNew') : 'Yeni ürün';
+        if (window.i18n) {
+          window.i18n.apply(t);
+        }
+      }
+      const cl = document.getElementById('editCodeLine');
+      if (cl) {
+        cl.style.display = 'none';
+      }
+      const bSave = document.getElementById('btnSaveProduct');
+      if (bSave) {
+        bSave.setAttribute('data-i18n', 'stock.product.save');
+        bSave.textContent = window.i18n ? window.i18n.t('stock.product.save') : 'Kaydet';
+        if (window.i18n) {
+          window.i18n.apply(bSave);
+        }
+      }
+      const bC = document.getElementById('btnCancelEdit');
+      if (bC) {
+        bC.style.display = 'none';
+      }
+    }
+    function setFormEditMode(p) {
+      editProductId = p.id;
+      const t = document.getElementById('formCardTitle');
+      if (t) {
+        t.removeAttribute('data-i18n');
+        t.textContent = window.i18n ? window.i18n.t('stock.product.formEdit') : 'Ürünü düzenle';
+      }
+      const cl = document.getElementById('editCodeLine');
+      if (cl) {
+        cl.removeAttribute('data-i18n');
+        const pr = window.i18n ? window.i18n.t('stock.product.editCodePrefix') : 'Düzenlenen kod:';
+        cl.textContent = pr + ' ' + (p.product_code || '');
+        cl.style.display = 'block';
+      }
+      const bSave = document.getElementById('btnSaveProduct');
+      if (bSave) {
+        bSave.setAttribute('data-i18n', 'stock.product.update');
+        bSave.textContent = window.i18n ? window.i18n.t('stock.product.update') : 'Güncelle';
+        if (window.i18n) {
+          window.i18n.apply(bSave);
+        }
+      }
+      const bC = document.getElementById('btnCancelEdit');
+      if (bC) {
+        bC.style.display = 'inline-block';
+        if (window.i18n) {
+          window.i18n.apply(bC);
+        }
+      }
+    }
+    function fillProductForm(p) {
+      if (!p) {
+        return;
+      }
+      const wId = p.warehouse_id;
+      if (wId) {
+        document.getElementById('warehouseId').value = String(wId);
+        refilterSubs();
+        if (p.warehouse_subcategory_id) {
+          document.getElementById('warehouseSubId').value = String(p.warehouse_subcategory_id);
+        }
+      } else {
+        document.getElementById('warehouseId').value = '';
+        refilterSubs();
+      }
+      document.getElementById('materialLabel').value = p.material_label || '';
+      document.getElementById('widthMm').value = p.width_mm != null && p.width_mm !== '' ? p.width_mm : '';
+      document.getElementById('heightMm').value = p.height_mm != null && p.height_mm !== '' ? p.height_mm : '';
+      document.getElementById('depthMm').value = p.depth_mm != null && p.depth_mm !== '' ? p.depth_mm : '';
+      if (p.unit_id) {
+        document.getElementById('unitId').value = String(p.unit_id);
+      }
+      const brandSel = document.getElementById('pbrand');
+      if (p.brand_id) {
+        brandSel.value = String(p.brand_id);
+        if (!Array.from(brandSel.options).some((o) => o.value === brandSel.value)) {
+          brandSel.value = '';
+        }
+      } else {
+        brandSel.value = '';
+      }
+      updatePreview();
+    }
+    function updatePreview() {
+      const m = document.getElementById('materialLabel').value.trim();
+      const w = +document.getElementById('widthMm').value || 0;
+      const h = +document.getElementById('heightMm').value || 0;
+      const d = +document.getElementById('depthMm').value || 0;
+      const brandSel = document.getElementById('pbrand');
+      const bval = brandSel.value;
+      const btext = bval && brandSel.options[brandSel.selectedIndex] ? brandSel.options[brandSel.selectedIndex].text : '';
+      let dim = '';
+      if (w > 0 && h > 0) {
+        dim = d > 0 ? `${w}×${h}×${d}` : `${w}×${h}`;
+      }
+      const tail = dim ? ` – ${dim}` : '';
+      let n;
+      if (bval && m) {
+        n = btext + ' — ' + m + tail;
+      } else if (bval) {
+        n = (btext + tail).trim() || '—';
+      } else if (m) {
+        n = m + tail;
+      } else {
+        n = dim || '—';
+      }
+      document.getElementById('previewName').innerHTML =
+        '<span data-i18n="stock.product.sysname">Sistem adı</span>: ' + esc(n || '—');
+      if (window.i18n) {
+        const pv = document.getElementById('previewName');
+        if (pv) window.i18n.apply(pv);
+      }
+    }
+    ['materialLabel', 'widthMm', 'heightMm', 'depthMm', 'pbrand'].forEach((id) => {
+      const el = document.getElementById(id);
+      el?.addEventListener('input', updatePreview);
+      el?.addEventListener('change', updatePreview);
+    });
+    document.getElementById('materialLabel')?.addEventListener('blur', function () {
+      this.value = toUpperTrClient(this.value);
+      updatePreview();
+    });
+    document.getElementById('warehouseId')?.addEventListener('change', refilterSubs);
+
+    async function loadUnits() {
+      const umsg = document.getElementById('unitListMsg');
+      const { data, ok, status } = await stockApi('/api/stock/units');
+      const sel = document.getElementById('unitId');
+      if (!sel) return;
+      if (!ok) {
+        const m = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || 'Birimler yüklenemedi';
+        umsg.textContent = (status ? '[' + status + '] ' : '') + m;
+        umsg.style.display = 'block';
+        return;
+      }
+      const list = Array.isArray(data.units) ? data.units : [];
+      sel.innerHTML = '';
+      list.forEach((u) => sel.add(new Option(u.code, u.id)));
+      if (list.length === 0) {
+        umsg.textContent = window.i18n ? window.i18n.t('stock.product.unitsEmptyHint') : 'Birim listesi boş (veritabanı: npm run db:migrate).';
+        umsg.style.display = 'block';
+      } else {
+        umsg.style.display = 'none';
+      }
+    }
+    async function loadBrands() {
+      const { data, ok, status } = await stockApi('/api/stock/brands');
+      if (!ok) {
+        pushApiDataErr(errLine(window.i18n ? window.i18n.t('stock.data.brands') : 'Markalar', { data, status }));
+        return;
+      }
+      const sel = document.getElementById('pbrand');
+      const f = document.getElementById('filterBrand');
+      const none = window.i18n ? window.i18n.t('stock.product.brandNone') : '—';
+      const allB = window.i18n ? window.i18n.t('stock.product.allBrands') : 'Tümü';
+      sel.innerHTML = '<option value="">' + none + '</option>';
+      f.innerHTML = '<option value="">' + allB + '</option>';
+      (data.brands || []).forEach((b) => {
+        if (b.slug === 'unbranded') {
+          return;
+        }
+        sel.add(new Option(b.name, b.id));
+        f.add(new Option(b.name, b.id));
+      });
+    }
+    async function loadProducts() {
+      await loadErpPublicConfig();
+      const b = document.getElementById('filterBrand').value;
+      const w = document.getElementById('filterWarehouse').value;
+      const q = document.getElementById('filterQ').value.trim();
+      const qs = new URLSearchParams();
+      if (b) {
+        qs.set('brandId', b);
+      }
+      if (w) {
+        qs.set('warehouseId', w);
+      }
+      if (q) {
+        qs.set('q', q);
+      }
+      const { data, ok, status } = await stockApi('/api/stock/products?' + qs.toString());
+      if (!ok) {
+        pushApiDataErr(errLine(window.i18n ? window.i18n.t('stock.data.products') : 'Ürün listesi', { data, status }));
+        return;
+      }
+      const rows = data.products || [];
+      productListById = Object.fromEntries(rows.map((r) => [r.id, r]));
+      const editL = window.i18n ? window.i18n.t('stock.product.edit') : 'Düzenle';
+      const delL = window.i18n ? window.i18n.t('stock.product.delete') : 'Sil';
+      document.getElementById('tb').innerHTML = rows
+        .map(
+          (p) =>
+            `<tr>
+            <td><code class="display-upper">${esc(p.product_code)}</code></td>
+            <td class="display-upper">${esc(p.name)}</td>
+            <td class="display-upper">${esc(p.warehouse_name || '—')}</td>
+            <td class="display-upper">${esc(p.subcategory_name || '—')}</td>
+            <td class="display-upper">${esc(p.brand_name)}</td>
+            <td>${fmtQty(p.stock_pieces)}</td>
+            <td>${fmtQty(p.stock_m2)}</td>
+            <td>${fmtQty(p.stock_m3)}</td>
+            <td><div class="table-actions"><button type="button" class="secondary-btn btn-edit product-edit-btn" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="secondary-btn btn-danger product-delete-btn" data-pid="${p.id}">${esc(
+              delL
+            )}</button></div></td>
+          </tr>`
+        )
+        .join('') || '<tr><td colspan="9">—</td></tr>';
+      document.getElementById('tb')?.querySelectorAll('.product-edit-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const pid = +btn.getAttribute('data-pid');
+          const pr = productListById[pid];
+          if (!pr) {
+            return;
+          }
+          setFormEditMode(pr);
+          fillProductForm(pr);
+          document.getElementById('fProd')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+      document.getElementById('tb')?.querySelectorAll('.product-delete-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const pid = +btn.getAttribute('data-pid');
+          const dc = window.i18n ? window.i18n.t('stock.product.deleteConfirm') : 'Bu ürün silinsin mi?';
+          if (!pid || !confirm(dc)) {
+            return;
+          }
+          const { data, ok } = await stockApi('/api/stock/products/' + pid, { method: 'DELETE' });
+          if (!ok) {
+            const msg = document.getElementById('pmsg');
+            msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data.message || '—';
+            msg.style.display = 'block';
+            return;
+          }
+          if (editProductId === pid) {
+            document.getElementById('fProd')?.reset();
+            setFormNewMode();
+            await loadWarehousesForForm();
+            refilterSubs();
+            updatePreview();
+          }
+          document.getElementById('pmsg').style.display = 'none';
+          loadProducts();
+        });
+      });
+    }
+    document.getElementById('fProd')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('pmsg');
+      msg.style.display = 'none';
+      const brandVal = document.getElementById('pbrand').value;
+      const payload = {
+        materialLabel: toUpperTrClient(document.getElementById('materialLabel').value.trim()),
+        widthMm: document.getElementById('widthMm').value,
+        heightMm: document.getElementById('heightMm').value,
+        depthMm: document.getElementById('depthMm').value,
+        unitId: +document.getElementById('unitId').value,
+        brandId: brandVal === '' ? null : +brandVal,
+        warehouseId: +document.getElementById('warehouseId').value,
+        warehouseSubcategoryId: +document.getElementById('warehouseSubId').value,
+      };
+      const isEdit = editProductId != null;
+      const { data, ok } = await stockApi(
+        isEdit ? '/api/stock/products/' + editProductId : '/api/stock/products',
+        {
+          method: isEdit ? 'PATCH' : 'POST',
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!ok) {
+        msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : data.message || 'Hata';
+        msg.style.display = 'block';
+        return;
+      }
+      if (data.warn) {
+        const w = data.warnKey && window.i18n ? window.i18n.t(data.warnKey) : data.warn;
+        alert(w);
+      }
+      document.getElementById('fProd').reset();
+      setFormNewMode();
+      await loadWarehousesForForm();
+      updatePreview();
+      loadProducts();
+    });
+    document.getElementById('btnCancelEdit')?.addEventListener('click', async () => {
+      document.getElementById('fProd')?.reset();
+      setFormNewMode();
+      await loadWarehousesForForm();
+      refilterSubs();
+      updatePreview();
+    });
+    document.getElementById('btnFilter')?.addEventListener('click', () => loadProducts());
+    document.getElementById('btnNewUnit')?.addEventListener('click', async () => {
+      const c = window.prompt(window.i18n ? window.i18n.t('stock.product.newUnit') : 'Yeni birim kodu (ör. lt, m):', '');
+      if (c == null || String(c).trim() === '') {
+        return;
+      }
+      const umsg = document.getElementById('unitListMsg');
+      const { data, ok } = await stockApi('/api/stock/units', { method: 'POST', body: JSON.stringify({ code: c }) });
+      if (!ok) {
+        const m = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata';
+        umsg.textContent = m;
+        umsg.style.display = 'block';
+        if (data && data.messageKey === 'api.stock.unit_exists') {
+          await loadUnits();
+        }
+        return;
+      }
+      umsg.style.display = 'none';
+      await loadUnits();
+      if (data && data.id) {
+        const sel = document.getElementById('unitId');
+        if (sel) sel.value = String(data.id);
+      }
+    });
+    document.getElementById('btnExcelImport')?.addEventListener('click', async () => {
+      const imp = document.getElementById('importMsg');
+      const fin = document.getElementById('excelImportFile');
+      if (imp) {
+        imp.style.display = 'none';
+        imp.textContent = '';
+      }
+      if (!fin || !fin.files || !fin.files[0]) {
+        if (imp) {
+          imp.textContent = window.i18n ? window.i18n.t('stock.product.importFileRequired') : 'Önce .xlsx / .xls / .csv dosyası seçin';
+          imp.style.color = '#b91c1c';
+          imp.style.display = 'block';
+        }
+        return;
+      }
+      const fd = new FormData();
+      fd.append('file', fin.files[0]);
+      const res = await fetch('/api/stock/products/import', { method: 'POST', body: fd, credentials: 'same-origin' });
+      if (res.status === 401) {
+        window.location.href = '/login.html';
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (imp) {
+          imp.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata';
+          imp.style.color = '#b91c1c';
+          imp.style.display = 'block';
+        }
+        return;
+      }
+      const tLine = (e) => {
+        let m = e.error || '—';
+        if (e.messageKey && window.i18n) {
+          const tr = window.i18n.t(e.messageKey);
+          if (tr && tr !== e.messageKey) {
+            m = tr;
+          }
+        }
+        return (window.i18n ? window.i18n.t('stock.product.importRowPrefix') : 'Satır') + ' ' + e.row + ': ' + m;
+      };
+      const parts = [];
+      parts.push(
+        (window.i18n ? window.i18n.t('stock.product.importAdded') : 'Eklenen') + ': ' + (data.createdCount != null ? data.createdCount : 0)
+      );
+      if (data.failedCount > 0) {
+        parts.push(
+          (window.i18n ? window.i18n.t('stock.product.importFailed') : 'Hatalı') + ': ' + data.failedCount
+        );
+        (data.errors || [])
+          .slice(0, 30)
+          .forEach((e) => {
+            parts.push(tLine(e));
+          });
+        if (data.errors && data.errors.length > 30) {
+          parts.push('…');
+        }
+      }
+      if (imp) {
+        imp.textContent = parts.join('\n');
+        imp.style.color = data.failedCount > 0 ? '#a16207' : '#15803d';
+        imp.style.display = 'block';
+      }
+      fin.value = '';
+      loadProducts();
+    });
+    function startStockProductPage() {
+      (async () => {
+        try {
+          clearApiDataErr();
+          await initStockPageNav('products');
+          await loadWarehousesForForm();
+          await loadUnits();
+          await loadBrands();
+          await loadProducts();
+          updatePreview();
+          /* Dil init / i18n apply sırasına göre listeleri bir kez daha doldur */
+          setTimeout(async () => {
+            await loadWarehousesForForm();
+            await loadUnits();
+            await loadBrands();
+          }, 0);
+        } catch (e) {
+          pushApiDataErr(
+            (window.i18n ? window.i18n.t('stock.data.bootError') : 'Yükleme hatası') + ': ' + (e && e.message ? e.message : String(e))
+          );
+        }
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockProductPage);
+    } else {
+      startStockProductPage();
+    }
+  </script>
+</body>
+</html>

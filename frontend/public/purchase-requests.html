@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="purch.list.title">Satınalma talepleri</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .pur-list-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="container pur-wide">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="purch.list.title">Satınalma talepleri</h1>
+        <p class="subtitle" data-i18n="purch.list.sub">Durumlar ve özet</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+
+    <div class="pur-list-actions">
+      <a class="version-btn" href="/purchase-requisition-open.html" data-i18n="purch.open.title" style="text-decoration:none;display:inline-block">Satınalma siparişi aç</a>
+      <a class="version-btn" href="/purchase-approvals.html" data-i18n="nav.purch.approvals" style="text-decoration:none;display:inline-block;background:#0f766e">Yönetici onayları</a>
+    </div>
+
+    <section class="card">
+      <h3 data-i18n="purch.list.h">Talep listesi</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="purch.req.lColCode">Talep no</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.req.lColUser">Talep eden</th>
+              <th data-i18n="purch.req.lColStatus">Durum</th>
+            </tr>
+          </thead>
+          <tbody id="reqBody"><tr><td colspan="4" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/purchasing-common.js" defer></script>
+  <script>
+  function startList() {
+    const STATUS_KEYS = {
+      draft: 'purch.status.reqV2.draft',
+      pending: 'purch.status.req.pending',
+      approved: 'purch.status.req.approved',
+      ordered: 'purch.status.reqV2.ordered',
+      partial: 'purch.status.ord.partial',
+      completed: 'purch.status.ord.completed',
+      cancelled: 'purch.status.ord.cancelled',
+      rejected: 'purch.status.req.rejected',
+    };
+    function tKey(k) { return window.i18n && window.i18n.t ? window.i18n.t(k) : k; }
+    function stLabel(s) { return tKey(STATUS_KEYS[s] || s || '—'); }
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
+    });
+    (async function () {
+      if (window.initPurchasingPageNav) await initPurchasingPageNav('listreq');
+      const { ok, data } = await purApi('/api/purchasing/requests');
+      const body = document.getElementById('reqBody');
+      if (!ok || !data || !data.ok) {
+        body.innerHTML = '<tr><td colspan="4">—</td></tr>';
+        return;
+      }
+      const list = data.requests || [];
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="4">' + tKey('purch.req.empty') + '</td></tr>';
+        return;
+      }
+      body.innerHTML = list.map((r) =>
+        '<tr><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td>' + stLabel(r.pr_status) + '</td></tr>'
+      ).join('');
+      if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+    })();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startList);
+  else startList();
+  </script>
+</body>
+</html>

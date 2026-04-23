@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="project.add.pageTitle">Proje ekle</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="project.add.pageTitle">Proje ekle</h1>
+        <p class="subtitle" data-i18n="project.add.sub">Yeni proje kaydı ve tüm kayıtlar</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <nav class="stock-nav" aria-label="Project module">
+      <a href="/projects.html" data-i18n="nav.project.hub">Özet</a>
+      <a href="/project-list.html" class="active" data-i18n="nav.project.add">Proje ekle</a>
+      <a href="/project-costs.html" data-i18n="nav.project.costs">Proje maliyet kontrolü</a>
+      <a href="/project-quotes.html" data-i18n="nav.project.quotes">Proje fiyat teklifleri</a>
+    </nav>
+
+    <section class="card" style="max-width: 640px; margin-bottom: 20px">
+      <h3 data-i18n="project.form.addTitle">Yeni proje</h3>
+      <p class="form-hint muted" style="margin: 0 0 12px; font-size: 13px" data-i18n="project.form.codeAuto">
+        Proje kodu sunucuda otomatik atanır. Önek: Süper yönetim → Sistem ayarları. Aynı isimle ikinci proje açılamaz.
+      </p>
+      <form id="fAdd" class="product-form-grid" style="grid-template-columns: 1fr">
+        <div
+          class="form-field-row"
+          style="display: grid; grid-template-columns: 1fr minmax(100px, 160px); gap: 12px; align-items: end"
+        >
+          <div class="form-field" style="margin: 0">
+            <label for="projectName" data-i18n="project.form.name">Proje adı</label>
+            <input type="text" id="projectName" class="input-upper" required maxlength="300" autocomplete="off" data-i18n-placeholder="project.form.namePh" />
+          </div>
+          <div class="form-field" style="margin: 0">
+            <label for="projectShort" data-i18n="project.form.shortName">Kısa ad</label>
+            <input
+              type="text"
+              id="projectShort"
+              class="input-upper"
+              required
+              minlength="2"
+              maxlength="8"
+              autocomplete="off"
+              spellcheck="false"
+              inputmode="text"
+              data-i18n-placeholder="project.form.shortNamePh"
+            />
+          </div>
+        </div>
+        <div>
+          <button type="submit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="project.form.submit">Kaydet</button>
+        </div>
+      </form>
+      <p id="addMsg" class="login-error" style="display: none; margin-top: 10px" role="alert"></p>
+    </section>
+
+    <div class="card" id="editCard" style="display: none; max-width: 640px; margin-bottom: 20px; border: 1px solid #0f172a">
+      <h3 data-i18n="project.form.editTitle">Proje adını düzenle</h3>
+      <p class="muted" style="font-size: 13px; margin: 0 0 8px" id="editCodeLine"></p>
+      <form id="fEdit" class="product-form-grid" style="grid-template-columns: 1fr">
+        <input type="hidden" id="editId" value="" />
+        <div class="form-field">
+          <label for="editName" data-i18n="project.form.name">Proje adı</label>
+          <input type="text" id="editName" class="input-upper" required maxlength="300" autocomplete="off" />
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <button type="submit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="project.form.saveEdit">Kaydet</button>
+          <button type="button" class="secondary-btn" id="btnCancelEdit" data-i18n="project.form.cancelEdit">Vazgeç</button>
+        </div>
+      </form>
+      <p id="editMsg" class="login-error" style="display: none; margin-top: 10px" role="alert"></p>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="project.hub.listTitle">Projeler</h3>
+      <p id="okMsg" class="form-hint" style="display: none; margin: 8px 0; color: #15803d; font-weight: 600" role="status" data-i18n="project.hub.created">Proje kaydedildi</p>
+      <p id="okEditMsg" class="form-hint" style="display: none; margin: 8px 0; color: #15803d; font-weight: 600" role="status" data-i18n="project.hub.updated">Güncellendi</p>
+      <p id="loadMsg" class="login-error" style="display: none; margin: 8px 0" role="alert"></p>
+      <div style="overflow-x: auto">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="project.list.colName">Proje adı</th>
+              <th data-i18n="project.list.colShort">Kısa ad</th>
+              <th data-i18n="project.list.colCode">Proje kodu</th>
+              <th data-i18n="project.list.colStatus">Durum</th>
+              <th data-i18n="project.list.colActions">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/project-common.js" defer></script>
+  <script>
+    function t(k) {
+      return window.i18n ? window.i18n.t(k) : k;
+    }
+    function showMsg(id, err) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (err) {
+        el.textContent = err;
+        el.style.display = 'block';
+      } else {
+        el.textContent = '';
+        el.style.display = 'none';
+      }
+    }
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    let listCache = [];
+    function cancelEdit() {
+      const c = document.getElementById('editCard');
+      if (c) c.style.display = 'none';
+      showMsg('editMsg', '');
+      document.getElementById('editId').value = '';
+    }
+    function openEdit(p) {
+      const c = document.getElementById('editCard');
+      const eid = document.getElementById('editId');
+      const en = document.getElementById('editName');
+      const line = document.getElementById('editCodeLine');
+      if (eid) eid.value = String(p.id);
+      if (en) en.value = p.name || '';
+      if (line) {
+        const prefix = t('project.edit.codeLine');
+        line.textContent = `${prefix}: ${p.project_code || '—'}`;
+      }
+      if (c) {
+        c.style.display = 'block';
+        c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        en?.focus();
+      }
+    }
+    async function loadList() {
+      showMsg('loadMsg', '');
+      const { ok, data } = await projectApi('/api/projects');
+      if (!ok) {
+        const err = window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : t('api.error.unknown');
+        showMsg('loadMsg', err);
+        return;
+      }
+      listCache = (data && data.projects) || [];
+      renderRows(listCache);
+    }
+    function renderRows(rows) {
+      const tb = document.getElementById('tb');
+      if (!tb) return;
+      if (!rows || !rows.length) {
+        tb.innerHTML = `<tr><td colspan="5" class="muted" data-i18n="project.list.empty">Henüz proje yok</td></tr>`;
+        if (window.i18n) window.i18n.apply(tb);
+        return;
+      }
+      tb.innerHTML = rows
+        .map((p) => {
+          const id = esc(p.id);
+          const isActive = String(p.status || '') === 'active';
+          const aState = isActive ? ' project-st--on' : ' project-st--dim';
+          const pState = isActive ? ' project-st--dim' : ' project-st--on';
+          return `<tr>
+        <td class="display-upper"><strong>${esc(p.name)}</strong></td>
+        <td><code class="display-upper" style="font-size:13px">${esc(p.short_code || '—')}</code></td>
+        <td><code class="display-upper" style="font-size:13px">${esc(p.project_code)}</code></td>
+        <td class="td-project-status" style="white-space: nowrap; vertical-align: middle">
+          <div class="project-st-toggle" role="group" aria-label="${esc(t('project.list.colStatus'))}">
+            <button type="button" class="project-st-btn project-status-btn project-st--active${aState}" data-pid="${id}" data-st="active" data-i18n="project.status.btnActive">Aktif</button>
+            <button type="button" class="project-st-btn project-status-btn project-st--passive${pState}" data-pid="${id}" data-st="on_hold" data-i18n="project.status.btnPassive">Pasif</button>
+          </div>
+        </td>
+        <td class="user-actions td-project-actions" style="white-space: nowrap; vertical-align: middle">
+          <div class="table-actions">
+            <button type="button" class="secondary-btn btn-edit" data-edit-id="${id}" data-i18n="project.action.edit">Düzenle</button>
+            <button type="button" class="secondary-btn btn-danger" data-del-id="${id}" data-i18n="project.action.delete">Sil</button>
+          </div>
+        </td>
+      </tr>`;
+        })
+        .join('');
+      if (window.i18n) window.i18n.apply(tb);
+      tb.querySelectorAll('[data-edit-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const i = Number.parseInt(btn.getAttribute('data-edit-id'), 10);
+          const p = listCache.find((x) => x.id === i);
+          if (p) openEdit(p);
+        });
+      });
+      tb.querySelectorAll('[data-del-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const i = Number.parseInt(btn.getAttribute('data-del-id'), 10);
+          if (!i) return;
+          if (!window.confirm(t('project.confirmDelete'))) return;
+          const { ok, data } = await projectApi('/api/projects/' + i, { method: 'DELETE' });
+          if (!ok) {
+            const err = window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : t('api.error.unknown');
+            window.alert(err);
+            return;
+          }
+          if (String(document.getElementById('editId')?.value) === String(i)) cancelEdit();
+          await loadList();
+        });
+      });
+      tb.querySelectorAll('button.project-status-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const pid = Number.parseInt(btn.getAttribute('data-pid') || '0', 10);
+          const st = btn.getAttribute('data-st') || '';
+          if (!pid || !st) return;
+          const p = listCache.find((x) => String(x.id) === String(pid));
+          if (p && String(p.status) === st) {
+            return;
+          }
+          const { ok, data } = await projectApi('/api/projects/' + pid, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: st }),
+          });
+          if (!ok) {
+            const err = window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : t('api.error.unknown');
+            window.alert(err);
+            return;
+          }
+          await loadList();
+        });
+      });
+    }
+    document.getElementById('languageSelect')?.addEventListener('change', (e) => {
+      const v = e.target.value;
+      if (v && window.i18n) {
+        localStorage.setItem('erp_lang', v);
+        window.i18n.loadDict(v).then(() => {
+          window.i18n.apply(document);
+          if (window.i18n.setDocumentLang) window.i18n.setDocumentLang(v);
+        });
+      }
+    });
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function normalizeShortClient(s) {
+      return String(s ?? '')
+        .trim()
+        .toLowerCase('en-US')
+        .replace(/[^a-z0-9]/g, '');
+    }
+    document.getElementById('projectName')?.addEventListener('blur', function () {
+      this.value = toUpperTrClient(this.value);
+    });
+    document.getElementById('projectShort')?.addEventListener('blur', function () {
+      this.value = normalizeShortClient(this.value);
+    });
+    document.getElementById('editName')?.addEventListener('blur', function () {
+      this.value = toUpperTrClient(this.value);
+    });
+    document.getElementById('btnCancelEdit')?.addEventListener('click', cancelEdit);
+    document.getElementById('fAdd')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMsg('addMsg', '');
+      const name = toUpperTrClient(document.getElementById('projectName')?.value || '');
+      const shortName = normalizeShortClient(document.getElementById('projectShort')?.value || '');
+      const nameIn = document.getElementById('projectName');
+      const shortIn = document.getElementById('projectShort');
+      if (nameIn) nameIn.value = name;
+      if (shortIn) shortIn.value = shortName;
+      if (!shortName || shortName.length < 2) {
+        showMsg('addMsg', t('api.project.short_required'));
+        return;
+      }
+      const { ok, data } = await projectApi('/api/projects', {
+        method: 'POST',
+        body: JSON.stringify({ name, shortName }),
+      });
+      if (!ok) {
+        const err = window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : t('api.error.unknown');
+        showMsg('addMsg', err);
+        return;
+      }
+      if (nameIn) nameIn.value = '';
+      if (shortIn) shortIn.value = '';
+      const u = new URL(window.location.href);
+      u.searchParams.set('created', '1');
+      window.location.href = u.toString();
+    });
+    document.getElementById('fEdit')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMsg('editMsg', '');
+      const id = Number.parseInt(document.getElementById('editId')?.value || '0', 10);
+      const name = toUpperTrClient(document.getElementById('editName')?.value || '');
+      const { ok, data } = await projectApi('/api/projects/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({ name }),
+      });
+      if (!ok) {
+        const err = window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : t('api.error.unknown');
+        showMsg('editMsg', err);
+        return;
+      }
+      const okEdit = document.getElementById('okEditMsg');
+      if (okEdit) {
+        okEdit.style.display = 'block';
+        if (window.i18n) window.i18n.apply(okEdit);
+      }
+      cancelEdit();
+      await loadList();
+    });
+    function startProjectsListPage() {
+      (async function load() {
+        try {
+          const u = new URL(window.location.href);
+          if (u.searchParams.get('created') === '1') {
+            const ok = document.getElementById('okMsg');
+            if (ok) {
+              ok.style.display = 'block';
+              if (window.i18n) window.i18n.apply(ok);
+            }
+            u.searchParams.delete('created');
+            window.history.replaceState(
+              {},
+              '',
+              u.pathname + (u.searchParams.toString() ? `?${u.searchParams}` : '') + u.hash
+            );
+          }
+        } catch {
+          /* ignore */
+        }
+        const lang = window.i18n && window.i18n.getLang ? window.i18n.getLang() : 'tr';
+        if (window.i18n && window.i18n.loadDict) {
+          await window.i18n.loadDict(lang);
+        }
+        const sel = document.getElementById('languageSelect');
+        if (sel) sel.value = lang;
+        if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
+        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        await loadList();
+        document.getElementById('projectName')?.focus();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startProjectsListPage);
+    } else {
+      startProjectsListPage();
+    }
+  </script>
+</body>
+</html>

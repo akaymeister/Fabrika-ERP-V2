@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="purch.hub.title">Satınalma yönetimi</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="purch.hub.title">Satınalma yönetimi</h1>
+        <p class="subtitle" data-i18n="purch.hub.sub">Talep ve onay</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+
+    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+      <div class="hero-text">
+        <span class="hero-mini-badge" data-i18n="purch.hub.badge">Modül</span>
+        <h2 data-i18n="nav.purch.hub">Satınalma</h2>
+        <p data-i18n="purch.hub.sub">Talep aç, liste, yönetici onayı. Mal kabul stok modülündedir.</p>
+      </div>
+    </section>
+
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))">
+      <a class="dashboard-card purch-finance primary-card" href="/purchase-requisition-open.html" style="text-decoration: none; color: inherit" id="linkOpenReq">
+        <h3 data-i18n="purch.open.title">Satınalma siparişi aç</h3>
+        <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak</p>
+      </a>
+      <a class="dashboard-card purch-finance" href="/purchase-requests.html" style="text-decoration: none; color: inherit" id="linkReq">
+        <h3 data-i18n="nav.purch.requests">Satınalma talepleri</h3>
+        <p data-i18n="purch.hub.cardReq">Liste ve durumlar</p>
+      </a>
+      <a class="dashboard-card purch-finance" href="/purchase-approvals.html" style="text-decoration: none; color: inherit" id="linkAppr">
+        <h3 data-i18n="nav.purch.approvals">Yönetici onayları</h3>
+        <p data-i18n="purch.hub.cardAppr">Onay / ret</p>
+      </a>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/purchasing-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    (async function page() {
+      if (window.initPurchasingPageNav) {
+        await window.initPurchasingPageNav('hub');
+      }
+      const s = window.getPurchasingScope && window.getPurchasingScope();
+      if (s && !s.canPurchasing) {
+        document.querySelectorAll('.purch-finance').forEach((el) => {
+          el.style.display = 'none';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

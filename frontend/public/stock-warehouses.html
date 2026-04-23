@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="stock.warehouse.title">Depolar</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .wh-top-forms {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      .wh-top-forms {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      #fSub.product-form-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    .wh-top-forms .card {
+      max-width: none;
+      margin-bottom: 0;
+    }
+    .wh-sub-list {
+      list-style: none;
+      margin: 0.75rem 0 0 0;
+      padding: 0;
+    }
+    .wh-sub-edit-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      width: 100%;
+    }
+    .wh-sub-inp {
+      flex: 1;
+      min-width: 0;
+      max-width: 100%;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font: inherit;
+      box-sizing: border-box;
+    }
+    .wh-sub-inp:read-only {
+      background: #f8fafc;
+      cursor: default;
+    }
+    .wh-block--editing .wh-sub-inp,
+    .wh-block--editing .wh-main-inp {
+      background: #fff;
+    }
+    .wh-sub-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .wh-sub-actions > button {
+      width: auto;
+      flex: 0 0 auto;
+    }
+    .wh-sub-actions .secondary-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      min-height: 36px;
+      box-shadow: none;
+    }
+    .wh-sub-id {
+      color: #94a3b8;
+      font-size: 0.85em;
+    }
+    .wh-main-block {
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .wh-main-line {
+      width: 100%;
+    }
+    .wh-main-inp {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font: inherit;
+      font-weight: 600;
+      box-sizing: border-box;
+    }
+    .wh-main-inp:read-only {
+      background: #f8fafc;
+      cursor: default;
+    }
+    .wh-main-meta {
+      margin: 0.35rem 0 0 0;
+      font-size: 0.85em;
+    }
+    .wh-block-footer {
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .wh-block-footer > button {
+      width: auto;
+      flex: 0 0 auto;
+      padding: 6px 14px;
+      font-size: 13px;
+      min-height: 38px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.warehouse.title">Depolar</h1>
+        <p class="subtitle" data-i18n="stock.warehouse.sub">Fiziksel depo (üst) ve alt kategoriler — ürün kaydında zorunlu</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="lang" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+
+    <div class="wh-top-forms">
+      <div class="card">
+        <h3 data-i18n="stock.warehouse.addWh">Yeni depo (ana kategori)</h3>
+        <form id="fWh" class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
+          <div class="form-field" style="margin:0; flex:1; min-width: 200px">
+            <label for="newWh" data-i18n="stock.warehouse.whName">Depo adı</label>
+            <input type="text" id="newWh" class="input-upper" maxlength="120" data-i18n-placeholder="stock.warehouse.whNamePh" />
+          </div>
+          <button type="submit" class="module-button" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.warehouse.saveWh">Ekle</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="stock.warehouse.addSub">Alt kategori ekle</h3>
+        <form id="fSub" class="product-form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end">
+          <div class="form-field">
+            <label for="subWh" data-i18n="stock.warehouse.toDepot">Depo</label>
+            <select id="subWh" required></select>
+          </div>
+          <div class="form-field">
+            <label for="newSub" data-i18n="stock.warehouse.subName">Alt kategori adı</label>
+            <input type="text" id="newSub" class="input-upper" maxlength="120" data-i18n-placeholder="stock.warehouse.subNamePh" />
+          </div>
+          <button type="submit" class="module-button" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.warehouse.saveSub">Ekle</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 data-i18n="stock.warehouse.list">Liste</h3>
+      <div id="whList" style="margin-top: 12px"></div>
+    </div>
+    <p id="pmsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;');
+    }
+    function escAttr(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+    }
+    function tW(key, fallback) {
+      return window.i18n ? window.i18n.t(key) : fallback;
+    }
+    let whTree = [];
+    function showErr(data) {
+      const msg = document.getElementById('pmsg');
+      msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata';
+      msg.style.display = 'block';
+    }
+    function enterBlockEdit(block) {
+      block.classList.add('wh-block--editing');
+      block.querySelectorAll('.wh-main-inp, .wh-sub-inp').forEach((el) => {
+        el.readOnly = false;
+      });
+      const main = block.querySelector('.wh-main-inp');
+      if (main) {
+        main.focus();
+      }
+      block.querySelector('.wh-block-btn-edit')?.setAttribute('hidden', '');
+      block.querySelector('.wh-block-btn-save')?.removeAttribute('hidden');
+    }
+    async function loadAll() {
+      const { data, ok } = await stockApi('/api/stock/warehouses');
+      const msg = document.getElementById('pmsg');
+      msg.style.display = 'none';
+      if (!ok) {
+        msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : (data && data.message) || '—';
+        msg.style.display = 'block';
+        return;
+      }
+      whTree = data.warehouses || [];
+      const subSel = document.getElementById('subWh');
+      subSel.innerHTML = '<option value="">' + tW('stock.warehouse.selectWh', '—') + '</option>';
+      whTree.forEach((w) => subSel.add(new Option(w.name, w.id)));
+      const el = document.getElementById('whList');
+      if (!whTree.length) {
+        el.innerHTML = '<p style="color:#64748b">' + esc(tW('stock.warehouse.empty', '—')) + '</p>';
+        return;
+      }
+      const te = tW('stock.warehouse.edit', 'Düzenle');
+      const ts = tW('stock.warehouse.save', 'Kaydet');
+      const td = tW('stock.warehouse.delete', 'Sil');
+      const tdis = tW('stock.warehouse.subDeleteDisabledTitle', '');
+      el.innerHTML = whTree
+        .map(
+          (w) =>
+            `<div class="wh-main-block" data-wh-id="${w.id}">
+            <div class="wh-main-line">
+            <input type="text" class="wh-main-inp input-upper" maxlength="120" readonly value="${escAttr(w.name)}" data-initial="${escAttr(
+            w.name
+            )}" />
+            </div>
+            <p class="wh-main-meta"><code class="wh-sub-id">#${w.id}</code></p>
+            <ul class="wh-sub-list">
+            ${(w.subcategories || [])
+              .map((s) => {
+                const canDel = s.deletable === true;
+                return (
+                  '<li class="wh-sub-edit-row" data-wh-id="' +
+                  w.id +
+                  '" data-sub-id="' +
+                  s.id +
+                  '">' +
+                  '<input type="text" class="wh-sub-inp input-upper" maxlength="120" readonly value="' +
+                  escAttr(s.name) +
+                  '" data-initial="' +
+                  escAttr(s.name) +
+                  '" />' +
+                  '<div class="wh-sub-actions">' +
+                  '<button type="button" class="secondary-btn btn-danger wh-sub-btn-del" data-wh-id="' +
+                  w.id +
+                  '" data-sub-id="' +
+                  s.id +
+                  '"' +
+                  (canDel ? '' : ' disabled') +
+                  (canDel ? '' : ' title="' + escAttr(tdis) + '"') +
+                  '>' +
+                  esc(td) +
+                  '</button>' +
+                  '</div><code class="wh-sub-id">#' +
+                  s.id +
+                  (s.productCount > 0
+                    ? ' · ' + tW('stock.warehouse.nProducts', '· {n} ürün').replace('{n}', String(s.productCount))
+                    : '') +
+                  '</code></li>'
+                );
+              })
+              .join('') || '<li>—</li>'}
+            </ul>
+            <div class="wh-block-footer">
+            <button type="button" class="secondary-btn btn-edit wh-block-btn-edit">${esc(te)}</button>
+            <button type="button" class="module-button wh-block-btn-save" hidden>${esc(ts)}</button>
+            </div>
+            </div>`
+        )
+        .join('');
+    }
+    async function saveBlock(whBlock) {
+      const wid = +String(whBlock.getAttribute('data-wh-id') || '0');
+      if (wid < 1) {
+        return;
+      }
+      const mainInp = whBlock.querySelector('.wh-main-inp');
+      const mainName = mainInp ? toUpperTrClient(String(mainInp.value || '').trim()) : '';
+      if (!mainName) {
+        showErr({ messageKey: 'api.warehouse.name_required', message: 'Depo adı gerekli' });
+        return;
+      }
+      const mainInit = toUpperTrClient((mainInp.getAttribute('data-initial') || '').trim());
+      if (mainName !== mainInit) {
+        const { data, ok } = await stockApi('/api/stock/warehouses/' + wid, {
+          method: 'PATCH',
+          body: JSON.stringify({ name: mainName }),
+        });
+        if (!ok) {
+          showErr(data);
+          return;
+        }
+      }
+      for (const li of whBlock.querySelectorAll('li.wh-sub-edit-row')) {
+        const inp = li.querySelector('.wh-sub-inp');
+        const sid = +String(li.getAttribute('data-sub-id') || '0');
+        if (!inp || sid < 1) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        const n = toUpperTrClient(String(inp.value || '').trim());
+        if (!n) {
+          showErr({ messageKey: 'api.warehouse.sub_name_required', message: 'Alt kategori adı gerekli' });
+          return;
+        }
+        const init = toUpperTrClient((inp.getAttribute('data-initial') || '').trim());
+        if (n === init) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        const { data, ok } = await stockApi('/api/stock/warehouses/' + wid + '/subcategories/' + sid, {
+          method: 'PATCH',
+          body: JSON.stringify({ name: n }),
+        });
+        if (!ok) {
+          showErr(data);
+          return;
+        }
+      }
+      loadAll();
+    }
+    async function deleteSubcategory(warehouseId, subId) {
+      const c = tW('stock.warehouse.confirmDeleteSub', 'Silmek istiyor musunuz?');
+      if (!window.confirm(c)) {
+        return;
+      }
+      const { data, ok } = await stockApi('/api/stock/warehouses/' + warehouseId + '/subcategories/' + subId, {
+        method: 'DELETE',
+      });
+      if (!ok) {
+        showErr(data);
+        return;
+      }
+      loadAll();
+    }
+    document.getElementById('whList')?.addEventListener('click', (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) {
+        return;
+      }
+      const whBlock = t.closest('.wh-main-block');
+      if (whBlock && t.closest('.wh-block-btn-edit')) {
+        e.preventDefault();
+        enterBlockEdit(whBlock);
+        return;
+      }
+      if (whBlock && t.closest('.wh-block-btn-save')) {
+        e.preventDefault();
+        saveBlock(whBlock);
+        return;
+      }
+      const li = t.closest('li.wh-sub-edit-row');
+      if (li && t.closest('.wh-sub-btn-del')) {
+        e.preventDefault();
+        const delBtn = t.closest('.wh-sub-btn-del');
+        if (delBtn && delBtn.disabled) {
+          return;
+        }
+        const wid = +li.getAttribute('data-wh-id');
+        const sid = +li.getAttribute('data-sub-id');
+        if (wid && sid) {
+          deleteSubcategory(wid, sid);
+        }
+      }
+    });
+    document.getElementById('whList')?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') {
+        return;
+      }
+      const t = e.target;
+      if (!t || !t.classList) {
+        return;
+      }
+      if (!t.classList.contains('wh-main-inp') && !t.classList.contains('wh-sub-inp')) {
+        return;
+      }
+      if (t.readOnly) {
+        return;
+      }
+      e.preventDefault();
+      const whBlock = t.closest('.wh-main-block');
+      if (whBlock && whBlock.classList.contains('wh-block--editing')) {
+        saveBlock(whBlock);
+      }
+    });
+    document.getElementById('fWh')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const n = toUpperTrClient(document.getElementById('newWh').value.trim());
+      if (!n) {
+        return;
+      }
+      const { data, ok } = await stockApi('/api/stock/warehouses', { method: 'POST', body: JSON.stringify({ name: n }) });
+      const msg = document.getElementById('pmsg');
+      if (!ok) {
+        msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : 'Hata';
+        msg.style.display = 'block';
+        return;
+      }
+      document.getElementById('newWh').value = '';
+      loadAll();
+    });
+    document.getElementById('fSub')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const wid = +document.getElementById('subWh').value;
+      const n = toUpperTrClient(document.getElementById('newSub').value.trim());
+      if (!wid || !n) {
+        return;
+      }
+      const { data, ok } = await stockApi('/api/stock/warehouses/' + wid + '/subcategories', {
+        method: 'POST',
+        body: JSON.stringify({ name: n }),
+      });
+      const msg = document.getElementById('pmsg');
+      if (!ok) {
+        msg.textContent = window.i18n?.apiErrorText ? window.i18n.apiErrorText(data) : 'Hata';
+        msg.style.display = 'block';
+        return;
+      }
+      document.getElementById('newSub').value = '';
+      loadAll();
+    });
+    function startStockWarehousesPage() {
+      (async () => {
+        await initStockPageNav('warehouses');
+        await loadAll();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockWarehousesPage);
+    } else {
+      startStockWarehousesPage();
+    }
+  </script>
+</body>
+</html>

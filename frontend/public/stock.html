@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stok — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="stock.hub.title">Stok yönetimi</h1>
+        <p class="subtitle" data-i18n="stock.hub.sub">Ürün, marka, hareket ve depo temelli süreçler</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+
+    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+      <div class="hero-text">
+        <span class="hero-mini-badge" data-i18n="stock.hub.badge">Modül 4</span>
+        <h2 data-i18n="stock.hub.panel">Stok paneli</h2>
+        <p data-i18n="stock.hub.desc">Marka ve ürün tanımları, otomatik ürün kodu (STK-00001), stok giriş/çıkış ve hareket geçmişi bu modülde toplanır.</p>
+      </div>
+    </section>
+
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
+      <a class="dashboard-card" href="/stock-brands.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.brands">Markalar</h3>
+        <p data-i18n="stock.hub.cardBrands">Marka ekle / listele</p>
+      </a>
+      <a class="dashboard-card" href="/stock-warehouses.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.warehouses">Depolar</h3>
+        <p data-i18n="stock.hub.cardWarehouses">Ana depo + alt kategori</p>
+      </a>
+      <a class="dashboard-card primary-card" href="/stock-products.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.products">Ürünler</h3>
+        <p data-i18n="stock.hub.cardProducts">Kayıt, ad + ölçü; marka isteğe bağlı</p>
+      </a>
+      <a class="dashboard-card" href="/stock-in.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.in">Stok giriş</h3>
+        <p data-i18n="stock.hub.cardIn">Depoya giriş hareketi</p>
+      </a>
+      <a class="dashboard-card" href="/stock-out.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.out">Stok çıkış</h3>
+        <p data-i18n="stock.hub.cardOut">Çıkış; yetersiz stok kontrolü</p>
+      </a>
+      <a class="dashboard-card" href="/goods-receipt.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.receipt">Mal kabul</h3>
+        <p data-i18n="stock.hub.cardReceipt">Siparişe göre kabul, depo girişi</p>
+      </a>
+      <a class="dashboard-card" href="/stock-movements.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.stock.mov">Hareketler</h3>
+        <p data-i18n="stock.hub.cardMov">Tüm stok hareketleri</p>
+      </a>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/stock-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function startStockHubPage() {
+      (async function () {
+        await initStockPageNav('hub');
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startStockHubPage);
+    } else {
+      startStockHubPage();
+    }
+  </script>
+</body>
+</html>

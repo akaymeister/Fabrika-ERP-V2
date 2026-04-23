@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="purch.gr.title">Mal kabul</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="purch.gr.title">Mal kabul / depo girişi</h1>
+        <p class="subtitle">Kabul m² stoka işlenir; kısmi teslim desteklenir</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/stock.html" class="version-btn" data-i18n="nav.stock.hub">Stok</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+
+    <section class="card">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:800px;align-items:end;flex-wrap:wrap">
+        <div>
+          <label style="display:block;font-size:13px" data-i18n="purch.col.waybill">İrsaliye no</label>
+          <input id="waybill" type="text" style="width:100%;padding:8px;border-radius:8px" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px" data-i18n="purch.col.warehouse">Depo</label>
+          <select id="wh" style="width:100%;padding:8px;border-radius:8px"></select>
+        </div>
+        <div style="grid-column:1/-1;max-width:500px">
+          <label style="display:block;font-size:13px">Sipariş</label>
+          <select id="ordSel" style="width:100%;padding:8px;border-radius:8px"></select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="display:block;font-size:13px">Not (isteğe bağlı)</label>
+          <textarea id="grNote" rows="2" style="width:100%;max-width:640px;border-radius:8px;padding:8px"></textarea>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;margin-top:16px" id="linesWrap" hidden>
+        <p style="font-size:13px;color:#64748b" id="ordSummary"></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Ürün</th>
+              <th>Kalan (m²-sistem)</th>
+              <th>Gelen</th>
+              <th>Kabul</th>
+              <th>Red</th>
+              <th>Hasar</th>
+              <th>Not</th>
+            </tr>
+          </thead>
+          <tbody id="grLines"></tbody>
+        </table>
+        <p>
+          <button type="button" class="logout-btn" style="background:#15803d;border:none" id="btnSave" data-i18n="purch.gr.save">Kaydet</button>
+        </p>
+      </div>
+    </section>
+  </div>
+  <script src="/js/stock-common.js" defer></script>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/purchasing-common.js" defer></script>
+  <script>
+    const msg = document.getElementById('msg');
+    function showMsg(t, e) { msg.textContent = t; msg.style.color = e ? '#b91c1c' : '#0f766e'; }
+    let currentOrder = null;
+    let ordersCache = [];
+    async function loadWarehouses() {
+      const { ok, data } = await purApi('/api/purchasing/warehouses');
+      const s = document.getElementById('wh');
+      s.innerHTML = '<option value="">—</option>';
+      if (ok && data && data.ok) {
+        (data.warehouses || []).forEach((w) => {
+          const o = document.createElement('option');
+          o.value = w.id;
+          o.textContent = w.name || w.code || w.id;
+          s.appendChild(o);
+        });
+      }
+    }
+    function fillOrderSelect() {
+      const s = document.getElementById('ordSel');
+      const fromUrl = new URLSearchParams(window.location.search).get('orderId');
+      s.innerHTML = '<option value="">— sipariş seçin —</option>';
+      ordersCache.forEach((o) => {
+        const e = document.createElement('option');
+        e.value = o.id;
+        e.textContent = (o.order_code || o.id) + ' — ' + (o.supplier_name || '') + ' / ' + (o.project_code || '');
+        s.appendChild(e);
+        if (fromUrl && String(o.id) === String(fromUrl)) e.selected = true;
+      });
+    }
+    async function loadOrderList() {
+      const { ok, data } = await purApi('/api/purchasing/orders');
+      if (!ok || !data || !data.ok) return;
+      ordersCache = (data.orders || []).filter(
+        (o) => o.status === 'ordered' || o.status === 'partial'
+      );
+      fillOrderSelect();
+    }
+    function renderOrderDetail() {
+      const w = document.getElementById('linesWrap');
+      const tb = document.getElementById('grLines');
+      const su = document.getElementById('ordSummary');
+      if (!currentOrder || !currentOrder.items) {
+        w.hidden = true;
+        return;
+      }
+      const s = getPurchasingScope();
+      su.textContent = (currentOrder.order_code || '') + (s.canPurchasing ? ' — tedarikçi: fiyat sadece satınalmada' : ' — fiyat gizli');
+      tb.innerHTML = (currentOrder.items || [])
+        .map((it) => {
+          const rem = (typeof it.qty_remaining !== 'undefined') ? it.qty_remaining : (Number(it.qty_ordered) - Number(it.qty_received || 0));
+          if (rem <= 0) return '';
+          return `<tr data-oi="${it.id}">
+            <td>${it.product_name || it.product_id}</td>
+            <td>${(window.fmtQty || ((n) => n))(rem)}</td>
+            <td><input type="number" class="f-gel" data-oi="${it.id}" min="0" step="0.0001" value="" style="width:88px" /></td>
+            <td><input type="number" class="f-kab" data-oi="${it.id}" min="0" step="0.0001" value="" style="width:88px" /></td>
+            <td><input type="number" class="f-red" data-oi="${it.id}" min="0" step="0.0001" value="0" style="width:72px" /></td>
+            <td><input type="number" class="f-hsr" data-oi="${it.id}" min="0" step="0.0001" value="0" style="width:72px" /></td>
+            <td><input type="text" class="f-nt" data-oi="${it.id}" style="min-width:100px" /></td>
+          </tr>`;
+        })
+        .join('');
+      w.hidden = !tb.querySelector('tr');
+    }
+    async function loadOrder(id) {
+      if (!id) {
+        currentOrder = null;
+        document.getElementById('linesWrap').hidden = true;
+        return;
+      }
+      const { ok, data } = await purApi(`/api/purchasing/orders/${id}`);
+      if (!ok || !data || !data.ok) {
+        showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : 'Hata', true);
+        return;
+      }
+      currentOrder = data.order;
+      renderOrderDetail();
+    }
+    document.getElementById('ordSel').addEventListener('change', (e) => {
+      loadOrder(e.target.value);
+    });
+    document.getElementById('btnSave').addEventListener('click', async () => {
+      const oid = document.getElementById('ordSel').value;
+      const wid = document.getElementById('wh').value;
+      if (!oid || !wid) {
+        showMsg('Sipariş ve depo seçin', true);
+        return;
+      }
+      const lines = [];
+      document.getElementById('grLines').querySelectorAll('tr[data-oi]').forEach((tr) => {
+        const oiId = tr.getAttribute('data-oi');
+        const k = (sel) => tr.querySelector(sel) && tr.querySelector(sel).value;
+        const qa = parseFloat(String(k('.f-kab') || '0').replace(',', '.')) || 0;
+        const qr = parseFloat(String(k('.f-red') || '0').replace(',', '.')) || 0;
+        const qd = parseFloat(String(k('.f-hsr') || '0').replace(',', '.')) || 0;
+        const gw = k('.f-gel');
+        const gwn = gw !== '' && gw != null ? parseFloat(String(gw).replace(',', '.')) : null;
+        if (!oiId) return;
+        lines.push({
+          orderItemId: parseInt(oiId, 10),
+          qtyWaybill: gwn,
+          qtyAccepted: qa,
+          qtyRejected: qr,
+          qtyDamaged: qd,
+          lineNote: k('.f-nt') || undefined,
+        });
+      });
+      if (!lines.length) {
+        showMsg('Kabul edilecek satır yok veya tüm kalanlar 0', true);
+        return;
+      }
+      const { ok, data } = await purApi('/api/purchasing/goods-receipts', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: parseInt(oid, 10),
+          warehouseId: parseInt(wid, 10),
+          waybillNumber: document.getElementById('waybill').value,
+          note: document.getElementById('grNote').value,
+          lines,
+        }),
+      });
+      if (!ok) {
+        showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata', true);
+        return;
+      }
+      showMsg('Mal kabul kaydedildi' + (data && data.orderStatus ? '; sipariş: ' + data.orderStatus : ''));
+      document.getElementById('waybill').value = '';
+      document.getElementById('grNote').value = '';
+      loadOrderList();
+      loadOrder(oid);
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
+    });
+    (async function init() {
+      if (window.initStockPageNav) await initStockPageNav('receipt');
+      await loadWarehouses();
+      await loadOrderList();
+      const q = new URLSearchParams(window.location.search).get('orderId');
+      if (q) {
+        const sel = document.getElementById('ordSel');
+        if (sel && !Array.from(sel.options).some((o) => o.value === String(q))) {
+          const o = document.createElement('option');
+          o.value = q;
+          o.textContent = 'Sipariş #' + q;
+          sel.appendChild(o);
+          o.selected = true;
+        }
+        loadOrder(q);
+      } else {
+        const sel = document.getElementById('ordSel');
+        if (sel && sel.value) loadOrder(sel.value);
+      }
+      if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+    })();
+  </script>
+  <style>@media (max-width: 800px) { .form-row { grid-template-columns: 1fr !important; } }</style>
+</body>
+</html>

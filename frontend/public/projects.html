@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="project.hub.title">Proje yönetimi</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="project.hub.title">Proje yönetimi</h1>
+        <p class="subtitle" data-i18n="project.hub.sub">Yeni proje, kod ve ileride maliyet / teklif</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+
+    <nav class="stock-nav" aria-label="Project module">
+      <a href="/projects.html" class="active" data-i18n="nav.project.hub">Özet</a>
+      <a href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
+      <a href="/project-costs.html" data-i18n="nav.project.costs">Proje maliyet kontrolü</a>
+      <a href="/project-quotes.html" data-i18n="nav.project.quotes">Proje fiyat teklifleri</a>
+    </nav>
+
+    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+      <div class="hero-text">
+        <span class="hero-mini-badge" data-i18n="project.hub.badge">Proje</span>
+        <h2 data-i18n="project.hub.panel">Proje modülü</h2>
+        <p data-i18n="project.hub.desc">Otomatik proje kodu (PRJ-26-001), proje ekle ve liste; ileride maliyet ve fiyat teklifleri bu modülde. Önek süper yönetimde.</p>
+      </div>
+    </section>
+
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
+      <a class="dashboard-card primary-card" href="/project-list.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.project.add">Proje ekle</h3>
+        <p data-i18n="project.hub.cardAdd">Yeni proje; otomatik kod, liste, düzenle</p>
+      </a>
+      <a class="dashboard-card" href="/project-costs.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.project.costs">Proje maliyet kontrolü</h3>
+        <p data-i18n="project.hub.cardCosts">Bütçe ve gerçekleşen (yakında)</p>
+      </a>
+      <a class="dashboard-card" href="/project-quotes.html" style="text-decoration: none; color: inherit">
+        <h3 data-i18n="nav.project.quotes">Proje fiyat teklifleri</h3>
+        <p data-i18n="project.hub.cardQuotes">Teklifler ve onay (yakında)</p>
+      </a>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/project-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function startProjectHubPage() {
+      (async function () {
+        const lang = window.i18n && window.i18n.getLang ? window.i18n.getLang() : 'tr';
+        if (window.i18n && window.i18n.loadDict) {
+          await window.i18n.loadDict(lang);
+        }
+        const sel = document.getElementById('languageSelect');
+        if (sel) sel.value = lang;
+        if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
+        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        document.getElementById('languageSelect')?.addEventListener('change', (e) => {
+          const v = e.target.value;
+          if (v && window.i18n) {
+            localStorage.setItem('erp_lang', v);
+            window.i18n.loadDict(v).then(() => {
+              window.i18n.apply(document);
+              if (window.i18n.setDocumentLang) window.i18n.setDocumentLang(v);
+            });
+          }
+        });
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startProjectHubPage);
+    } else {
+      startProjectHubPage();
+    }
+  </script>
+</body>
+</html>
