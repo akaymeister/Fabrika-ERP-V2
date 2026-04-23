@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="purch.print.title">Sipariş formu</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .print-root { max-width: 900px; margin: 0 auto; background: #fff; padding: 24px; }
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .print-root { box-shadow: none; margin: 0; max-width: 100%; }
+    }
+    .ph { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; }
+    .pl-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .pl-table th, .pl-table td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+    .pl-table th { background: #f1f5f9; }
+    .pl-attach { margin-top: 8px; page-break-inside: avoid; }
+    .pl-attach img { max-height: 120px; max-width: 200px; }
+  </style>
+</head>
+<body>
+  <p class="no-print" style="padding:12px">
+    <button type="button" class="logout-btn" id="btnPr" data-i18n="purch.print.btn">Yazdır</button>
+    <a href="/purchase-processing.html" class="version-btn" data-i18n="purch.print.back">İşleme dön</a>
+  </p>
+  <div class="print-root" id="root"></div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/purchasing-common.js" defer></script>
+  <script>
+  (function () {
+    const id = new URLSearchParams(window.location.search).get('id');
+    const tK = (k) => (window.i18n && window.i18n.t) ? window.i18n.t(k) : k;
+    function money(n) {
+      return (window.fmtPrice ? fmtPrice(n) : (Number(n) || 0).toFixed(2));
+    }
+    async function go() {
+      if (!id) {
+        document.getElementById('root').innerHTML = '<p>—</p>';
+        return;
+      }
+      const { ok, data } = await purApi('/api/purchasing/orders/' + id);
+      if (!ok || !data || !data.ok || !data.order) {
+        document.getElementById('root').innerHTML = '<p>' + tK('api.error.unknown') + '</p>';
+        return;
+      }
+      const o = data.order;
+      const rows = (o.items || [])
+        .map(
+          (it) => `<tr>
+          <td>${(it.product_code || '').replace(/</g, '')}</td>
+          <td>${(it.product_name || '').replace(/</g, '')}</td>
+          <td style="text-align:right">${(Number(it.qty_ordered) || 0).toFixed(4)}</td>
+          <td>${money(it.unit_price)}</td>
+          <td style="text-align:right">${money(it.line_total)}</td>
+          <td style="font-size:11px">${it.request_line_image_path || it.request_line_pdf_path ? '●' : '—'}</td>
+        </tr>`
+        )
+        .join('');
+      const atts = (o.items || [])
+        .map((it) => {
+          const img = it.request_line_image_path;
+          const pdf = it.request_line_pdf_path;
+          if (!img && !pdf) {
+            return '';
+          }
+          return `<div class="pl-attach"><strong>${(it.product_code + '').replace(/</g, '')}</strong>
+            ${img ? '<div><img src="' + String(img).replace(/"/g, '') + '" alt="" /></div>' : ''}
+            ${pdf ? '<div><a href="' + String(pdf).replace(/"/g, '') + '">PDF</a></div>' : ''}
+          </div>`;
+        })
+        .join('');
+      const grand = o.grand_total != null ? money(o.grand_total) : '—';
+      document.getElementById('root').innerHTML = `
+        <div class="ph">
+          <h1 style="margin:0;">${tK('purch.print.title')}</h1>
+          <p><strong>${(o.order_code || '').replace(/</g, '')}</strong> · ${(o.project_label || o.project_code || '—').toString().replace(/</g, '')}</p>
+          <p>${tK('purch.wf.colDate')}: ${(o.order_date || '—').toString().replace(/</g, '')} · ${tK('purch.delivery')}: ${(o.delivery_date || '—').toString().replace(/</g, '')}</p>
+          <p>${tK('purch.col.supplier')}: ${(o.supplier_name || '—').replace(/</g, '')} · ${tK('purch.wf.issuer')}: ${(o.order_creator_name || '—').replace(/</g, '')}</p>
+          <p>${tK('purch.wf.talepNo')}: ${(o.request_code || o.requester_name ? (o.request_code || '') : '—').replace(/</g, '')} · ${tK('purch.wf.requester')}: ${(o.requester_name || '—').replace(/</g, '')} · ${tK('purch.wf.approver')}: ${(o.approver_name || '—').replace(/</g, '')}</p>
+          <p style="font-size:12px;color:#334155">${(o.note || '').replace(/</g, '')}</p>
+        </div>
+        <table class="pl-table">
+          <thead>
+            <tr>
+              <th>Kod</th>
+              <th>Ürün</th>
+              <th>Miktar</th>
+              <th>${tK('purch.col.unitPrice')}</th>
+              <th>Toplam</th>
+              <th>Ek</th>
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="6">—</td></tr>'}</tbody>
+        </table>
+        <p style="text-align:right;font-weight:700">Genel: ${grand}</p>
+        <div class="pl-atch-wrap">${atts}</div>
+        <p style="font-size:11px;margin-top:16px">PDF referansı tıklanabilir; ekte görsel baskıda listelenir.</p>
+      `;
+      if (window.i18n && window.i18n.apply) {
+        window.i18n.apply(document.getElementById('root'));
+      }
+    }
+    document.getElementById('btnPr').addEventListener('click', () => globalThis.print && globalThis.print());
+    (async function () {
+      if (window.i18n && window.i18n.loadDict) {
+        await window.i18n.loadDict(window.i18n.getLang());
+      }
+      if (window.loadErpPublicConfig) {
+        await loadErpPublicConfig();
+      }
+      await go();
+    })();
+  })();
+  </script>
+</body>
+</html>

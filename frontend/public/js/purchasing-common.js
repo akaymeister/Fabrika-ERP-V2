@@ -1,8 +1,8 @@
 const PUR_NAV_FALLBACK_TR = {
-  'nav.purch.requisitionOpen': 'Satınalma siparişi aç',
+  'nav.purch.requisitionOpen': 'Talep aç',
+  'nav.purch.requests': 'Talepler & onay',
+  'nav.purch.processing': 'Satınalma işleme',
   'nav.purch.hub': 'Satınalma',
-  'nav.purch.requests': 'Satınalma talepleri',
-  'nav.purch.approvals': 'Yönetici onayları',
 };
 
 function tNav(k) {
@@ -15,20 +15,40 @@ function tNav(k) {
   return PUR_NAV_FALLBACK_TR[k] || k;
 }
 
-let __purScope = { canPurchasing: false, canReceipt: false };
+let __purScope = { canPurchasing: false, canRequest: false, canApprove: false, canReceipt: false };
+
+/**
+ * Görünebilir herhangi bir satınalma ekranı var mı
+ */
+function hasAnyPurchasingNav() {
+  return !!(
+    __purScope.canPurchasing ||
+    __purScope.canRequest ||
+    __purScope.canApprove ||
+    __purScope.canReceipt
+  );
+}
 
 function purchasingNavHTML(active) {
   const items = [
-    { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', finance: true },
-    { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', finance: true },
-    { href: '/purchase-approvals.html', key: 'appr', k: 'nav.purch.approvals', finance: true },
-    { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub' },
+    { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', need: 'request' },
+    { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'see' },
+    { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'purch' },
+    { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },
   ];
   return `<nav class="stock-nav" aria-label="Purchasing">
     ${items
       .map((i) => {
-        const hide = i.finance && !__purScope.canPurchasing;
-        if (hide) {
+        if (i.need === 'any' && !hasAnyPurchasingNav()) {
+          return '';
+        }
+        if (i.need === 'request' && !__purScope.canRequest && !__purScope.canPurchasing) {
+          return '';
+        }
+        if (i.need === 'see' && !__purScope.canRequest && !__purScope.canApprove && !__purScope.canPurchasing) {
+          return '';
+        }
+        if (i.need === 'purch' && !__purScope.canPurchasing) {
           return '';
         }
         return `<a href="${i.href}" class="${i.key === active ? 'active' : ''}" data-i18n="${i.k}">${tNav(i.k)}</a>`;
@@ -97,10 +117,12 @@ async function loadPurchasingScope() {
   if (ok && data && data.ok) {
     __purScope = {
       canPurchasing: !!data.canPurchasing,
+      canRequest: !!data.canRequest,
+      canApprove: !!data.canApprove,
       canReceipt: !!data.canReceipt,
     };
   } else {
-    __purScope = { canPurchasing: true, canReceipt: true };
+    __purScope = { canPurchasing: true, canRequest: true, canApprove: true, canReceipt: true };
   }
   return __purScope;
 }

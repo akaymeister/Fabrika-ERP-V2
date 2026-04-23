@@ -15,6 +15,8 @@ const {
   getSuppliers,
   postSupplier,
   getRequests,
+  getRequestById,
+  putRequest,
   postRequest,
   postRequestSubmit,
   postRequestCancel,
@@ -28,6 +30,9 @@ const {
 
 const router = express.Router();
 const PUR = 'module.purchasing';
+const PUR_REQ = ['module.purchasing.request', 'module.purchasing'];
+const PUR_APP = ['module.purchasing.approve', 'module.purchasing'];
+const PUR_SEE = ['module.purchasing.request', 'module.purchasing.approve', 'module.purchasing'];
 /** Depo kabul (mal kabul) sayfası stok modülüne taşındı: module.stock da bu uçlara erişir */
 const ANY = ['module.purchasing', 'module.purchasing.receipt', 'module.stock'];
 
@@ -39,10 +44,10 @@ router.get('/orders', requireAnyPermission(ANY), getOrders);
 router.get('/orders/:id', requireAnyPermission(ANY), getOrder);
 router.post('/goods-receipts', requireAnyPermission(ANY), postGoodsReceipt);
 
-router.get('/next-request-code', requirePermission(PUR), getNextRequestCode);
-router.get('/units', requirePermission(PUR), getUnitsForPurchase);
-router.get('/products', requirePermission(PUR), getProductsForPurchase);
-router.post('/line-attachment', requirePermission(PUR), (req, res, next) => {
+router.get('/next-request-code', requireAnyPermission(PUR_REQ), getNextRequestCode);
+router.get('/units', requireAnyPermission(PUR_REQ), getUnitsForPurchase);
+router.get('/products', requireAnyPermission(PUR_REQ), getProductsForPurchase);
+router.post('/line-attachment', requireAnyPermission(PUR_REQ), (req, res, next) => {
   lineUpload.single('file')(req, res, (e) => {
     if (e) {
       return res.status(400).json(jsonError('VALIDATION', e.message || 'Yükleme hatası', null, 'api.pur.upload_invalid'));
@@ -51,15 +56,17 @@ router.post('/line-attachment', requirePermission(PUR), (req, res, next) => {
   });
 }, postLineAttachment);
 
-router.get('/product-options', requirePermission(PUR), getProductOptions);
-router.get('/projects-brief', requirePermission(PUR), getProjectsBrief);
+router.get('/product-options', requireAnyPermission(PUR_REQ), getProductOptions);
+router.get('/projects-brief', requireAnyPermission(PUR_REQ), getProjectsBrief);
 router.get('/suppliers', requirePermission(PUR), getSuppliers);
 router.post('/suppliers', requirePermission(PUR), postSupplier);
-router.get('/requests', requirePermission(PUR), getRequests);
-router.post('/requests', requirePermission(PUR), postRequest);
-router.post('/requests/:id/submit', requirePermission(PUR), postRequestSubmit);
-router.post('/requests/:id/cancel', requirePermission(PUR), postRequestCancel);
-router.patch('/requests/:id/status', requirePermission(PUR), patchRequestStatus);
+router.get('/requests', requireAnyPermission(PUR_SEE), getRequests);
+router.get('/requests/:id', requireAnyPermission(PUR_SEE), getRequestById);
+router.put('/requests/:id', requireAnyPermission(PUR_REQ), putRequest);
+router.post('/requests', requireAnyPermission(PUR_REQ), postRequest);
+router.post('/requests/:id/submit', requireAnyPermission(PUR_REQ), postRequestSubmit);
+router.post('/requests/:id/cancel', requireAnyPermission(PUR_SEE), postRequestCancel);
+router.patch('/requests/:id/status', requireAnyPermission(PUR_APP), patchRequestStatus);
 router.get('/approved-request-items', requirePermission(PUR), getApprovedRequestItems);
 router.post('/orders', requirePermission(PUR), postOrder);
 

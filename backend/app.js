@@ -75,7 +75,12 @@ app.get('/purchase-orders.html', requirePageAuth, (req, res) => res.redirect(302
 app.get(
   '/purchasing.html',
   requirePageAuth,
-  requirePageAnyPermission(['module.purchasing', 'module.purchasing.receipt']),
+  requirePageAnyPermission([
+    'module.purchasing',
+    'module.purchasing.request',
+    'module.purchasing.approve',
+    'module.purchasing.receipt',
+  ]),
   sendPage('purchasing.html')
 );
 app.get(
@@ -87,15 +92,27 @@ app.get(
 app.get(
   '/purchase-requisition-open.html',
   requirePageAuth,
-  requirePagePermission('module.purchasing'),
+  requirePageAnyPermission(['module.purchasing.request', 'module.purchasing']),
   sendPage('purchase-requisition-open.html')
 );
-app.get('/purchase-requests.html', requirePageAuth, requirePagePermission('module.purchasing'), sendPage('purchase-requests.html'));
 app.get(
-  '/purchase-approvals.html',
+  '/purchase-requests.html',
+  requirePageAuth,
+  requirePageAnyPermission(['module.purchasing.request', 'module.purchasing.approve', 'module.purchasing']),
+  sendPage('purchase-requests.html')
+);
+app.get('/purchase-approvals.html', requirePageAuth, (req, res) => res.redirect(302, '/purchase-requests.html'));
+app.get(
+  '/purchase-processing.html',
   requirePageAuth,
   requirePagePermission('module.purchasing'),
-  sendPage('purchase-approvals.html')
+  sendPage('purchase-processing.html')
+);
+app.get(
+  '/purchase-order-print.html',
+  requirePageAuth,
+  requirePagePermission('module.purchasing'),
+  sendPage('purchase-order-print.html')
 );
 app.get('/stock.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock.html'));
 app.get('/stock-brands.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-brands.html'));

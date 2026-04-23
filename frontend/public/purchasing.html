@@ -11,7 +11,7 @@
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
         <h1 data-i18n="purch.hub.title">Satınalma yönetimi</h1>
-        <p class="subtitle" data-i18n="purch.hub.sub">Talep ve onay</p>
+        <p class="subtitle" data-i18n="purch.hub.sub">Dört adım: talep → onay → sipariş → mal kabul (stok)</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
@@ -30,22 +30,22 @@
       <div class="hero-text">
         <span class="hero-mini-badge" data-i18n="purch.hub.badge">Modül</span>
         <h2 data-i18n="nav.purch.hub">Satınalma</h2>
-        <p data-i18n="purch.hub.sub">Talep aç, liste, yönetici onayı. Mal kabul stok modülündedir.</p>
+        <p data-i18n="purch.hub.subLong">1) Talep aç 2) Talepler & onay 3) Satınalma işleme (fiyat) 4) Mal kabul ayrıca Stok modülünde. Stok sadece kabulle artar.</p>
       </div>
     </section>
 
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))">
-      <a class="dashboard-card purch-finance primary-card" href="/purchase-requisition-open.html" style="text-decoration: none; color: inherit" id="linkOpenReq">
-        <h3 data-i18n="purch.open.title">Satınalma siparişi aç</h3>
-        <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak</p>
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))">
+      <a class="dashboard-card primary-card" href="/purchase-requisition-open.html" style="text-decoration: none; color: inherit" id="linkOpenReq">
+        <h3 data-i18n="purch.hub.step1">Talep aç</h3>
+        <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak; fiyat yok</p>
       </a>
-      <a class="dashboard-card purch-finance" href="/purchase-requests.html" style="text-decoration: none; color: inherit" id="linkReq">
-        <h3 data-i18n="nav.purch.requests">Satınalma talepleri</h3>
-        <p data-i18n="purch.hub.cardReq">Liste ve durumlar</p>
+      <a class="dashboard-card" href="/purchase-requests.html" style="text-decoration: none; color: inherit" id="linkReq">
+        <h3 data-i18n="purch.hub.step2">Talepler & onay</h3>
+        <p data-i18n="purch.hub.cardReq">Liste, detay, onay / red / revizyon</p>
       </a>
-      <a class="dashboard-card purch-finance" href="/purchase-approvals.html" style="text-decoration: none; color: inherit" id="linkAppr">
-        <h3 data-i18n="nav.purch.approvals">Yönetici onayları</h3>
-        <p data-i18n="purch.hub.cardAppr">Onay / ret</p>
+      <a class="dashboard-card" href="/purchase-processing.html" style="text-decoration: none; color: inherit" id="linkProc">
+        <h3 data-i18n="purch.hub.step3">Satınalma işleme</h3>
+        <p data-i18n="purch.hub.cardProc">Sipariş, fiyat, yazdır; stok artmaz</p>
       </a>
     </div>
   </div>
@@ -63,11 +63,18 @@
         await window.initPurchasingPageNav('hub');
       }
       const s = window.getPurchasingScope && window.getPurchasingScope();
-      if (s && !s.canPurchasing) {
-        document.querySelectorAll('.purch-finance').forEach((el) => {
-          el.style.display = 'none';
-        });
+      if (!s) {
+        return;
       }
+      const a = (id, show) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.display = show ? '' : 'none';
+        }
+      };
+      a('linkOpenReq', s.canRequest || s.canPurchasing);
+      a('linkReq', s.canRequest || s.canApprove || s.canPurchasing);
+      a('linkProc', !!s.canPurchasing);
     })();
   </script>
 </body>

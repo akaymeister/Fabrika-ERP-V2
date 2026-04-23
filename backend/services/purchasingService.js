@@ -11,6 +11,7 @@ function escapeRegex(s) {
 function legacyStatusFromPrStatus(pr) {
   const s = String(pr);
   if (s === 'pending') return 'submitted';
+  if (s === 'revision_requested') return 'submitted';
   return s;
 }
 
@@ -241,12 +242,16 @@ async function loadProductForPurchasing(productId) {
 }
 
 /** request_code, pr_status kolonlarını 006b patch doldurur */
-async function listPurchaseRequests({ status, projectId } = {}) {
+async function listPurchaseRequests({ status, projectId, requestId } = {}) {
   if (!(await hasCol('purchase_requests', 'pr_status'))) {
     return err('DB: npm run db:patch-6b (purchase_requests sütunları)', 'api.pur.migration_006b');
   }
   let where = '1=1';
   const p = [];
+  if (requestId != null && requestId !== '') {
+    where += ' AND pr.id = ?';
+    p.push(parseInt(String(requestId), 10));
+  }
   if (status) {
     where += ' AND pr.pr_status = ?';
     p.push(String(status));
@@ -255,13 +260,20 @@ async function listPurchaseRequests({ status, projectId } = {}) {
     where += ' AND pr.project_id = ?';
     p.push(parseInt(String(projectId), 10));
   }
+  const exSm = await hasCol('purchase_requests', 'status_message');
+  const extraSel = exSm
+    ? ', pr.status_message, pr.decided_by, pr.decided_at, COALESCE(NULLIF(TRIM(ua.full_name), \'\'), ua.username) AS approver_name'
+    : '';
+  const extraJoin = exSm ? 'LEFT JOIN users ua ON ua.id = pr.decided_by' : '';
   const [list] = await pool.query(
     `SELECT pr.id, pr.request_code, pr.title, pr.pr_status, pr.project_id, pr.requester_id, pr.created_at, pr.note,
             prj.project_code, prj.name AS project_name,
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS requester_name
+            ${extraSel}
      FROM purchase_requests pr
      LEFT JOIN projects prj ON prj.id = pr.project_id
      LEFT JOIN users u ON u.id = pr.requester_id
+     ${extraJoin}
      WHERE ${where}
      ORDER BY pr.id DESC
      LIMIT 200`,
@@ -314,6 +326,93 @@ async function listPurchaseRequests({ status, projectId } = {}) {
   return { requests: list };
 }
 
+/**
+ * Satır ekle (create / update ortak; conn transaction içinde)
+ * @returns {import('../utils/serviceError').Err|null}
+ */
+async function insertPurchaseRequestLineRows(conn, reqId, items, { hasExt, hasFiles, hasUid }) {
+  for (const it of items) {
+    const prodId = parseInt(String(it.productId), 10);
+    if (!Number.isFinite(prodId) || prodId < 1) {
+      return err('Ürün veya satır hatası', 'api.pur.line_invalid');
+    }
+    const P = await loadProductForPurchasing(prodId);
+    if (!P) {
+      return err('Ürün veya satır hatası', 'api.pur.line_invalid');
+    }
+    if (P.warehouse_id && it.warehouseId != null && it.warehouseId !== '' && Number(P.warehouse_id) !== Number(it.warehouseId)) {
+      return err('Ürün seçilen depo ile eşleşmiyor', 'api.pur.warehouse_product_mismatch');
+    }
+    if (P.warehouse_subcategory_id && it.warehouseSubcategoryId != null && it.warehouseSubcategoryId !== '') {
+      if (Number(P.warehouse_subcategory_id) !== Number(it.warehouseSubcategoryId)) {
+        return err('Ürün seçilen alt kategori ile eşleşmiyor', 'api.pur.sub_product_mismatch');
+      }
+    }
+    const q = Number(it.quantity);
+    if (!Number.isFinite(q) || q <= 0) {
+      return err('Geçerli miktar gerekli', 'api.pur.qty_invalid');
+    }
+    const uc = (it.unitCode || P.unit_code || P.unit || 'adet').toString();
+    const m2n = qtyToSystemM2(q, uc, P.m2_per_piece);
+    if (m2n <= 0) {
+      return err('Miktar / birim hatalı', 'api.pur.qty_m2_invalid');
+    }
+    const lnote = it.lineNote ? toUpperTr(String(it.lineNote)) : null;
+    const wid = it.warehouseId != null && it.warehouseId !== '' ? parseInt(String(it.warehouseId), 10) : null;
+    const sid = it.warehouseSubcategoryId != null && it.warehouseSubcategoryId !== '' ? parseInt(String(it.warehouseSubcategoryId), 10) : null;
+    const uId = it.unitId != null && it.unitId !== '' ? parseInt(String(it.unitId), 10) : null;
+    const img = it.lineImagePath && String(it.lineImagePath).trim() ? String(it.lineImagePath).trim().slice(0, 500) : null;
+    const pdf = it.linePdfPath && String(it.linePdfPath).trim() ? String(it.linePdfPath).trim().slice(0, 500) : null;
+    if (hasExt && hasFiles && hasUid) {
+      await conn.query(
+        'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, unit_id, line_note, warehouse_id, warehouse_subcategory_id, line_image_path, line_pdf_path) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [reqId, prodId, q, uc, uId, lnote, wid, sid, img, pdf]
+      );
+    } else if (hasExt && hasFiles && !hasUid) {
+      await conn.query(
+        'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note, warehouse_id, warehouse_subcategory_id, line_image_path, line_pdf_path) VALUES (?,?,?,?,?,?,?,?,?)',
+        [reqId, prodId, q, uc, lnote, wid, sid, img, pdf]
+      );
+    } else if (hasExt && hasUid) {
+      await conn.query(
+        'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, unit_id, line_note, warehouse_id, warehouse_subcategory_id) VALUES (?,?,?,?,?,?,?,?,?)',
+        [reqId, prodId, q, uc, uId, lnote, wid, sid]
+      );
+    } else if (hasExt) {
+      await conn.query(
+        'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note, warehouse_id, warehouse_subcategory_id) VALUES (?,?,?,?,?,?,?,?)',
+        [reqId, prodId, q, uc, lnote, wid, sid]
+      );
+    } else {
+      await conn.query('INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note) VALUES (?,?,?,?,?)', [
+        reqId,
+        prodId,
+        q,
+        uc,
+        lnote,
+      ]);
+    }
+  }
+  return null;
+}
+
+/** Tek talep + satırlar (düzenleme / onay ekranı) */
+async function getPurchaseRequestById(id) {
+  const mid = parseInt(String(id), 10);
+  if (!Number.isFinite(mid) || mid < 1) {
+    return err('Geçersiz id', 'api.pur.id_invalid');
+  }
+  const res = await listPurchaseRequests({ requestId: mid });
+  if (res.error) {
+    return res;
+  }
+  const r = (res.requests || [])[0];
+  if (!r) {
+    return err('Talep yok', 'api.pur.request_not_found');
+  }
+  return { request: r };
+}
+
 async function createPurchaseRequest({ userId, projectId, title, items, note, mode }) {
   if (!(await hasCol('purchase_requests', 'pr_status'))) {
     return err('DB: npm run db:patch-6b', 'api.pur.migration_006b');
@@ -346,71 +445,10 @@ async function createPurchaseRequest({ userId, projectId, title, items, note, mo
     const reqId = ins.insertId;
     const rcode = await computeNextRequestCodeForProject(conn, pid, prj.company_code);
     await conn.query('UPDATE purchase_requests SET request_code = ? WHERE id = ?', [rcode, reqId]);
-    for (const it of items) {
-      const prodId = parseInt(String(it.productId), 10);
-      if (!Number.isFinite(prodId) || prodId < 1) {
-        throw Object.assign(new Error('Ürün'), { code: 'VALID' });
-      }
-      const P = await loadProductForPurchasing(prodId);
-      if (!P) {
-        throw Object.assign(new Error('Ürün yok'), { code: 'VALID' });
-      }
-      if (P.warehouse_id && it.warehouseId != null && it.warehouseId !== '' && Number(P.warehouse_id) !== Number(it.warehouseId)) {
-        await conn.rollback();
-        return err('Ürün seçilen depo ile eşleşmiyor', 'api.pur.warehouse_product_mismatch');
-      }
-      if (P.warehouse_subcategory_id && it.warehouseSubcategoryId != null && it.warehouseSubcategoryId !== '') {
-        if (Number(P.warehouse_subcategory_id) !== Number(it.warehouseSubcategoryId)) {
-          await conn.rollback();
-          return err('Ürün seçilen alt kategori ile eşleşmiyor', 'api.pur.sub_product_mismatch');
-        }
-      }
-      const q = Number(it.quantity);
-      if (!Number.isFinite(q) || q <= 0) {
-        await conn.rollback();
-        return err('Geçerli miktar gerekli', 'api.pur.qty_invalid');
-      }
-      const uc = (it.unitCode || P.unit_code || P.unit || 'adet').toString();
-      const m2n = qtyToSystemM2(q, uc, P.m2_per_piece);
-      if (m2n <= 0) {
-        await conn.rollback();
-        return err('Miktar / birim hatalı', 'api.pur.qty_m2_invalid');
-      }
-      const lnote = it.lineNote ? toUpperTr(String(it.lineNote)) : null;
-      const wid = it.warehouseId != null && it.warehouseId !== '' ? parseInt(String(it.warehouseId), 10) : null;
-      const sid = it.warehouseSubcategoryId != null && it.warehouseSubcategoryId !== '' ? parseInt(String(it.warehouseSubcategoryId), 10) : null;
-      const uId = it.unitId != null && it.unitId !== '' ? parseInt(String(it.unitId), 10) : null;
-      const img = it.lineImagePath && String(it.lineImagePath).trim() ? String(it.lineImagePath).trim().slice(0, 500) : null;
-      const pdf = it.linePdfPath && String(it.linePdfPath).trim() ? String(it.linePdfPath).trim().slice(0, 500) : null;
-      if (hasExt && hasFiles && hasUid) {
-        await conn.query(
-          'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, unit_id, line_note, warehouse_id, warehouse_subcategory_id, line_image_path, line_pdf_path) VALUES (?,?,?,?,?,?,?,?,?,?)',
-          [reqId, prodId, q, uc, uId, lnote, wid, sid, img, pdf]
-        );
-      } else if (hasExt && hasFiles && !hasUid) {
-        await conn.query(
-          'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note, warehouse_id, warehouse_subcategory_id, line_image_path, line_pdf_path) VALUES (?,?,?,?,?,?,?,?,?)',
-          [reqId, prodId, q, uc, lnote, wid, sid, img, pdf]
-        );
-      } else if (hasExt && hasUid) {
-        await conn.query(
-          'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, unit_id, line_note, warehouse_id, warehouse_subcategory_id) VALUES (?,?,?,?,?,?,?,?,?)',
-          [reqId, prodId, q, uc, uId, lnote, wid, sid]
-        );
-      } else if (hasExt) {
-        await conn.query(
-          'INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note, warehouse_id, warehouse_subcategory_id) VALUES (?,?,?,?,?,?,?,?)',
-          [reqId, prodId, q, uc, lnote, wid, sid]
-        );
-      } else {
-        await conn.query('INSERT INTO purchase_request_items (request_id, product_id, quantity, unit_code, line_note) VALUES (?,?,?,?,?)', [
-          reqId,
-          prodId,
-          q,
-          uc,
-          lnote,
-        ]);
-      }
+    const lineErr = await insertPurchaseRequestLineRows(conn, reqId, items, { hasExt, hasFiles, hasUid });
+    if (lineErr) {
+      await conn.rollback();
+      return lineErr;
     }
     await conn.commit();
     return { id: reqId, requestCode: rcode };
@@ -437,14 +475,27 @@ async function submitDraftRequest({ id }) {
   if (!row) {
     return err('Talep yok', 'api.pur.request_not_found');
   }
-  if (String(row.pr_status) !== 'draft') {
-    return err('Sadece taslak gönderilebilir', 'api.pur.request_not_draft');
+  const st = String(row.pr_status);
+  if (st === 'draft') {
+    await pool.query("UPDATE purchase_requests SET pr_status = 'pending', `status` = 'submitted' WHERE id = ? AND pr_status = 'draft'", [mid]);
+    return { ok: true };
   }
-  await pool.query("UPDATE purchase_requests SET pr_status = 'pending', `status` = 'submitted' WHERE id = ? AND pr_status = 'draft'", [mid]);
-  return { ok: true };
+  if (st === 'revision_requested') {
+    const hasSm = await hasCol('purchase_requests', 'status_message');
+    if (hasSm) {
+      await pool.query(
+        "UPDATE purchase_requests SET pr_status = 'pending', `status` = 'submitted', status_message = NULL, decided_by = NULL, decided_at = NULL WHERE id = ? AND pr_status = 'revision_requested'",
+        [mid]
+      );
+    } else {
+      await pool.query("UPDATE purchase_requests SET pr_status = 'pending', `status` = 'submitted' WHERE id = ? AND pr_status = 'revision_requested'", [mid]);
+    }
+    return { ok: true };
+  }
+  return err('Sadece taslak veya revizyon bekleyen talep gönderilebilir', 'api.pur.request_not_draft');
 }
 
-async function cancelRequest({ id, allowed = ['draft', 'pending'] }) {
+async function cancelRequest({ id, allowed = ['draft', 'pending', 'revision_requested'] }) {
   if (!(await hasCol('purchase_requests', 'pr_status'))) {
     return err('DB: 006b', 'api.pur.migration_006b');
   }
@@ -463,17 +514,21 @@ async function cancelRequest({ id, allowed = ['draft', 'pending'] }) {
   return { ok: true };
 }
 
-async function setRequestStatus({ id, status }) {
+async function setRequestStatus({ id, status, userId, note }) {
   if (!(await hasCol('purchase_requests', 'pr_status'))) {
     return err('DB: npm run db:patch-6b', 'api.pur.migration_006b');
   }
   const s = String(status);
-  if (!['approved', 'rejected'].includes(s)) {
-    return err('Geçersiz durum (approved / rejected)', 'api.pur.status_invalid');
+  if (!['approved', 'rejected', 'revision_requested'].includes(s)) {
+    return err('Geçersiz durum', 'api.pur.status_invalid');
   }
   const mid = parseInt(String(id), 10);
   if (!Number.isFinite(mid) || mid < 1) {
     return err('Geçersiz id', 'api.pur.id_invalid');
+  }
+  const uid = parseInt(String(userId), 10);
+  if (!Number.isFinite(uid) || uid < 1) {
+    return err('Kullanıcı yok', 'api.pur.id_invalid');
   }
   const [[row]] = await pool.query("SELECT pr_status, id FROM purchase_requests WHERE id = ?", [mid]);
   if (!row) {
@@ -482,9 +537,81 @@ async function setRequestStatus({ id, status }) {
   if (String(row.pr_status) !== 'pending') {
     return err('Sadece onay bekleyen talep güncellenebilir', 'api.pur.request_not_pending');
   }
-  const legacy = s === 'approved' ? 'approved' : 'rejected';
-  await pool.query("UPDATE purchase_requests SET pr_status = ?, `status` = ? WHERE id = ? AND pr_status = 'pending'", [s, legacy, mid]);
+  let legacy = s === 'approved' ? 'approved' : 'rejected';
+  if (s === 'revision_requested') {
+    legacy = 'submitted';
+  }
+  const n = note && String(note).trim() ? String(note).trim().slice(0, 2000) : null;
+  const hasDecided = await hasCol('purchase_requests', 'decided_by');
+  if (hasDecided) {
+    await pool.query(
+      'UPDATE purchase_requests SET pr_status = ?, `status` = ?, decided_by = ?, decided_at = NOW(), status_message = ? WHERE id = ? AND pr_status = ?',
+      [s, legacy, uid, n, mid, 'pending']
+    );
+  } else {
+    await pool.query("UPDATE purchase_requests SET pr_status = ?, `status` = ? WHERE id = ? AND pr_status = 'pending'", [s, legacy, mid]);
+  }
   return { ok: true };
+}
+
+async function updatePurchaseRequest({ id, userId, projectId, title, items, note, mode }) {
+  if (!(await hasCol('purchase_requests', 'pr_status'))) {
+    return err('DB: 006b', 'api.pur.migration_006b');
+  }
+  const mid = parseInt(String(id), 10);
+  if (!Number.isFinite(mid) || mid < 1) {
+    return err('Geçersiz id', 'api.pur.id_invalid');
+  }
+  const [[reqRow]] = await pool.query('SELECT id, requester_id, pr_status, project_id FROM purchase_requests WHERE id = ?', [mid]);
+  if (!reqRow) {
+    return err('Talep yok', 'api.pur.request_not_found');
+  }
+  if (Number(reqRow.requester_id) !== Number(userId)) {
+    return err('Sadece talep sahibi düzenleyebilir', 'api.pur.request_not_owner');
+  }
+  const st = String(reqRow.pr_status);
+  if (!['draft', 'revision_requested'].includes(st)) {
+    return err('Sadece taslak veya revizyon talebi düzenlenebilir', 'api.pur.request_not_editable');
+  }
+  const pid = parseInt(String(projectId), 10);
+  if (!Number.isFinite(pid) || pid < 1) {
+    return err('Proje zorunlu', 'api.pur.project_required');
+  }
+  const [[prj]] = await pool.query("SELECT id, company_code FROM projects WHERE id = ? AND status = 'active' LIMIT 1", [pid]);
+  if (!prj) {
+    return err('Geçersiz proje', 'api.pur.project_invalid');
+  }
+  if (!Array.isArray(items) || !items.length) {
+    return err('En az bir satır gerekli', 'api.pur.items_required');
+  }
+  const isDraft = String(mode || 'submit') === 'draft';
+  const hasExt = await hasCol('purchase_request_items', 'warehouse_id');
+  const hasUid = await hasCol('purchase_request_items', 'unit_id');
+  const hasFiles = await hasCol('purchase_request_items', 'line_image_path');
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const t = optionalNoteUpperTr(title) || toUpperTr('Satınalma talebi');
+    const newPrs = isDraft ? 'draft' : 'pending';
+    const newLeg = isDraft ? 'draft' : 'submitted';
+    await conn.query(
+      'UPDATE purchase_requests SET title = ?, `status` = ?, note = ?, project_id = ?, pr_status = ? WHERE id = ?',
+      [t, newLeg, note || null, pid, newPrs, mid]
+    );
+    await conn.query('DELETE FROM purchase_request_items WHERE request_id = ?', [mid]);
+    const lineErr = await insertPurchaseRequestLineRows(conn, mid, items, { hasExt, hasFiles, hasUid });
+    if (lineErr) {
+      await conn.rollback();
+      return lineErr;
+    }
+    await conn.commit();
+    return { ok: true, id: mid };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
 }
 
 async function listApprovedRequestItems() {
@@ -617,9 +744,11 @@ function stripOrderForWarehouse(row) {
 
 async function getPurchaseOrderById(id, { hidePrice } = {}) {
   const [ords] = await pool.query(
-    `SELECT po.*, s.name AS supplier_name
+    `SELECT po.*, s.name AS supplier_name,
+            COALESCE(NULLIF(TRIM(uc.full_name),''), uc.username) AS order_creator_name
      FROM purchase_orders po
      INNER JOIN suppliers s ON s.id = po.supplier_id
+     LEFT JOIN users uc ON uc.id = po.created_by
      WHERE po.id = ?`,
     [id]
   );
@@ -629,7 +758,9 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
   const o = ords[0];
   const [items] = await pool.query(
     `SELECT poi.*, p.product_code, p.name AS product_name, pri.id AS request_item_id,
-            pr.request_code, pri.quantity AS request_qty, pri.unit_code AS request_unit
+            pr.request_code, pr.id AS purchase_request_id,
+            pri.quantity AS request_qty, pri.unit_code AS request_unit,
+            pri.line_image_path AS request_line_image_path, pri.line_pdf_path AS request_line_pdf_path
      FROM purchase_order_items poi
      INNER JOIN products p ON p.id = poi.product_id
      LEFT JOIN purchase_request_items pri ON pri.id = poi.request_item_id
@@ -642,6 +773,45 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
     it.line_total = Number(it.unit_price) * Number(it.qty_ordered);
   }
   o.items = items;
+  const reqId = items.length && items[0].purchase_request_id ? items[0].purchase_request_id : null;
+  if (reqId) {
+    const hasDec = await hasCol('purchase_requests', 'decided_by');
+    const hasMsg = await hasCol('purchase_requests', 'status_message');
+    const extra = [
+      hasMsg ? 'pr.status_message' : null,
+      hasDec ? "COALESCE(NULLIF(TRIM(ua.full_name),''), ua.username) AS approver_name" : null,
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const joinA = hasDec ? 'LEFT JOIN users ua ON ua.id = pr.decided_by' : '';
+    const selectExtra = extra ? `, ${extra}` : '';
+    const [[meta]] = await pool.query(
+      `SELECT pr.request_code,
+              COALESCE(NULLIF(TRIM(ur.full_name),''), ur.username) AS requester_name
+              ${selectExtra}
+       FROM purchase_requests pr
+       LEFT JOIN users ur ON ur.id = pr.requester_id
+       ${joinA}
+       WHERE pr.id = ? LIMIT 1`,
+      [reqId]
+    );
+    if (meta) {
+      o.request_code = o.request_code || meta.request_code;
+      o.requester_name = meta.requester_name;
+      o.approver_name = meta.approver_name;
+      o.approval_note = hasMsg ? meta.status_message : undefined;
+    }
+  }
+  o.project_label = o.project_id ? `${o.project_id}` : '—';
+  if (o.project_id) {
+    const [[pj]] = await pool.query('SELECT project_code, name AS project_name FROM projects WHERE id = ?', [o.project_id]);
+    if (pj) {
+      o.project_code = pj.project_code;
+      o.project_name = pj.project_name;
+      o.project_label = (pj.project_code || '') + (pj.project_name ? ' — ' + pj.project_name : '');
+    }
+  }
+  o.grand_total = o.items.reduce((a, it) => a + (Number(it.line_total) || 0), 0);
   if (hidePrice) {
     return { order: stripOrderForWarehouse(o) };
   }
@@ -822,7 +992,9 @@ module.exports = {
   listProductsForPurchase,
   getNextRequestCodePreview,
   listPurchaseRequests,
+  getPurchaseRequestById,
   createPurchaseRequest,
+  updatePurchaseRequest,
   submitDraftRequest,
   cancelRequest,
   setRequestStatus,

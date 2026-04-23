@@ -7,6 +7,7 @@
   let whTree = [];
   let unitList = [];
   let lineCounter = 0;
+  let editId = null;
 
   const msg = document.getElementById('msg');
 
@@ -272,9 +273,16 @@
       showMsg(tKey('purch.req.errLines'), true);
       return;
     }
-    const { ok, data } = await window.purApi('/api/purchasing/requests', { method: 'POST', body: JSON.stringify(p) });
+    const isEdit = editId != null;
+    const { ok, data } = isEdit
+      ? await window.purApi('/api/purchasing/requests/' + editId, { method: 'PUT', body: JSON.stringify(p) })
+      : await window.purApi('/api/purchasing/requests', { method: 'POST', body: JSON.stringify(p) });
     if (!ok) {
       showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata', true);
+      return;
+    }
+    if (isEdit) {
+      showMsg(tKey('purch.req.updated'));
       return;
     }
     showMsg(tKey('purch.req.ok') + (data && data.requestCode ? ' ' + data.requestCode : ''));
@@ -314,6 +322,90 @@
     }
   }
 
+  async function loadEditFromServer() {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) {
+      return;
+    }
+    const { ok, data } = await window.purApi('/api/purchasing/requests/' + encodeURIComponent(id));
+    if (!ok || !data || !data.request) {
+      return;
+    }
+    const rq = data.request;
+    if (rq.requester_id && rq.requester_id !== undefined) {
+      /* server session — ignore client check; backend enforces on PUT */
+    }
+    if (!['draft', 'revision_requested'].includes(String(rq.pr_status))) {
+      showMsg(tKey('purch.req.cannotEdit'), true);
+      return;
+    }
+    editId = String(rq.id);
+    document.getElementById('fProject').value = String(rq.project_id || '');
+    document.getElementById('fTitle').value = rq.title || '';
+    document.getElementById('fNote').value = rq.note || '';
+    document.getElementById('codePreview').textContent = rq.request_code || '—';
+    document.getElementById('linesBody').innerHTML = '';
+    (rq.items || []).forEach((it) => {
+      const snap = {
+        wh: it.warehouse_id != null ? String(it.warehouse_id) : '',
+        sc: it.warehouse_subcategory_id != null ? String(it.warehouse_subcategory_id) : '',
+        p: it.product_id != null ? String(it.product_id) : '',
+        qty: it.quantity,
+        un: it.unit_id != null ? String(it.unit_id) : '',
+        note: it.line_note || '',
+        img: it.line_image_path,
+        pdf: it.line_pdf_path,
+      };
+      const tr = insertNewLineWithSnapshot(snap);
+      if (it.line_image_path) {
+        tr.dataset.imagePath = it.line_image_path;
+        const im = tr.querySelector('.r-imgprev');
+        if (im) {
+          im.src = it.line_image_path;
+          im.style.display = 'block';
+        }
+      }
+      if (it.line_pdf_path) {
+        tr.dataset.pdfPath = it.line_pdf_path;
+      }
+    });
+  }
+
+  function insertNewLineWithSnapshot(snap) {
+    lineCounter += 1;
+    const tr = document.createElement('tr');
+    tr.dataset.rid = String(lineCounter);
+    tr.innerHTML = `
+      <td><select class="r-wh pur-inp"></select></td>
+      <td><select class="r-sc pur-inp" disabled></select></td>
+      <td><select class="r-pr pur-inp" disabled><option value="">—</option></select></td>
+      <td class="r-stock-cell"><span class="r-stock">—</span></td>
+      <td><input type="number" class="r-qty pur-inp" min="0" step="any" /></td>
+      <td><select class="r-unit pur-inp"></select></td>
+      <td>
+        <input type="file" accept="image/*" class="r-file-img" style="max-width:110px;font-size:11px" />
+        <div class="r-imgbox"><img class="r-imgprev" alt="" style="display:none" /></div>
+      </td>
+      <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf" style="max-width:110px;font-size:11px" /></td>
+      <td><input type="text" class="r-note pur-inp" style="min-width:140px" /></td>
+      <td><button type="button" class="copy-row-btn" data-i18n="purch.req.copyRow">Kopya</button></td>`;
+    const tbody = document.getElementById('linesBody');
+    tbody.appendChild(tr);
+    fillWh(tr.querySelector('.r-wh'), null);
+    fillSub(tr.querySelector('.r-sc'), '', '');
+    fillUnits(tr.querySelector('.r-unit'), null);
+    wireRow(tr);
+    if (snap && (snap.wh || snap.sc)) {
+      tr.dataset.imagePath = snap.img || '';
+      tr.dataset.pdfPath = snap.pdf || '';
+      initRowFromSnapshot(tr, snap);
+    }
+    if (window.i18n && window.i18n.apply) {
+      window.i18n.apply(tr);
+    }
+    return tr;
+  }
+
   function start() {
     document.getElementById('addLine').addEventListener('click', () => insertNewLineAfter(null, null));
     document.getElementById('submitReq').addEventListener('click', () => doSave('submit'));
@@ -330,8 +422,16 @@
       if (window.initPurchasingPageNav) await window.initPurchasingPageNav('openreq');
       await loadWhUnits();
       await loadProjects();
-      addFirstLine();
-      await refreshCodePreview();
+      const qid = new URLSearchParams(window.location.search).get('id');
+      if (qid) {
+        await loadEditFromServer();
+        if (document.getElementById('linesBody').querySelectorAll('tr').length === 0) {
+          addFirstLine();
+        }
+      } else {
+        addFirstLine();
+        await refreshCodePreview();
+      }
       if (window.i18n && window.i18n.apply) window.i18n.apply(document);
     })();
   }

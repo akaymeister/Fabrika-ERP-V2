@@ -14,7 +14,9 @@ const {
   listProductsForPurchase,
   getNextRequestCodePreview,
   listPurchaseRequests,
+  getPurchaseRequestById,
   createPurchaseRequest,
+  updatePurchaseRequest,
   submitDraftRequest,
   cancelRequest,
   setRequestStatus,
@@ -74,8 +76,12 @@ async function getScope(req, res) {
   }
   const u = req.session.user;
   const canPurchasing = await userHasPermission(u.id, u.role?.slug, 'module.purchasing');
+  const canRequestRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.request');
+  const canApproveRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.approve');
+  const canRequest = canRequestRaw || canPurchasing;
+  const canApprove = canApproveRaw || canPurchasing;
   const canReceipt = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.receipt');
-  return res.json(jsonOk({ canPurchasing, canReceipt }));
+  return res.json(jsonOk({ canPurchasing, canRequest, canApprove, canReceipt }));
 }
 
 async function getProductOptions(_req, res) {
@@ -141,9 +147,50 @@ async function postSupplier(req, res) {
 }
 
 async function getRequests(req, res) {
-  const out = await listPurchaseRequests({ status: req.query?.status, projectId: req.query?.projectId });
+  const out = await listPurchaseRequests({
+    status: req.query?.status,
+    projectId: req.query?.projectId,
+    requestId: req.query?.id,
+  });
   if (out.error) {
     return res.status(500).json(validationOut(out));
+  }
+  return res.json(jsonOk(out));
+}
+
+/** GET /api/purchasing/requests/:id */
+async function getRequestById(req, res) {
+  const id = parseId(req.params.id);
+  if (id == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const out = await getPurchaseRequestById(id);
+  if (out.error) {
+    const is404 = out.messageKey === 'api.pur.request_not_found';
+    return res.status(is404 ? 404 : 400).json(validationOut(out));
+  }
+  return res.json(jsonOk({ request: out.request }));
+}
+
+/** PUT /api/purchasing/requests/:id */
+async function putRequest(req, res) {
+  const u = req.session.user;
+  const id = parseId(req.params.id);
+  if (id == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const b = req.body || {};
+  const out = await updatePurchaseRequest({
+    id,
+    userId: u.id,
+    projectId: b.projectId,
+    title: b.title,
+    items: b.items,
+    note: b.note,
+    mode: b.mode,
+  });
+  if (out.error) {
+    return res.status(400).json(validationOut(out));
   }
   return res.json(jsonOk(out));
 }
@@ -231,11 +278,17 @@ async function postRequestCancel(req, res) {
 }
 
 async function patchRequestStatus(req, res) {
+  const u = req.session.user;
   const id = parseId(req.params.id);
   if (id == null) {
     return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
   }
-  const out = await setRequestStatus({ id, status: req.body?.status });
+  const out = await setRequestStatus({
+    id,
+    status: req.body?.status,
+    userId: u.id,
+    note: req.body?.note,
+  });
   if (out.error) {
     const st = out.messageKey === 'api.pur.request_not_found' ? 404 : 400;
     return res.status(st).json(validationOut(out));
@@ -324,6 +377,8 @@ module.exports = {
   getSuppliers,
   postSupplier,
   getRequests,
+  getRequestById,
+  putRequest,
   postRequest,
   postRequestSubmit,
   postRequestCancel,
