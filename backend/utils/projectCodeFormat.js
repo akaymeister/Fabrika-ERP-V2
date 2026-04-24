@@ -33,29 +33,29 @@ function formatAutoProjectCode(prefix, year, sequence) {
 }
 
 /**
- * Kısa ad + yıl + sıra: ör. ahkfc-dnm26-001
- * {company}{lower}- {short}{yy} -{NNN}
+ * Kısa ad + sıra + yıl: ör. AHKFC-VLM00126
+ * {COMPANY}-{SHORT}{NNN}{YY}
  * @param {string} companyCode AHKFC
- * @param {string} shortCode dnm
+ * @param {string} shortCode VLM
  * @param {number} year
  * @param {number} sequence
  */
 function formatProjectCodeWithShort(companyCode, shortCode, year, sequence) {
   const comp = String(companyCode || '')
     .trim()
-    .toLowerCase('en-US')
-    .replace(/[^a-z0-9]/g, '');
+    .toLocaleUpperCase('tr-TR')
+    .replace(/[^A-Z0-9]/g, '');
   const short = String(shortCode || '')
     .trim()
-    .toLowerCase('en-US')
-    .replace(/[^a-z0-9]/g, '');
+    .toLocaleUpperCase('tr-TR')
+    .replace(/[^A-Z0-9]/g, '');
   const yy = String(Number(year) % 100).padStart(2, '0');
   const seq = Math.max(1, Math.floor(Number(sequence)) || 1);
   const seqStr = String(seq).padStart(3, '0');
   if (!comp || !short) {
     return '';
   }
-  return `${comp}-${short}${yy}-${seqStr}`;
+  return `${comp}-${short}${seqStr}${yy}`;
 }
 
 /**
@@ -69,8 +69,8 @@ function normalizeProjectShort(raw) {
   }
   const s = String(raw)
     .trim()
-    .toLowerCase('en-US')
-    .replace(/[^a-z0-9]/g, '');
+    .toLocaleUpperCase('tr-TR')
+    .replace(/[^A-Z0-9]/g, '');
   if (s.length < 2 || s.length > 8) {
     return '';
   }

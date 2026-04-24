@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="purch.gr.title">Mal kabul</title>
+  <title data-i18n="purch.gr.title">MAL KABUL</title>
   <link rel="stylesheet" href="/style.css?v=gr10" />
   <style>
     .gr-po-scroll {
@@ -37,27 +37,13 @@
     .gr-po-table tbody tr.gr-po-sel {
       background: #e0f2fe;
     }
-    .gr-form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    @media (max-width: 700px) {
-      .gr-form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .gr-form-grid .gr-span2 {
-      grid-column: 1 / -1;
-    }
     .gr-line-scroll {
       overflow-x: auto;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
     }
     .gr-line-table {
-      min-width: 1100px;
+      min-width: 1260px;
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
@@ -99,7 +85,7 @@
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
-        <h1 data-i18n="purch.gr.title">Mal kabul</h1>
+        <h1 data-i18n="purch.gr.title">MAL KABUL</h1>
         <p class="subtitle" data-i18n="purch.gr.subShort">Depo: siparişe göre miktarsal kabul. Fiyat / maliyet satınalma tarafında.</p>
       </div>
       <div class="topbar-right">
@@ -118,7 +104,7 @@
     <p id="msg" style="min-height: 1.2em; margin: 8px 0" role="status"></p>
 
     <section class="card">
-      <h3 style="margin-top: 0" data-i18n="purch.gr.blockOrders">Gelen siparişler</h3>
+      <h3 style="margin-top: 0" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
       <p class="muted" style="font-size: 13px" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
       <div class="gr-po-scroll">
         <table class="gr-po-table">
@@ -141,30 +127,17 @@
     </section>
 
     <section class="card" style="margin-top: 16px">
-      <h3 style="margin-top: 0" data-i18n="purch.gr.blockReceipt">Seçili sipariş — kabul formu</h3>
+      <h3 style="margin-top: 0" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
       <p id="grDetailEmpty" class="muted" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
       <div id="grDetailBlock" hidden>
         <p id="grOrderMeta" style="font-weight: 600; margin: 0 0 10px" class="display-upper"></p>
-        <div class="gr-form-grid">
-          <div>
-            <label for="grWaybill" data-i18n="purch.col.waybill">İrsaliye no</label>
-            <input type="text" id="grWaybill" class="input-upper" style="width: 100%; padding: 8px; border-radius: 8px" />
-          </div>
-          <div>
-            <label for="grWh" data-i18n="purch.col.warehouse">Depo</label>
-            <select id="grWh" style="width: 100%; padding: 8px; border-radius: 8px"></select>
-          </div>
-          <div class="gr-span2">
-            <label for="grNote" data-i18n="purch.gr.headerNote">Genel not (isteğe bağlı)</label>
-            <textarea id="grNote" class="input-upper" rows="2" style="width: 100%; max-width: 900px; border-radius: 8px; padding: 8px"></textarea>
-          </div>
-        </div>
         <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
         <div class="gr-line-scroll">
           <table class="gr-line-table" id="grLineTable">
             <thead>
               <tr>
                 <th data-i18n="purch.gr.colProduct">Ürün</th>
+                <th data-i18n="purch.gr.colWhSub">Depo / alt kategori</th>
                 <th data-i18n="purch.gr.colOrderQty">Sipariş</th>
                 <th data-i18n="purch.gr.colPrevRecv">Önceki kabul</th>
                 <th data-i18n="purch.gr.colRemain">Kalan</th>
@@ -176,6 +149,10 @@
             </thead>
             <tbody id="grLineBody"></tbody>
           </table>
+        </div>
+        <div style="margin-top: 16px">
+          <label for="grNote" data-i18n="purch.gr.headerNote">Genel not (isteğe bağlı)</label>
+          <textarea id="grNote" class="input-upper" rows="2" style="width: 100%; max-width: 900px; border-radius: 8px; padding: 8px"></textarea>
         </div>
         <p class="pur-req-btns" style="margin-top: 16px">
           <button type="button" class="module-button" id="grBtnSave" data-i18n="purch.gr.btnSubmit">Giriş yap</button>
@@ -220,6 +197,56 @@
       function fmtQ(n) {
         return (window.fmtQty || ((x) => x))(n);
       }
+      function normalizeUnitCode(v) {
+        return String(v || '').trim().toUpperCase();
+      }
+      function primaryUnit(it) {
+        return normalizeUnitCode(it.primary_unit || it.request_unit || it.p_unit_code || it.p_unit_legacy || 'ADET') || 'ADET';
+      }
+      function isM2Unit(v) {
+        const s = String(v || '').trim().toLowerCase();
+        return s === 'm2' || s === 'm²' || s === 'sqm';
+      }
+      function isM3Unit(v) {
+        const s = String(v || '').trim().toLowerCase();
+        return s === 'm3' || s.indexOf('m³') >= 0;
+      }
+      function calcM2ForQty(it, qty) {
+        const q = Number(qty) || 0;
+        if (q <= 0) return null;
+        const unit = primaryUnit(it);
+        if (isM2Unit(unit)) return q;
+        const m2PerUnit = Number(it.m2_per_piece);
+        return Number.isFinite(m2PerUnit) && m2PerUnit > 0 ? q * m2PerUnit : null;
+      }
+      function calcM3ForQty(it, qty) {
+        const q = Number(qty) || 0;
+        if (q <= 0) return null;
+        const unit = primaryUnit(it);
+        if (isM3Unit(unit)) return q;
+        const calcM2 = calcM2ForQty(it, q);
+        const depth = Number(it.depth_mm) || 0;
+        return calcM2 != null && depth > 0 ? calcM2 * (depth / 1000) : null;
+      }
+      function helperLine(labelKey, value) {
+        if (value == null) return '';
+        return '<div style="font-size:11px;color:#64748b">' + esc(tK(labelKey)) + ': ' + esc(fmtQ(value)) + '</div>';
+      }
+      function qtyCellHtml(it, qty, strong) {
+        const unit = primaryUnit(it);
+        const calcM2 = calcM2ForQty(it, qty);
+        const calcM3 = calcM3ForQty(it, qty);
+        const mainTagStart = strong ? '<strong>' : '';
+        const mainTagEnd = strong ? '</strong>' : '';
+        let html = mainTagStart + esc(fmtQ(qty)) + ' ' + esc(unit) + mainTagEnd;
+        if (calcM2 != null && !isM2Unit(unit)) {
+          html += helperLine('stock.mov.colQtyM2Helper', calcM2);
+        }
+        if (calcM3 != null && !isM3Unit(unit)) {
+          html += helperLine('stock.mov.colQtyM3Helper', calcM3);
+        }
+        return html;
+      }
       function clearPoSelection() {
         document.querySelectorAll('#grPoBody tr[data-oid]').forEach((r) => r.classList.remove('gr-po-sel'));
       }
@@ -241,18 +268,29 @@
             '</span><br/><span class="display-upper">' +
             esc(it.product_name || '') +
             '</td>' +
+            '<td><span class="display-upper">' +
+            esc(it.warehouse_name || '—') +
+            '</span><br/><span class="display-upper" style="font-size:11px;color:#64748b">' +
+            esc(it.subcategory_name || '—') +
+            '</span></td>' +
             '<td class="r-stock">' +
-            esc(fmtQ(it.qty_ordered)) +
+            qtyCellHtml(it, it.qty_ordered, false) +
             '</td>' +
             '<td class="r-stock">' +
-            esc(fmtQ(it.qty_received || 0)) +
+            qtyCellHtml(it, it.qty_received || 0, false) +
             '</td>' +
-            '<td class="r-stock"><strong>' +
-            esc(fmtQ(rem)) +
-            '</strong></td>' +
-            '<td><input type="number" class="gr-inp f-kab" min="0" step="0.0001" value=""/></td>' +
-            '<td><input type="number" class="gr-inp f-red" min="0" step="0.0001" value="0"/></td>' +
-            '<td><input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/></td>' +
+            '<td class="r-stock">' +
+            qtyCellHtml(it, rem, true) +
+            '</td>' +
+            '<td><input type="number" class="gr-inp f-kab" min="0" step="0.0001" value=""/><div style="font-size:11px;color:#64748b">' +
+            esc(primaryUnit(it)) +
+            '</div></td>' +
+            '<td><input type="number" class="gr-inp f-red" min="0" step="0.0001" value="0"/><div style="font-size:11px;color:#64748b">' +
+            esc(primaryUnit(it)) +
+            '</div></td>' +
+            '<td><input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/><div style="font-size:11px;color:#64748b">' +
+            esc(primaryUnit(it)) +
+            '</div></td>' +
             '<td><input type="text" class="gr-inp gr-inp-wide f-nt input-upper" /></td>';
           lineBody.appendChild(tr);
         }
@@ -297,16 +335,6 @@
           selectOrder(fromUrl);
         }
       }
-      async function loadWarehouses() {
-        const { ok, data } = await purApi('/api/purchasing/warehouses');
-        const s = document.getElementById('grWh');
-        s.innerHTML = '<option value="">' + esc(tK('purch.col.warehouse')) + ' —</option>';
-        if (ok && data && data.ok) {
-          (data.warehouses || []).forEach((w) => {
-            s.add(new Option(w.name || w.code || w.id, w.id));
-          });
-        }
-      }
       async function selectOrder(oid) {
         if (!oid) return;
         selectedOrderId = String(oid);
@@ -325,7 +353,6 @@
         const meta =
           (o.order_code || o.id) + ' — ' + (o.supplier_name || '—') + ' — ' + (o.project_code || tK('purch.gr.project'));
         orderMeta.textContent = meta;
-        document.getElementById('grWaybill').value = '';
         document.getElementById('grNote').value = '';
         renderLineRows();
         if (window.i18n && window.i18n.apply) {
@@ -335,11 +362,6 @@
       document.getElementById('grBtnSave').addEventListener('click', async () => {
         if (!selectedOrderId || !currentOrder) {
           showMsg(tK('purch.gr.selectPoFirst'), true);
-          return;
-        }
-        const wid = document.getElementById('grWh').value;
-        if (!wid) {
-          showMsg(tK('purch.gr.warehouseRequired'), true);
           return;
         }
         const lines = [];
@@ -366,8 +388,6 @@
           method: 'POST',
           body: JSON.stringify({
             orderId: parseInt(selectedOrderId, 10),
-            warehouseId: parseInt(wid, 10),
-            waybillNumber: document.getElementById('grWaybill').value,
             note: document.getElementById('grNote').value,
             lines,
           }),
@@ -380,7 +400,6 @@
           tK('purch.gr.savedOk') +
             (data && (data.receiptStatus || data.orderStatus) ? ' — ' + statusLabel(data.receiptStatus || data.orderStatus) : '')
         );
-        document.getElementById('grWaybill').value = '';
         document.getElementById('grNote').value = '';
         await loadPoList();
         if (selectedOrderId) {
@@ -411,7 +430,6 @@
           } else if (window.initStockPageNav) {
             await window.initStockPageNav('receipt');
           }
-          await loadWarehouses();
           await loadPoList();
           if (window.i18n && window.i18n.apply) {
             window.i18n.apply(document);

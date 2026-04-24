@@ -2,7 +2,8 @@ const { pool } = require('../config/database');
 const { err } = require('../utils/serviceError');
 const { toUpperTr, optionalNoteUpperTr } = require('../utils/textNormalize');
 const { recordMovementIn } = require('./stockMovementService');
-const { listProducts } = require('./stockProductService');
+const { usdToSystemAmount } = require('./systemSettingsService');
+const { listProducts, m3FromStockM2AndDepth } = require('./stockProductService');
 const { logActivity } = require('./activityLogService');
 
 function escapeRegex(s) {
@@ -45,6 +46,73 @@ function isM3Unit(code) {
     .trim()
     .toLowerCase();
   return u === 'm3' || u.includes('m³') || u.includes('m3');
+}
+
+function normalizeReceiptStatusValue(value) {
+  const s = String(value || '').trim().toLowerCase();
+  if (!s || s === 'awaiting_receipt') return 'pending';
+  if (s === 'partially_received' || s === 'partial_received' || s === 'partial') return 'partial';
+  if (s === 'received_completed' || s === 'completed') return 'completed';
+  return s;
+}
+
+function normalizePricingStatusValue(value) {
+  const s = String(value || '').trim().toLowerCase();
+  if (!s) return 'unpriced';
+  if (s === 'fully_priced' || s === 'priced') return 'priced';
+  if (s === 'partially_priced') return 'partially_priced';
+  return s;
+}
+
+function normalizeBuyerStatusValue(value) {
+  const s = String(value || '').trim().toLowerCase();
+  if (!s) return 'draft';
+  if (s === 'ready_for_warehouse') return 'completed';
+  return s;
+}
+
+function movementQtyFromOrderUnit(qty, unitCode, m2p) {
+  const actualQty = Number(qty) || 0;
+  const safeUnit = String(unitCode || '').trim();
+  const qtyM2 = qtyToSystemM2(actualQty, safeUnit, m2p);
+  if (actualQty <= 0) {
+    return { actualQty: 0, qtyM2: 0, qtyPieces: 0, unitCode: safeUnit };
+  }
+  if (isM2Unit(safeUnit)) {
+    return { actualQty, qtyM2, qtyPieces: null, unitCode: safeUnit };
+  }
+  return { actualQty, qtyM2, qtyPieces: actualQty, unitCode: safeUnit };
+}
+
+function primaryUnitCode(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase();
+}
+
+function calcM2FromPrimaryQty(qty, unitCode, m2p) {
+  const q = Number(qty) || 0;
+  if (q <= 0) return null;
+  const calcM2 = qtyToSystemM2(q, unitCode, m2p);
+  return Number.isFinite(calcM2) && calcM2 > 0 ? calcM2 : null;
+}
+
+function calcM3FromPrimaryQty(qty, unitCode, m2p, depthMm) {
+  const q = Number(qty) || 0;
+  if (q <= 0) return null;
+  if (isM3Unit(unitCode)) return q;
+  const calcM2 = calcM2FromPrimaryQty(q, unitCode, m2p);
+  const depth = Number(depthMm) || 0;
+  if (!Number.isFinite(calcM2) || calcM2 <= 0 || depth <= 0) return null;
+  return m3FromStockM2AndDepth(calcM2, depth);
+}
+
+function toPositiveIntOrNull(v) {
+  if (v == null || v === '') {
+    return null;
+  }
+  const n = Number.parseInt(String(v), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 /**
@@ -252,13 +320,17 @@ async function recomputeRequestStatusAfterPoLines(conn, requestIds) {
 
 /* ---------- Talepler ---------- */
 async function loadProductForPurchasing(productId) {
+  const pid = toPositiveIntOrNull(productId);
+  if (!pid) {
+    return null;
+  }
   const [rows] = await pool.query(
     `SELECT p.*, u.code AS unit_code, u.code AS u_code
      FROM products p
      LEFT JOIN units u ON u.id = p.unit_id
      WHERE p.id = ?
      LIMIT 1`,
-    [productId]
+    [pid]
   );
   if (!rows.length) {
     return null;
@@ -710,7 +782,7 @@ async function ensurePendingSupplier(conn) {
 function isOrderReadonlyForPricing(row) {
   if (!row) return true;
   if (String(row.status) === 'cancelled') return true;
-  return String(row.receipt_status) === 'received_completed' && String(row.pricing_status) === 'fully_priced';
+  return normalizeReceiptStatusValue(row.receipt_status) === 'completed' && normalizePricingStatusValue(row.pricing_status) === 'priced';
 }
 
 async function createPurchaseOrder({
@@ -797,8 +869,11 @@ async function createPurchaseOrder({
         return err('Aynı siparişte aynı projeye ait satırlar olmalı', 'api.pur.project_mismatch');
       }
       const P = await loadProductForPurchasing(pri.product_id);
-      const m2o = qtyToSystemM2(pri.quantity, pri.unit_code, P.m2_per_piece);
-      oiIns.push({ pri, up, m2o, product: P, riId });
+      if (!P) {
+        if (ownConn) await conn.rollback();
+        return err('Ürün yok', 'api.stock.product_not_found');
+      }
+      oiIns.push({ pri, up, orderedQty: Number(pri.quantity) || 0, product: P, riId });
     }
     if (projectId == null) {
       if (ownConn) await conn.rollback();
@@ -838,7 +913,7 @@ async function createPurchaseOrder({
       if (hasItemReceiptStatus) itemInsertSql += ",'awaiting_receipt'";
       if (hasItemPricingStatus) itemInsertSql += ",'unpriced'";
       itemInsertSql += ')';
-      await conn.query(itemInsertSql, [oid, row.riId, row.pri.product_id, row.m2o, row.up, cur]);
+      await conn.query(itemInsertSql, [oid, row.riId, row.pri.product_id, row.orderedQty, row.up, cur]);
     }
     if (await hasCol('purchase_order_items', 'supplier_id')) {
       await conn.query('UPDATE purchase_order_items SET supplier_id = ? WHERE order_id = ?', [sid, oid]);
@@ -978,9 +1053,13 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
     return { notFound: true };
   }
   const o = ords[0];
+  o.receipt_status = normalizeReceiptStatusValue(o.receipt_status || o.status);
+  o.pricing_status = normalizePricingStatusValue(o.pricing_status);
+  o.buyer_status = normalizeBuyerStatusValue(o.buyer_status || o.buyer_state);
   const exW = await hasCol('purchase_request_items', 'warehouse_id');
   const hasLineSup = await hasCol('purchase_order_items', 'supplier_id');
-  let itemSql = `SELECT poi.*, p.product_code, p.name AS product_name, p.stock_pieces, p.stock_qty, p.unit AS p_unit_legacy, pu.code AS p_unit_code,
+  let itemSql = `SELECT poi.*, p.product_code, p.name AS product_name, p.stock_pieces, p.stock_qty, p.m2_per_piece, p.depth_mm,
+            p.unit AS p_unit_legacy, pu.code AS p_unit_code,
             pri.id AS request_item_id,
             pr.request_code, pr.id AS purchase_request_id,
             pri.quantity AS request_qty, pri.unit_code AS request_unit,
@@ -1009,8 +1088,13 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
   itemSql += ' WHERE poi.order_id = ?';
   const [items] = await pool.query(itemSql, [id]);
   for (const it of items) {
+    it.receipt_status = normalizeReceiptStatusValue(it.receipt_status);
+    it.pricing_status = normalizePricingStatusValue(it.pricing_status);
     it.qty_remaining = Math.max(0, Number(it.qty_ordered) - Number(it.qty_received || 0));
     it.line_total = Number(it.unit_price) * Number(it.qty_ordered);
+    it.primary_unit = primaryUnitCode(it.request_unit || it.p_unit_code || it.p_unit_legacy || 'ADET');
+    it.calc_m2_per_unit = calcM2FromPrimaryQty(1, it.primary_unit, it.m2_per_piece);
+    it.calc_m3_per_unit = calcM3FromPrimaryQty(1, it.primary_unit, it.m2_per_piece, it.depth_mm);
     const disp = primaryStockDisplay({
       unit_code: it.p_unit_code,
       unit: it.p_unit_legacy,
@@ -1069,14 +1153,15 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
   return { order: o };
 }
 
-async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt, forPricing } = {}) {
+async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt, forPricing, buyerStatus, completedByBuyer } = {}) {
   let where = '1=1';
   const p = [];
   const hasReceiptStatus = await hasCol('purchase_orders', 'receipt_status');
   const hasPricingStatus = await hasCol('purchase_orders', 'pricing_status');
+  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
   if (openForReceipt) {
     if (hasReceiptStatus) {
-      where += " AND po.receipt_status IN ('awaiting_receipt', 'partially_received')";
+      where += " AND po.receipt_status IN ('pending', 'partial', 'awaiting_receipt', 'partially_received')";
     } else {
       where += " AND po.status IN ('awaiting_goods_receipt', 'partial_received', 'partial')";
     }
@@ -1086,6 +1171,11 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
     } else {
       where += ' AND 1=1';
     }
+  } else if (completedByBuyer && hasBuyerState) {
+    where += " AND po.buyer_state = 'completed'";
+  } else if (buyerStatus && hasBuyerState) {
+    where += ' AND po.buyer_state = ?';
+    p.push(String(buyerStatus).trim());
   } else if (statuses && Array.isArray(statuses) && statuses.length) {
     const safe = statuses.map((s) => String(s).trim()).filter(Boolean);
     if (safe.length) {
@@ -1101,6 +1191,7 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
             CASE WHEN po.status = 'partial' THEN 'partial_received' ELSE po.status END AS status,
             ${hasReceiptStatus ? 'po.receipt_status,' : "'awaiting_receipt' AS receipt_status,"}
             ${hasPricingStatus ? 'po.pricing_status,' : "'unpriced' AS pricing_status,"}
+            ${hasBuyerState ? 'po.buyer_state,' : "NULL AS buyer_state,"}
             po.currency, po.created_at,
             COALESCE(s.name, CONCAT('Tedarikçi #', po.supplier_id)) AS supplier_name, prj.project_code
      FROM purchase_orders po
@@ -1116,15 +1207,20 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
       delete r.currency;
     }
   }
+  for (const r of list) {
+    r.receipt_status = normalizeReceiptStatusValue(r.receipt_status || r.status);
+    r.pricing_status = normalizePricingStatusValue(r.pricing_status);
+    r.buyer_status = normalizeBuyerStatusValue(r.buyer_status || r.buyer_state);
+  }
   return { orders: list };
 }
 
 function deriveReceiptStatusForItem(row) {
   const ordered = Number(row && row.qty_ordered) || 0;
   const received = Number(row && row.qty_received) || 0;
-  if (received <= 0.0000) return 'awaiting_receipt';
-  if (received + 0.0001 >= ordered) return 'received_completed';
-  return 'partially_received';
+  if (received <= 0.0000) return 'pending';
+  if (received + 0.0001 >= ordered) return 'completed';
+  return 'partial';
 }
 
 async function recalculateReceiptStatusesForOrder(conn, orderId) {
@@ -1139,18 +1235,18 @@ async function recalculateReceiptStatusesForOrder(conn, orderId) {
       await conn.query('UPDATE purchase_order_items SET receipt_status = ? WHERE id = ?', [receiptStatus, row.id]);
     }
     if ((Number(row.qty_received) || 0) > 0) anyReceived = true;
-    if (receiptStatus !== 'received_completed') allCompleted = false;
+    if (receiptStatus !== 'completed') allCompleted = false;
   }
-  let orderReceiptStatus = 'awaiting_receipt';
-  if (allCompleted && rows.length) orderReceiptStatus = 'received_completed';
-  else if (anyReceived) orderReceiptStatus = 'partially_received';
+  let orderReceiptStatus = 'pending';
+  if (allCompleted && rows.length) orderReceiptStatus = 'completed';
+  else if (anyReceived) orderReceiptStatus = 'partial';
   if (hasOrderReceiptStatus) {
     await conn.query('UPDATE purchase_orders SET receipt_status = ? WHERE id = ?', [orderReceiptStatus, orderId]);
   }
   const legacyStatus =
-    orderReceiptStatus === 'received_completed'
+    orderReceiptStatus === 'completed'
       ? 'completed'
-      : orderReceiptStatus === 'partially_received'
+      : orderReceiptStatus === 'partial'
         ? 'partial_received'
         : 'awaiting_goods_receipt';
   await conn.query('UPDATE purchase_orders SET status = ? WHERE id = ?', [legacyStatus, orderId]);
@@ -1187,11 +1283,6 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
   if (!(await hasCol('goods_receipts', 'id'))) {
     return err('Mal kabul tabloları yok (migrasyon 006)', 'api.pur.migration_006');
   }
-  const wid = parseInt(String(warehouseId), 10);
-  const [[wh]] = await pool.query('SELECT id FROM warehouses WHERE id = ?', [wid]);
-  if (!wh) {
-    return err('Depo bulunamadı', 'api.pur.warehouse_not_found');
-  }
   const oid = parseInt(String(orderId), 10);
   if (!Array.isArray(lines) || !lines.length) {
     return err('Kabul satırları gerekli', 'api.pur.gr_lines_required');
@@ -1211,7 +1302,7 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
     }
     const [grIns] = await conn.query(
       'INSERT INTO goods_receipts (receipt_code, purchase_order_id, warehouse_id, waybill_number, received_by, note) VALUES (NULL,?,?,?,?,?)',
-      [oid, wid, waybillNumber || null, userId, optionalNoteUpperTr(note) || null]
+      [oid, null, null, userId, optionalNoteUpperTr(note) || null]
     );
     const grid = grIns.insertId;
     await conn.query('UPDATE goods_receipts SET receipt_code = CONCAT(\'MKB-\', DATE_FORMAT(created_at, \'%Y\'), \'-\', LPAD(?, 5, \'0\')) WHERE id = ?', [grid, grid]);
@@ -1219,16 +1310,24 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
     const rcode = (grRow && grRow.receipt_code) || `MKB-${grid}`;
 
     for (const ln of lines) {
-      const oiId = parseInt(String(ln.orderItemId), 10);
+      const oiId = toPositiveIntOrNull(ln.orderItemId);
       const qa = Number(ln.qtyAccepted) || 0;
       const qr = Number(ln.qtyRejected) || 0;
       const qd = Number(ln.qtyDamaged) || 0;
       const qw = ln.qtyWaybill != null && ln.qtyWaybill !== '' ? Number(ln.qtyWaybill) : null;
-      if (!Number.isFinite(oiId) || oiId < 1) {
+      if (!oiId) {
         await conn.rollback();
         return err('Sipariş satır id gerekli', 'api.pur.oi_required');
       }
-      const [[oi]] = await conn.query('SELECT * FROM purchase_order_items WHERE id = ? AND order_id = ? FOR UPDATE', [oiId, oid]);
+      const [[oi]] = await conn.query(
+        `SELECT poi.*, pri.warehouse_id AS request_warehouse_id, pri.warehouse_subcategory_id AS request_warehouse_subcategory_id,
+                pri.unit_code AS request_unit_code
+         FROM purchase_order_items poi
+         LEFT JOIN purchase_request_items pri ON pri.id = poi.request_item_id
+         WHERE poi.id = ? AND poi.order_id = ?
+         FOR UPDATE`,
+        [oiId, oid]
+      );
       if (!oi) {
         await conn.rollback();
         return err('Sipariş satırı yok', 'api.pur.oi_not_found');
@@ -1245,39 +1344,73 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         await conn.rollback();
         return err('Kabul miktarı kalan miktardan fazla olamaz', 'api.pur.qty_exceeds_remaining');
       }
-      const P = await loadProductForPurchasing(oi.product_id);
+      const productId = toPositiveIntOrNull(oi.product_id);
+      if (!productId) {
+        await conn.rollback();
+        return err('Sipariş satırındaki ürün bilgisi geçersiz', 'api.stock.product_not_found');
+      }
+      const P = await loadProductForPurchasing(productId);
       if (!P) {
         await conn.rollback();
         return err('Ürün yok', 'api.stock.product_not_found');
       }
-      if (P.warehouse_id && Number(P.warehouse_id) !== wid) {
+      const targetWarehouseId = toPositiveIntOrNull(oi.request_warehouse_id) || toPositiveIntOrNull(P.warehouse_id);
+      const targetSubcategoryId =
+        toPositiveIntOrNull(oi.request_warehouse_subcategory_id) || toPositiveIntOrNull(P.warehouse_subcategory_id);
+      if (!targetWarehouseId) {
+        await conn.rollback();
+        return err('Sipariş satırında depo bilgisi eksik', 'api.pur.warehouse_not_found');
+      }
+      if (!targetSubcategoryId) {
+        await conn.rollback();
+        return err('Sipariş satırında alt kategori bilgisi eksik', 'api.pur.sub_product_mismatch');
+      }
+      const [[wh]] = await conn.query('SELECT id FROM warehouses WHERE id = ?', [targetWarehouseId]);
+      if (!wh) {
+        await conn.rollback();
+        return err('Depo bulunamadı', 'api.pur.warehouse_not_found');
+      }
+      const [[sub]] = await conn.query('SELECT id, warehouse_id FROM warehouse_subcategories WHERE id = ?', [targetSubcategoryId]);
+      if (!sub || Number(sub.warehouse_id) !== targetWarehouseId) {
+        await conn.rollback();
+        return err('Sipariş satırındaki alt kategori depoyla eşleşmiyor', 'api.pur.sub_product_mismatch');
+      }
+      if (P.warehouse_id && Number(P.warehouse_id) !== targetWarehouseId) {
         await conn.rollback();
         return err('Ürün bu depoda değil; depo/ürün eşleşmesi hatalı', 'api.pur.warehouse_product_mismatch');
       }
-      const m2p = Number(P.m2_per_piece) || 0;
-      const up = Number(oi.unit_price);
-      const totUzs = Number.isFinite(up) && up > 0 ? up * Number(qa) : 0;
-      const m2In = Number(qa);
-      let qPieces = null;
-      let qM2 = null;
-      if (isM2ByProductRow(P)) {
-        qM2 = m2In;
-      } else if (m2p > 0) {
-        qPieces = m2In / m2p;
-      } else {
-        qPieces = m2In;
+      if (P.warehouse_subcategory_id && Number(P.warehouse_subcategory_id) !== targetSubcategoryId) {
+        await conn.rollback();
+        return err('Ürün bu alt kategoride değil; alt kategori/ürün eşleşmesi hatalı', 'api.pur.sub_product_mismatch');
       }
+      const up = Number(oi.unit_price);
+      const lineCur = String(oi.currency || 'UZS').trim().toUpperCase();
+      const fxRate = oi.fx_rate != null && oi.fx_rate !== '' ? Number(oi.fx_rate) : null;
+      const movementQty = movementQtyFromOrderUnit(
+        qa,
+        oi.request_unit_code || P.unit_code || P.unit || P.unit_legacy || '',
+        P.m2_per_piece
+      );
+      const totalUsd = Number.isFinite(up) && up > 0 && lineCur === 'USD' ? up * movementQty.actualQty : 0;
+      const totalUzs =
+        Number.isFinite(up) && up > 0
+          ? lineCur === 'USD'
+            ? Number.isFinite(fxRate) && fxRate > 0
+              ? usdToSystemAmount(totalUsd, fxRate)
+              : 0
+            : up * movementQty.actualQty
+          : 0;
       const mIn = await recordMovementIn({
-        productId: oi.product_id,
+        productId,
         userId,
         note: toUpperTr(`${rcode} — SİP#${oid}`).slice(0, 400),
-        qtyPieces: qPieces,
-        qtyM2: qM2,
+        qtyPieces: movementQty.qtyPieces,
+        qtyM2: movementQty.qtyM2,
         projectId: por.project_id,
-        inputCurrency: 'UZS',
-        lineTotalUzs: totUzs,
-        lineTotalUsd: 0,
-        fxUzsPerUsd: 1,
+        inputCurrency: lineCur === 'USD' ? 'USD' : 'UZS',
+        lineTotalUzs: totalUzs,
+        lineTotalUsd: lineCur === 'USD' ? totalUsd : null,
+        fxUzsPerUsd: lineCur === 'USD' ? fxRate : null,
         _useConn: conn,
         movementSource: 'PURCHASE_RECEIPT',
         purchaseOrderId: oid,
@@ -1292,7 +1425,7 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
       if (smid) {
         stockInAudit.push({
           movementId: smid,
-          productId: oi.product_id,
+          productId,
           orderId: oid,
           goodsReceiptId: grid,
           rcode,
@@ -1362,14 +1495,15 @@ async function recalculateCostLayersForOrderId(orderId) {
   if (!Number.isFinite(oid) || oid < 1) {
     return;
   }
+  const hasFxRate = await hasCol('purchase_order_items', 'fx_rate');
   const [rows] = await pool.query(
-    `SELECT scl.id AS layer_id, sm.qty AS m_qty, gri.qty_accepted, poi.unit_price, poi.currency
+    `SELECT scl.id AS layer_id, sm.id AS movement_id, sm.qty AS m_qty, gri.qty_accepted, poi.unit_price, poi.currency,
+            ${hasFxRate ? 'poi.fx_rate' : 'NULL AS fx_rate'}
      FROM stock_cost_layers scl
      INNER JOIN stock_movements sm ON sm.id = scl.movement_in_id AND sm.movement_type = 'in'
      INNER JOIN goods_receipt_items gri ON gri.stock_movement_id = sm.id
      INNER JOIN purchase_order_items poi ON poi.id = gri.order_item_id
-     WHERE poi.order_id = ?
-       AND UPPER(IFNULL(poi.currency, 'UZS')) IN ('UZS', 'SYSTEM')`,
+     WHERE poi.order_id = ?`,
     [oid]
   );
   for (const r of rows) {
@@ -1380,9 +1514,20 @@ async function recalculateCostLayersForOrderId(orderId) {
     }
     const qa = Number(r.qty_accepted) || 0;
     const upr = Number(r.unit_price) || 0;
-    const totalUzs = upr * qa;
-    const cost = totalUzs > 0 ? totalUzs / m2 : 0;
-    await pool.query('UPDATE stock_cost_layers SET cost_uzs_per_m2 = ? WHERE id = ?', [cost, r.layer_id]);
+    const lineCur = String(r.currency || 'UZS').trim().toUpperCase();
+    const fxRate = r.fx_rate != null && r.fx_rate !== '' ? Number(r.fx_rate) : null;
+    const totalUsd = lineCur === 'USD' ? upr * qa : 0;
+    const totalUzs = lineCur === 'USD' ? (Number.isFinite(fxRate) && fxRate > 0 ? usdToSystemAmount(totalUsd, fxRate) : 0) : upr * qa;
+    const costUzs = totalUzs > 0 ? totalUzs / m2 : 0;
+    const costUsd = totalUsd > 0 ? totalUsd / m2 : null;
+    await pool.query(
+      'UPDATE stock_cost_layers SET cost_uzs_per_m2 = ?, cost_usd_per_m2 = ?, input_currency = ?, fx_uzs_per_usd = ? WHERE id = ?',
+      [costUzs, costUsd, lineCur === 'USD' ? 'USD' : 'UZS', lineCur === 'USD' ? fxRate : null, r.layer_id]
+    );
+    await pool.query(
+      'UPDATE stock_movements SET line_total_uzs = ?, line_total_usd = ?, fx_uzs_per_usd = ?, input_currency = ? WHERE id = ?',
+      [totalUzs || 0, lineCur === 'USD' ? totalUsd : null, lineCur === 'USD' ? fxRate : null, lineCur === 'USD' ? 'USD' : 'UZS', r.movement_id]
+    );
   }
 }
 
@@ -1397,7 +1542,7 @@ function derivePricingStatusForItem(row) {
   if (cur !== 'UZS' && cur !== 'SYSTEM' && (!Number.isFinite(fx) || fx <= 0)) {
     return 'unpriced';
   }
-  return 'fully_priced';
+  return 'priced';
 }
 
 async function recalculatePricingStatusesForOrder(conn, orderId) {
@@ -1410,10 +1555,10 @@ async function recalculatePricingStatusesForOrder(conn, orderId) {
     if (hasItemPricingStatus) {
       await conn.query('UPDATE purchase_order_items SET pricing_status = ? WHERE id = ?', [pricingStatus, row.id]);
     }
-    if (pricingStatus === 'fully_priced') pricedCount += 1;
+    if (pricingStatus === 'priced') pricedCount += 1;
   }
   let orderPricingStatus = 'unpriced';
-  if (rows.length && pricedCount === rows.length) orderPricingStatus = 'fully_priced';
+  if (rows.length && pricedCount === rows.length) orderPricingStatus = 'priced';
   else if (pricedCount > 0) orderPricingStatus = 'partially_priced';
   if (hasOrderPricingStatus) {
     await conn.query('UPDATE purchase_orders SET pricing_status = ? WHERE id = ?', [orderPricingStatus, orderId]);
@@ -1454,6 +1599,7 @@ async function updatePurchaseOrder({ id, supplierId, orderDate, deliveryDate, cu
       n || null,
       oid,
     ]);
+    const lineChanges = [];
     if (Array.isArray(lines) && lines.length) {
       for (const ln of lines) {
         const oiId = parseInt(String(ln.orderItemId), 10);
@@ -1547,6 +1693,7 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    const lineChanges = [];
     const [[por]] = await conn.query('SELECT * FROM purchase_orders WHERE id = ? FOR UPDATE', [oid]);
     if (!por) {
       await conn.rollback();
@@ -1594,7 +1741,10 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
           await conn.rollback();
           return err('Yabancı para için geçerli kur gerekli', 'api.pur.fx_required');
         }
-        const [[row]] = await conn.query('SELECT id FROM purchase_order_items WHERE id = ? AND order_id = ?', [oiId, oid]);
+        const [[row]] = await conn.query(
+          'SELECT id, unit_price, currency, fx_rate, supplier_id FROM purchase_order_items WHERE id = ? AND order_id = ?',
+          [oiId, oid]
+        );
         if (!row) continue;
         const updates = ['unit_price = ?', 'currency = ?'];
         const values = [up, lineCur];
@@ -1621,6 +1771,20 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
         }
         values.push(oiId);
         await conn.query(`UPDATE purchase_order_items SET ${updates.join(', ')} WHERE id = ?`, values);
+        lineChanges.push({
+          orderItemId: oiId,
+          oldUnitPrice: row.unit_price,
+          newUnitPrice: up,
+          oldCurrency: row.currency,
+          newCurrency: lineCur,
+          oldFxRate: row.fx_rate,
+          newFxRate: Number.isFinite(fxRate) ? fxRate : null,
+          oldSupplierId: row.supplier_id,
+          newSupplierId:
+            ln.supplierId != null && ln.supplierId !== '' && Number.isFinite(parseInt(String(ln.supplierId), 10))
+              ? parseInt(String(ln.supplierId), 10)
+              : null,
+        });
       }
     }
     if (await hasCol(conn, 'purchase_order_items', 'supplier_id')) {
@@ -1645,13 +1809,25 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
       await conn.query('UPDATE purchase_orders SET supplier_id = ? WHERE id = ?', [newSid, oid]);
     }
     const pricingOut = await recalculatePricingStatusesForOrder(conn, oid);
+    if (await hasCol(conn, 'purchase_orders', 'buyer_state')) {
+      await conn.query(
+        `UPDATE purchase_orders
+         SET buyer_state = CASE
+           WHEN buyer_state IS NULL OR buyer_state = '' OR buyer_state IN ('draft', 'in_progress', 'prices_saved')
+             THEN 'prices_saved'
+           ELSE buyer_state
+         END
+         WHERE id = ?`,
+        [oid]
+      );
+    }
     await conn.commit();
     try {
       await recalculateCostLayersForOrderId(oid);
     } catch (e) {
       console.error('[recalculateCostLayersForOrderId]', e);
     }
-    return { ok: true, pricingStatus: pricingOut.orderPricingStatus };
+    return { ok: true, pricingStatus: pricingOut.orderPricingStatus, lineChanges };
   } catch (e) {
     await conn.rollback();
     throw e;
@@ -1765,7 +1941,7 @@ async function runOrderBuyerAction({ id, action }) {
   const a = String(action || '')
     .trim()
     .toLowerCase();
-  if (!['process', 'ready'].includes(a)) {
+  if (!['process', 'ready', 'complete', 'revise'].includes(a)) {
     return err('Geçersiz işlem', 'api.pur.action_invalid');
   }
   const oid = parseInt(String(id), 10);
@@ -1782,11 +1958,27 @@ async function runOrderBuyerAction({ id, action }) {
   if (String(por.status) === 'completed') {
     return err('Tamamlanmış sipariş', 'api.pur.order_readonly');
   }
+  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
   if (a === 'process') {
+    if (hasBuyerState) {
+      await pool.query("UPDATE purchase_orders SET buyer_state = 'in_progress' WHERE id = ?", [oid]);
+    }
     return setProcurementStateForOrderStart(oid);
   }
   if (a === 'ready') {
     return { ok: true };
+  }
+  if (a === 'complete') {
+    if (hasBuyerState) {
+      await pool.query("UPDATE purchase_orders SET buyer_state = 'completed' WHERE id = ?", [oid]);
+    }
+    return { ok: true, buyerStatus: 'completed' };
+  }
+  if (a === 'revise') {
+    if (hasBuyerState) {
+      await pool.query("UPDATE purchase_orders SET buyer_state = 'revision_requested' WHERE id = ?", [oid]);
+    }
+    return { ok: true, buyerStatus: 'revision_requested' };
   }
   return err('Geçersiz işlem', 'api.pur.action_invalid');
 }

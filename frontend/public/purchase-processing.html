@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="purch.proc.title">Satınalma işleme</title>
+  <title data-i18n="purch.proc.title">SATINALMA İŞLEME</title>
   <link rel="stylesheet" href="/style.css" />
   <style>
     .po-row-sel { background: #e0f2fe !important; }
@@ -25,7 +25,7 @@
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
-        <h1 data-i18n="purch.proc.titleV2">Satınalma — işleme</h1>
+        <h1 data-i18n="purch.proc.titleV2">SATINALMA İŞLEME</h1>
         <p class="subtitle" data-i18n="purch.proc.subV4">Üstte fiyat bekleyen siparişler, altta fiyatlandırma detayı. Fiziksel stok burada artmaz.</p>
       </div>
       <div class="topbar-right">
@@ -44,7 +44,7 @@
     <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
 
     <section class="card">
-      <h3 data-i18n="purch.proc.blockIncoming">Gelen siparişler</h3>
+      <h3 data-i18n="purch.proc.blockIncoming">GELEN SİPARİŞLER</h3>
       <p class="muted" style="font-size:13px" data-i18n="purch.proc.incomingSub">Yalnız fiyat bekleyen veya kısmen fiyatlanmış satınalma siparişleri listelenir.</p>
       <div class="pur-line-scroll">
         <table class="pur-line-table">
@@ -63,7 +63,27 @@
     </section>
 
     <section class="card" style="margin-top:16px">
-      <h3 data-i18n="purch.proc.blockProcessing">Sipariş işleme</h3>
+      <h3 data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
+      <p class="muted" style="font-size:13px" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak aşağıda inceleyebilirsiniz.</p>
+      <div class="pur-line-scroll">
+        <table class="pur-line-table">
+          <thead>
+            <tr>
+              <th data-i18n="purch.proc.colOrderCode">Sipariş</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.proc.colReceiptStatus">Mal kabul</th>
+              <th data-i18n="purch.proc.colPricingStatus">Fiyatlama</th>
+              <th data-i18n="purch.proc.colBuyerStatus">Satınalmacı durumu</th>
+              <th data-i18n="purch.wf.colDate">Tarih</th>
+            </tr>
+          </thead>
+          <tbody id="completedOrdBody"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3 data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
       <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
       <div id="orderFormBlock" hidden>
         <p id="orderMeta" style="font-weight:600;margin-bottom:12px"></p>
@@ -88,7 +108,10 @@
         <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
           <div class="pur-req-btns-row">
             <button type="button" class="version-btn" id="btnStart" style="background:#0d9488;border:none;color:#fff" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-            <button type="button" class="version-btn" id="btnSavePricing" disabled data-i18n="purch.proc.btnComplete" style="background:#16a34a;border:none;color:#fff">Fiyatları kaydet</button>
+            <button type="button" class="version-btn" id="btnPrint" disabled data-i18n="purch.proc.btnPrint" style="background:#475569;border:none;color:#fff">YAZDIR</button>
+            <button type="button" class="version-btn" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing" style="background:#16a34a;border:none;color:#fff">FİYATLARI KAYDET</button>
+            <button type="button" class="version-btn" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder" style="background:#2563eb;border:none;color:#fff">SİPARİŞİ TAMAMLA</button>
+            <button type="button" class="version-btn" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder" style="background:#b45309;border:none;color:#fff">SİPARİŞİ REVİZE ET</button>
           </div>
         </div>
         <p class="muted" style="font-size:12px;margin-top:10px" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>

@@ -447,7 +447,18 @@ async function getOrders(req, res) {
     String(req.query.openForReceipt || req.query.forReceipt || '') === '1' || String(req.query.openForReceipt || '') === 'true';
   const forPricing =
     String(req.query.forPricing || '') === '1' || String(req.query.forPricing || '') === 'true';
-  const out = await listPurchaseOrders({ status: req.query?.status, statuses, hidePrice, openForReceipt, forPricing });
+  const completedByBuyer =
+    String(req.query.completedByBuyer || req.query.completed || '') === '1' ||
+    String(req.query.completedByBuyer || '') === 'true';
+  const out = await listPurchaseOrders({
+    status: req.query?.status,
+    statuses,
+    hidePrice,
+    openForReceipt,
+    forPricing,
+    buyerStatus: req.query?.buyerStatus,
+    completedByBuyer,
+  });
   if (out.error) {
     return res.status(500).json(validationOut(out));
   }
@@ -498,34 +509,42 @@ async function putOrder(req, res) {
 }
 
 async function putOrderPricing(req, res) {
-  const id = parseId(req.params.id);
-  if (id == null) {
-    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  try {
+    const id = parseId(req.params.id);
+    if (id == null) {
+      return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+    }
+    const u = req.session.user;
+    const b = req.body || {};
+    const out = await updatePurchaseOrderPricing({
+      id,
+      supplierId: b.supplierId,
+      orderDate: b.orderDate,
+      deliveryDate: b.deliveryDate,
+      currency: b.currency,
+      note: b.note,
+      lines: b.lines,
+      userId: u.id,
+    });
+    if (out.error) {
+      const code = out.messageKey === 'api.pur.order_readonly' ? 409 : 400;
+      return res.status(code).json(validationOut(out));
+    }
+    await logActivity(req, {
+      action_type: 'UPDATE',
+      module_name: 'purchasing',
+      table_name: 'purchase_orders',
+      record_id: id,
+      new_data: { pricingStatus: out.pricingStatus, changes: out.lineChanges || [] },
+      description: 'Sipariş fiyatları güncellendi (satınalma işleme)',
+    });
+    return res.json(jsonOk(out));
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error && error.message ? error.message : 'Internal server error',
+    });
   }
-  const u = req.session.user;
-  const b = req.body || {};
-  const out = await updatePurchaseOrderPricing({
-    id,
-    supplierId: b.supplierId,
-    orderDate: b.orderDate,
-    deliveryDate: b.deliveryDate,
-    currency: b.currency,
-    note: b.note,
-    lines: b.lines,
-    userId: u.id,
-  });
-  if (out.error) {
-    const code = out.messageKey === 'api.pur.order_readonly' ? 409 : 400;
-    return res.status(code).json(validationOut(out));
-  }
-  await logActivity(req, {
-    action_type: 'UPDATE',
-    module_name: 'purchasing',
-    table_name: 'purchase_orders',
-    record_id: id,
-    description: 'Sipariş fiyatları güncellendi (satınalma işleme)',
-  });
-  return res.json(jsonOk(out));
 }
 
 async function postOrderStartProcessing(req, res) {
@@ -599,12 +618,20 @@ async function postOrderBuyerAction(req, res) {
     const code = out.messageKey === 'api.pur.order_readonly' ? 409 : 400;
     return res.status(code).json(validationOut(out));
   }
-  const desc = String(action) === 'ready' ? 'Satınalmacı: depo / mal kabul için hazır' : 'Satınalmacı: işleme alındı (İşleniyor)';
+  const desc =
+    String(action) === 'ready'
+      ? 'Satınalmacı: depo / mal kabul için hazır'
+      : String(action) === 'complete'
+        ? 'Satınalmacı: sipariş tamamlandı'
+        : String(action) === 'revise'
+          ? 'Satınalmacı: sipariş revize istendi'
+          : 'Satınalmacı: işleme alındı (İşleniyor)';
   await logActivity(req, {
     action_type: 'UPDATE',
     module_name: 'purchasing',
     table_name: 'purchase_orders',
     record_id: id,
+    new_data: { action, buyerStatus: out.buyerStatus || null },
     description: desc,
   });
   return res.json(jsonOk(out));
@@ -616,8 +643,6 @@ async function postGoodsReceipt(req, res) {
   const out = await createGoodsReceipt({
     userId: u.id,
     orderId: b.orderId,
-    warehouseId: b.warehouseId,
-    waybillNumber: b.waybillNumber,
     note: b.note,
     lines: b.lines,
     auditReq: req,
@@ -630,7 +655,7 @@ async function postGoodsReceipt(req, res) {
     module_name: 'purchasing',
     table_name: 'goods_receipts',
     record_id: out.goodsReceiptId,
-    new_data: { orderId: b.orderId, warehouseId: b.warehouseId, goodsReceiptId: out.goodsReceiptId, orderStatus: out.orderStatus },
+    new_data: { orderId: b.orderId, goodsReceiptId: out.goodsReceiptId, orderStatus: out.orderStatus },
     description: 'Mal kabul kaydı',
   });
   return res.status(201).json(jsonOk(out));

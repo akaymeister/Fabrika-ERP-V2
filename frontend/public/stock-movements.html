@@ -42,7 +42,13 @@
               <th data-i18n="stock.mov.colCode">Kod</th>
               <th data-i18n="stock.mov.colProduct">Ürün</th>
               <th data-i18n="stock.mov.colType">Tip</th>
-              <th data-i18n="stock.mov.colQty">Miktar (m²)</th>
+              <th data-i18n="stock.mov.colQty">Miktar</th>
+              <th data-i18n="stock.mov.colBirim">Birim</th>
+              <th data-i18n="stock.mov.colQtyM2Helper">Yardımcı m²</th>
+              <th data-i18n="stock.mov.colQtyM3Helper">Yardımcı m³</th>
+              <th data-i18n="stock.mov.colFx">Kur (1 USD)</th>
+              <th data-i18n="stock.mov.colLineUsd">Tutar (USD)</th>
+              <th data-i18n="stock.mov.colLineUzs">Tutar (sistem)</th>
               <th data-i18n="stock.mov.colUser">Kullanıcı</th>
             </tr>
           </thead>
@@ -67,6 +73,14 @@
       if (x === 'out') return t('dashboard.typeOut');
       return x || '—';
     }
+    function fmtNum(x) {
+      const n = Number(x);
+      return Number.isFinite(n) ? new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 4 }).format(n) : '—';
+    }
+    function fmtOptionalNum(x) {
+      if (x == null || x === '') return '—';
+      return fmtNum(x);
+    }
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
@@ -89,11 +103,17 @@
             <td><code class="display-upper">${esc(m.product_code)}</code></td>
             <td class="display-upper">${esc(m.product_name)}</td>
             <td class="display-upper">${esc(tip(m.movement_type))}</td>
-            <td>${esc(String(m.qty))}</td>
+            <td>${esc(fmtNum(m.primary_qty))}</td>
+            <td class="display-upper">${esc(m.primary_unit || m.receipt_unit_code || m.unit_code || m.p_unit || '—')}</td>
+            <td>${esc(fmtOptionalNum(m.calc_m2))}</td>
+            <td>${esc(fmtOptionalNum(m.calc_m3))}</td>
+            <td>${esc(fmtOptionalNum(m.fx_uzs_per_usd))}</td>
+            <td>${esc(fmtOptionalNum(m.line_total_usd))}</td>
+            <td>${esc(fmtNum(m.line_total_uzs))}</td>
             <td class="display-upper">${esc(m.user_username || '—')}</td>
           </tr>`
         )
-        .join('') || `<tr><td colspan="6">${esc(t('stock.mov.empty'))}</td></tr>`;
+        .join('') || `<tr><td colspan="12">${esc(t('stock.mov.empty'))}</td></tr>`;
     }
     document.getElementById('btnF')?.addEventListener('click', load);
     function startStockMovementsPage() {

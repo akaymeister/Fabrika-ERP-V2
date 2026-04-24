@@ -23,6 +23,71 @@ const { m3FromStockM2AndDepth } = require('./stockProductService');
 
 /** stock_m2 / stock_m3 / m2_per_piece: fiyatlandırma için isteğe bağlı metadata; eksik veya tutarsız olsa da stok akışı bloklanmaz. */
 
+function normalizeUnitCode(code) {
+  return String(code || '')
+    .trim()
+    .toUpperCase();
+}
+
+function isM2Unit(code) {
+  const unit = String(code || '')
+    .trim()
+    .toLowerCase();
+  return unit === 'm2' || unit === 'm²' || unit === 'sqm';
+}
+
+function isM3Unit(code) {
+  const unit = String(code || '')
+    .trim()
+    .toLowerCase();
+  return unit === 'm3' || unit.includes('m³');
+}
+
+function movementPrimaryUnit(row) {
+  return normalizeUnitCode(row && (row.receipt_unit_code || row.unit_code || row.p_unit || 'ADET'));
+}
+
+function movementPrimaryQty(row) {
+  const qty = Number(row && row.qty);
+  const qtyPieces = Number(row && row.qty_pieces);
+  const unit = movementPrimaryUnit(row);
+  if (isM2Unit(unit)) {
+    return Number.isFinite(qty) && qty > 0 ? qty : 0;
+  }
+  if (Number.isFinite(qtyPieces) && qtyPieces > 0) {
+    return qtyPieces;
+  }
+  return Number.isFinite(qty) && qty > 0 ? qty : 0;
+}
+
+function movementCalcM2(row) {
+  const qty = Number(row && row.qty);
+  const primaryQty = movementPrimaryQty(row);
+  const unit = movementPrimaryUnit(row);
+  if (isM2Unit(unit)) {
+    return primaryQty > 0 ? primaryQty : Number.isFinite(qty) && qty > 0 ? qty : null;
+  }
+  if (Number.isFinite(qty) && qty > 0) {
+    return qty;
+  }
+  const m2PerPiece = Number(row && row.m2_per_piece) || 0;
+  return primaryQty > 0 && m2PerPiece > 0 ? primaryQty * m2PerPiece : null;
+}
+
+function movementCalcM3(row) {
+  const unit = movementPrimaryUnit(row);
+  const primaryQty = movementPrimaryQty(row);
+  if (isM3Unit(unit)) {
+    return primaryQty > 0 ? primaryQty : null;
+  }
+  const calcM2 = movementCalcM2(row);
+  const depth = Number(row && row.depth_mm) || 0;
+  if (!Number.isFinite(calcM2) || calcM2 <= 0 || depth <= 0) {
+    return null;
+  }
+  return m3FromStockM2AndDepth(calcM2, depth);
+}
+
 async function listMovements({ productId, movementType, projectId, limit = 100, offset = 0 } = {}) {
   const lim = Math.min(Math.max(parseInt(String(limit), 10) || 100, 1), 500);
   const off = Math.max(parseInt(String(offset), 10) || 0, 0);
@@ -58,6 +123,18 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   const msSel = hasMs
     ? 'sm.movement_source, sm.purchase_order_id, sm.goods_receipt_id'
     : 'NULL AS movement_source, NULL AS purchase_order_id, NULL AS goods_receipt_id';
+  const hasReceiptUnit =
+    hasMs &&
+    (await tableExists('goods_receipt_items')) &&
+    (await tableExists('purchase_order_items')) &&
+    (await tableExists('purchase_request_items')) &&
+    (await columnExists('purchase_request_items', 'unit_code'));
+  const receiptUnitSel = hasReceiptUnit ? ', pri.unit_code AS receipt_unit_code' : ', NULL AS receipt_unit_code';
+  const receiptUnitJoin = hasReceiptUnit
+    ? `LEFT JOIN goods_receipt_items gri ON gri.stock_movement_id = sm.id
+       LEFT JOIN purchase_order_items poi ON poi.id = gri.order_item_id
+       LEFT JOIN purchase_request_items pri ON pri.id = poi.request_item_id`
+    : '';
   const hasProjects = await tableExists('projects');
   const projSel = hasProjects ? 'pr.name AS project_name, pr.project_code AS project_code' : 'NULL AS project_name, NULL AS project_code';
   const projJoin = hasProjects
@@ -68,18 +145,25 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   const [rows] = await pool.query(
     `SELECT sm.id, sm.product_id, sm.movement_type, sm.qty, sm.note, sm.ref_type, sm.ref_id, sm.created_at,
             ${msSel},
-            p.product_code, p.name AS product_name, p.m2_per_piece, p.unit AS p_unit, ${unitCol},
+            p.product_code, p.name AS product_name, p.m2_per_piece, p.depth_mm, p.unit AS p_unit, ${unitCol}${receiptUnitSel},
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS user_username, ${directM2Sel}, ${whSel}, ${projSel}${extra}
      FROM stock_movements sm
      INNER JOIN products p ON p.id = sm.product_id
      LEFT JOIN users u ON u.id = sm.user_id
      ${unitJoin}
+     ${receiptUnitJoin}
      ${projJoin}
      WHERE ${where}
      ORDER BY sm.id DESC
      LIMIT ? OFFSET ?`,
     params
   );
+  for (const row of rows) {
+    row.primary_unit = movementPrimaryUnit(row);
+    row.primary_qty = movementPrimaryQty(row);
+    row.calc_m2 = movementCalcM2(row);
+    row.calc_m3 = movementCalcM3(row);
+  }
   return rows;
 }
 
@@ -468,6 +552,12 @@ async function recordMovementIn(params) {
   try {
     if (ownConn) {
       await conn.beginTransaction();
+    }
+    if (!Number.isFinite(pid) || pid < 1) {
+      if (ownConn) {
+        await conn.rollback();
+      }
+      return err('Ürün yok', 'api.stock.product_not_found');
     }
     const [[P]] = await conn.query('SELECT * FROM products WHERE id = ? FOR UPDATE', [pid]);
     if (!P) {

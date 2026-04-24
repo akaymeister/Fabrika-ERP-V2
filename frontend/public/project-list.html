@@ -256,8 +256,8 @@
     function normalizeShortClient(s) {
       return String(s ?? '')
         .trim()
-        .toLowerCase('en-US')
-        .replace(/[^a-z0-9]/g, '');
+        .toLocaleUpperCase('tr-TR')
+        .replace(/[^A-Z0-9]/g, '');
     }
     document.getElementById('projectName')?.addEventListener('blur', function () {
       this.value = toUpperTrClient(this.value);

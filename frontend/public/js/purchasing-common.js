@@ -3,12 +3,12 @@
  * Anahtarlar: openreq | listreq | appr | proc | suppliers | hub
  */
 const PUR_NAV_FALLBACK_TR = {
-  'nav.purch.requisitionOpen': 'Talep aç',
-  'nav.purch.requests': 'Talepler & onay',
-  'nav.purch.approvals': 'Yönetici onayları',
-  'nav.purch.processing': 'Satınalma işleme',
-  'nav.purch.suppliers': 'Tedarikçiler',
-  'nav.purch.hub': 'Satınalma',
+  'nav.purch.requisitionOpen': 'TALEP AÇ',
+  'nav.purch.requests': 'TALEPLER & ONAY',
+  'nav.purch.approvals': 'YÖNETİCİ ONAYLARI',
+  'nav.purch.processing': 'SATINALMA İŞLEME',
+  'nav.purch.suppliers': 'TEDARİKÇİLER',
+  'nav.purch.hub': 'SATINALMA',
 };
 
 function tNav(k) {

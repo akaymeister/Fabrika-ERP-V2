@@ -14,6 +14,7 @@
     "db:patch-12": "node database/patch-012-purchase-orders-buyer-state.js",
     "db:patch-13": "node database/patch-013-suppliers-extra.js",
     "db:patch-14": "node database/patch-014-purchasing-process-states.js",
+    "db:cleanup-ops": "node database/cleanup-operational-data.js",
     "db:patch-4": "node database/patch-004.js",
     "db:patch-5": "node database/patch-005.js",
     "db:patch-6": "node database/patch-006.js",

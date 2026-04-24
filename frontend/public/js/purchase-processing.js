@@ -6,13 +6,17 @@
 (function () {
   const msg = document.getElementById('msg');
   const ordBody = document.getElementById('ordBody');
+  const completedOrdBody = document.getElementById('completedOrdBody');
   const detailEmpty = document.getElementById('detailEmpty');
   const orderFormBlock = document.getElementById('orderFormBlock');
   const linesDetailBody = document.getElementById('linesDetailBody');
   const orderMeta = document.getElementById('orderMeta');
   const orderBadges = document.getElementById('orderBadges');
   const btnStart = document.getElementById('btnStart');
+  const btnPrint = document.getElementById('btnPrint');
   const btnSavePricing = document.getElementById('btnSavePricing');
+  const btnCompleteOrder = document.getElementById('btnCompleteOrder');
+  const btnReviseOrder = document.getElementById('btnReviseOrder');
 
   let suppliers = [];
   let selectedOrder = null;
@@ -53,6 +57,62 @@
     return Number.isFinite(n) ? String(Number(n.toFixed(4))) : '0';
   }
 
+  function normalizeUnitCode(value) {
+    return String(value || '').trim().toUpperCase();
+  }
+
+  function primaryUnit(item) {
+    return normalizeUnitCode(item.primary_unit || item.request_unit || item.p_unit_code || item.p_unit_legacy || 'ADET') || 'ADET';
+  }
+
+  function isM2Unit(value) {
+    const unit = String(value || '').trim().toLowerCase();
+    return unit === 'm2' || unit === 'm²' || unit === 'sqm';
+  }
+
+  function isM3Unit(value) {
+    const unit = String(value || '').trim().toLowerCase();
+    return unit === 'm3' || unit.indexOf('m³') >= 0;
+  }
+
+  function calcM2ForQty(item, qty) {
+    const q = Number(qty) || 0;
+    if (q <= 0) return null;
+    const unit = primaryUnit(item);
+    if (isM2Unit(unit)) return q;
+    const m2PerUnit = Number(item.m2_per_piece);
+    return Number.isFinite(m2PerUnit) && m2PerUnit > 0 ? q * m2PerUnit : null;
+  }
+
+  function calcM3ForQty(item, qty) {
+    const q = Number(qty) || 0;
+    if (q <= 0) return null;
+    const unit = primaryUnit(item);
+    if (isM3Unit(unit)) return q;
+    const calcM2 = calcM2ForQty(item, q);
+    const depth = Number(item.depth_mm) || 0;
+    return calcM2 != null && depth > 0 ? calcM2 * (depth / 1000) : null;
+  }
+
+  function helperLineHtml(labelKey, value) {
+    if (value == null) return '';
+    return `<div style="font-size:11px;color:#64748b">${esc(tK(labelKey))}: ${esc(fmtQty(value))}</div>`;
+  }
+
+  function qtyCellHtml(item, qty) {
+    const unit = primaryUnit(item);
+    const calcM2 = calcM2ForQty(item, qty);
+    const calcM3 = calcM3ForQty(item, qty);
+    let html = `<div>${esc(fmtQty(qty))} ${esc(unit)}</div>`;
+    if (calcM2 != null && !isM2Unit(unit)) {
+      html += helperLineHtml('stock.mov.colQtyM2Helper', calcM2);
+    }
+    if (calcM3 != null && !isM3Unit(unit)) {
+      html += helperLineHtml('stock.mov.colQtyM3Helper', calcM3);
+    }
+    return html;
+  }
+
   function currentOrderId() {
     const raw = selectedOrder && selectedOrder.id;
     const id = parseInt(String(raw), 10);
@@ -61,7 +121,16 @@
 
   function statusLabel(group, value) {
     if (!value) return '—';
-    const keys = [`purch.status.${group}.${value}`];
+    let normalized = String(value);
+    if (group === 'receipt') {
+      if (normalized === 'awaiting_receipt') normalized = 'pending';
+      else if (normalized === 'partially_received' || normalized === 'partial_received') normalized = 'partial';
+      else if (normalized === 'received_completed') normalized = 'completed';
+    }
+    if (group === 'pricing') {
+      if (normalized === 'fully_priced') normalized = 'priced';
+    }
+    const keys = [`purch.status.${group}.${normalized}`];
     if (group === 'receipt') keys.push(`purch.status.ord.${value}`);
     for (const key of keys) {
       const text = tK(key);
@@ -135,8 +204,47 @@
 
   function highlightSelectedOrder(id) {
     document.querySelectorAll('#ordBody .po-row').forEach((x) => x.classList.remove('po-row-sel'));
+    document.querySelectorAll('#completedOrdBody .po-row').forEach((x) => x.classList.remove('po-row-sel'));
     const tr = document.querySelector(`#ordBody .po-row[data-oid="${id}"]`);
+    const trCompleted = document.querySelector(`#completedOrdBody .po-row[data-oid="${id}"]`);
     if (tr) tr.classList.add('po-row-sel');
+    if (trCompleted) trCompleted.classList.add('po-row-sel');
+  }
+
+  async function loadCompletedOrders(keepSelection) {
+    if (!completedOrdBody) return;
+    const prevSelectedId = keepSelection ? currentOrderId() : null;
+    const { ok, data } = await window.purApi('/api/purchasing/orders?completedByBuyer=1');
+    if (!ok || !data || !data.ok) {
+      completedOrdBody.innerHTML = '<tr><td colspan="6">—</td></tr>';
+      return;
+    }
+    const rows = data.orders || [];
+    if (!rows.length) {
+      completedOrdBody.innerHTML = `<tr><td colspan="6">${esc(tK('purch.proc.noCompleted'))}</td></tr>`;
+      return;
+    }
+    completedOrdBody.innerHTML = rows
+      .map((row) => {
+        const id = row.id;
+        const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
+        return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
+          <td>${esc(row.order_code || row.id)}</td>
+          <td>${esc(row.project_code || row.project_label || '—')}</td>
+          <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
+          <td>${esc(statusLabel('pricing', row.pricing_status))}</td>
+          <td>${esc(statusLabel('buyer', row.buyer_status || row.buyer_state || 'draft'))}</td>
+          <td>${esc(String(row.order_date || row.created_at || '').slice(0, 10))}</td>
+        </tr>`;
+      })
+      .join('');
+    completedOrdBody.querySelectorAll('.po-row').forEach((tr) => {
+      tr.addEventListener('click', async () => {
+        const id = tr.getAttribute('data-oid');
+        highlightSelectedOrder(id);
+        await selectOrder(id);
+      });
+    });
   }
 
   function renderBadges(order) {
@@ -144,6 +252,7 @@
     orderBadges.innerHTML = [
       `<span class="proc-badge">${esc(tK('purch.proc.colReceiptStatus'))}: ${esc(statusLabel('receipt', order.receipt_status || order.status))}</span>`,
       `<span class="proc-badge">${esc(tK('purch.proc.colPricingStatus'))}: ${esc(statusLabel('pricing', order.pricing_status))}</span>`,
+      `<span class="proc-badge">${esc(tK('purch.proc.colBuyerStatus'))}: ${esc(statusLabel('buyer', order.buyer_status || order.buyer_state || 'draft'))}</span>`,
       `<span class="proc-badge">${esc(tK('purch.col.supplier'))}: ${esc(order.supplier_name || '—')}</span>`,
     ].join('');
   }
@@ -180,9 +289,9 @@
               : '';
         return `<tr>
           <td><span style="font-size:11px;color:#64748b">${esc(it.product_code || '')}</span><br/>${esc(it.product_name || '')}</td>
-          <td class="r-stock">${esc(fmtQty(it.qty_ordered))}</td>
-          <td class="r-stock">${esc(fmtQty(it.qty_received))}</td>
-          <td class="r-stock">${esc(fmtQty(it.qty_remaining))}</td>
+          <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
+          <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
+          <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
           <td>
             <input class="pur-inp po-line-supsearch" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" style="width:150px;margin-bottom:4px" />
             <select class="pur-inp po-line-sup" data-i="${i}">${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
@@ -228,11 +337,12 @@
       lineInputs[i].fxEl = el;
     });
 
-    if (btnStart) btnStart.disabled = false;
-    if (btnSavePricing) {
-      btnSavePricing.disabled = false;
-      btnSavePricing.style.opacity = '1';
-    }
+    [btnStart, btnPrint, btnSavePricing, btnCompleteOrder, btnReviseOrder].forEach((btn) => {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    });
     if (window.i18n && window.i18n.apply) window.i18n.apply(orderFormBlock);
   }
 
@@ -291,6 +401,7 @@
     }
     showMsg(tK('purch.proc.startOkV2'));
     await loadIncomingOrders(true);
+    await loadCompletedOrders(true);
     await selectOrder(String(id));
     highlightSelectedOrder(String(id));
   }
@@ -320,8 +431,44 @@
     }
     showMsg(`${tK('purch.proc.saved')} ${statusLabel('pricing', data.pricingStatus)}`);
     await loadIncomingOrders(true);
+    await loadCompletedOrders(true);
     await selectOrder(String(id));
     highlightSelectedOrder(String(id));
+  }
+
+  async function postBuyerAction(action) {
+    const id = currentOrderId();
+    if (id == null) {
+      showMsg(tK('api.pur.order_not_found'), true);
+      return;
+    }
+    const { ok, data, status } = await window.purApi(`/api/purchasing/orders/${encodeURIComponent(id)}/buyer-action`, {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
+    if (!ok) {
+      showMsg(apiMsg(data) || `HTTP ${status}`, true);
+      return;
+    }
+    const msgKey =
+      action === 'complete'
+        ? 'purch.proc.completeOk'
+        : action === 'revise'
+          ? 'purch.proc.reviseOk'
+          : 'purch.proc.startOkV2';
+    showMsg(tK(msgKey));
+    await loadIncomingOrders(true);
+    await loadCompletedOrders(true);
+    await selectOrder(String(id));
+    highlightSelectedOrder(String(id));
+  }
+
+  function printOrder() {
+    if (!selectedOrder) {
+      showMsg(tK('purch.proc.selectPo'), true);
+      return;
+    }
+    window.print();
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
@@ -335,7 +482,10 @@
   }
 
   if (btnStart) btnStart.addEventListener('click', startProcessing);
+  if (btnPrint) btnPrint.addEventListener('click', printOrder);
   if (btnSavePricing) btnSavePricing.addEventListener('click', savePricing);
+  if (btnCompleteOrder) btnCompleteOrder.addEventListener('click', () => postBuyerAction('complete'));
+  if (btnReviseOrder) btnReviseOrder.addEventListener('click', () => postBuyerAction('revise'));
 
   (async function init() {
     if (window.initPurchasingPageNav) {
@@ -346,6 +496,7 @@
       await loadSuppliers();
     }
     await loadIncomingOrders(false);
+    await loadCompletedOrders(false);
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
 
     const langSel = document.getElementById('languageSelect');
@@ -356,6 +507,7 @@
         }
         const id = currentOrderId();
         await loadIncomingOrders(true);
+        await loadCompletedOrders(true);
         if (id != null) {
           await selectOrder(String(id));
           highlightSelectedOrder(String(id));
