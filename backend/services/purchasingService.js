@@ -3,6 +3,7 @@ const { err } = require('../utils/serviceError');
 const { toUpperTr, optionalNoteUpperTr } = require('../utils/textNormalize');
 const { recordMovementIn } = require('./stockMovementService');
 const { listProducts } = require('./stockProductService');
+const { logActivity } = require('./activityLogService');
 
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -118,17 +119,42 @@ async function listProductOptions() {
   return { products: rows };
 }
 
+async function supplierExtraCols() {
+  const extras = {};
+  for (const c of ['phone', 'email', 'address', 'note', 'tax_number']) {
+    extras[c] = await hasCol('suppliers', c);
+  }
+  return extras;
+}
+
 async function listSuppliers() {
-  const [rows] = await pool.query('SELECT id, name, contact, tax_id, created_at FROM suppliers ORDER BY name');
+  const ex = await supplierExtraCols();
+  const cols = ['id', 'name', 'contact', 'tax_id'];
+  if (ex.phone) cols.push('phone');
+  if (ex.email) cols.push('email');
+  if (ex.address) cols.push('address');
+  if (ex.note) cols.push('note');
+  if (ex.tax_number) cols.push('tax_number');
+  cols.push('created_at');
+  const [rows] = await pool.query(`SELECT ${cols.join(', ')} FROM suppliers ORDER BY name`);
   return rows;
 }
 
-async function createSupplier({ name, contact, taxId }) {
+async function createSupplier({ name, contact, taxId, phone, email, address, note, tax_number }) {
   const n = toUpperTr(String(name || '').trim());
   if (!n) {
     return err('Tedarikçi adı gerekli', 'api.pur.supplier_name_required');
   }
-  const [r] = await pool.query('INSERT INTO suppliers (name, contact, tax_id) VALUES (?,?,?)', [n, contact || null, taxId || null]);
+  const ex = await supplierExtraCols();
+  const cols = ['name', 'contact', 'tax_id'];
+  const vals = [n, contact || null, taxId || tax_number || null];
+  if (ex.phone) { cols.push('phone'); vals.push(phone || null); }
+  if (ex.email) { cols.push('email'); vals.push(email || null); }
+  if (ex.address) { cols.push('address'); vals.push(address || null); }
+  if (ex.note) { cols.push('note'); vals.push(note || null); }
+  if (ex.tax_number) { cols.push('tax_number'); vals.push(tax_number || null); }
+  const ph = cols.map(() => '?').join(',');
+  const [r] = await pool.query(`INSERT INTO suppliers (${cols.join(',')}) VALUES (${ph})`, vals);
   return { id: r.insertId, name: n };
 }
 
@@ -242,7 +268,7 @@ async function loadProductForPurchasing(productId) {
 }
 
 /** request_code, pr_status kolonlarını 006b patch doldurur */
-async function listPurchaseRequests({ status, projectId, requestId } = {}) {
+async function listPurchaseRequests({ status, statuses, projectId, requestId } = {}) {
   if (!(await hasCol('purchase_requests', 'pr_status'))) {
     return err('DB: npm run db:patch-6b (purchase_requests sütunları)', 'api.pur.migration_006b');
   }
@@ -252,7 +278,13 @@ async function listPurchaseRequests({ status, projectId, requestId } = {}) {
     where += ' AND pr.id = ?';
     p.push(parseInt(String(requestId), 10));
   }
-  if (status) {
+  if (statuses && Array.isArray(statuses) && statuses.length) {
+    const safe = statuses.map((s) => String(s).trim()).filter(Boolean);
+    if (safe.length) {
+      where += ` AND pr.pr_status IN (${safe.map(() => '?').join(',')})`;
+      p.push(...safe);
+    }
+  } else if (status) {
     where += ' AND pr.pr_status = ?';
     p.push(String(status));
   }
@@ -261,14 +293,17 @@ async function listPurchaseRequests({ status, projectId, requestId } = {}) {
     p.push(parseInt(String(projectId), 10));
   }
   const exSm = await hasCol('purchase_requests', 'status_message');
+  const exProc = await hasCol('purchase_requests', 'procurement_state');
   const extraSel = exSm
     ? ', pr.status_message, pr.decided_by, pr.decided_at, COALESCE(NULLIF(TRIM(ua.full_name), \'\'), ua.username) AS approver_name'
     : '';
+  const procSel = exProc ? ', pr.procurement_state' : '';
   const extraJoin = exSm ? 'LEFT JOIN users ua ON ua.id = pr.decided_by' : '';
   const [list] = await pool.query(
     `SELECT pr.id, pr.request_code, pr.title, pr.pr_status, pr.project_id, pr.requester_id, pr.created_at, pr.note,
             prj.project_code, prj.name AS project_name,
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS requester_name
+            ${procSel}
             ${extraSel}
      FROM purchase_requests pr
      LEFT JOIN projects prj ON prj.id = pr.project_id
@@ -703,7 +738,7 @@ async function createPurchaseOrder({ userId, supplierId, orderDate, deliveryDate
       return err('Sipariş için talep satırında proje gerekli (006b / project_id)', 'api.pur.po_project_required');
     }
     const [oins] = await conn.query(
-      'INSERT INTO purchase_orders (order_code, supplier_id, project_id, order_date, delivery_date, payment_terms, currency, status, note, created_by) VALUES (NULL,?,?,?,?,?,?,\'ordered\',?,?)',
+      "INSERT INTO purchase_orders (order_code, supplier_id, project_id, order_date, delivery_date, payment_terms, currency, status, note, created_by) VALUES (NULL,?,?,?,?,?,?,'awaiting_goods_receipt',?,?)",
       [sid, projectId, odate, deliveryDate || null, paymentTerms || null, cur, optionalNoteUpperTr(note) || null, userId]
     );
     const oid = oins.insertId;
@@ -713,6 +748,9 @@ async function createPurchaseOrder({ userId, supplierId, orderDate, deliveryDate
         'INSERT INTO purchase_order_items (order_id, request_item_id, product_id, qty_ordered, unit_price, currency, qty_received) VALUES (?,?,?,?,?,?,0)',
         [oid, row.riId, row.pri.product_id, row.m2o, row.up, cur]
       );
+    }
+    if (await hasCol('purchase_order_items', 'supplier_id')) {
+      await conn.query('UPDATE purchase_order_items SET supplier_id = ? WHERE order_id = ?', [sid, oid]);
     }
     const rids = oiIns.map((r) => r.pri.request_id).filter((x) => x != null);
     await recomputeRequestStatusAfterPoLines(conn, rids);
@@ -756,21 +794,50 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
     return { notFound: true };
   }
   const o = ords[0];
-  const [items] = await pool.query(
-    `SELECT poi.*, p.product_code, p.name AS product_name, pri.id AS request_item_id,
+  const exW = await hasCol('purchase_request_items', 'warehouse_id');
+  const hasLineSup = await hasCol('purchase_order_items', 'supplier_id');
+  let itemSql = `SELECT poi.*, p.product_code, p.name AS product_name, p.stock_pieces, p.stock_qty, p.unit AS p_unit_legacy, pu.code AS p_unit_code,
+            pri.id AS request_item_id,
             pr.request_code, pr.id AS purchase_request_id,
             pri.quantity AS request_qty, pri.unit_code AS request_unit,
-            pri.line_image_path AS request_line_image_path, pri.line_pdf_path AS request_line_pdf_path
+            pri.line_image_path AS request_line_image_path, pri.line_pdf_path AS request_line_pdf_path`;
+  if (hasLineSup) {
+    itemSql += `, poi.supplier_id AS line_supplier_id, sln.name AS line_supplier_name`;
+  }
+  if (exW) {
+    itemSql += `,
+            pri.warehouse_id, pri.warehouse_subcategory_id, wh.name AS warehouse_name, wsc.name AS subcategory_name`;
+  }
+  itemSql += `
      FROM purchase_order_items poi
      INNER JOIN products p ON p.id = poi.product_id
+     LEFT JOIN units pu ON pu.id = p.unit_id
      LEFT JOIN purchase_request_items pri ON pri.id = poi.request_item_id
-     LEFT JOIN purchase_requests pr ON pr.id = pri.request_id
-     WHERE poi.order_id = ?`,
-    [id]
-  );
+     LEFT JOIN purchase_requests pr ON pr.id = pri.request_id`;
+  if (hasLineSup) {
+    itemSql += ' LEFT JOIN suppliers sln ON sln.id = poi.supplier_id';
+  }
+  if (exW) {
+    itemSql += `
+     LEFT JOIN warehouses wh ON wh.id = pri.warehouse_id
+     LEFT JOIN warehouse_subcategories wsc ON wsc.id = pri.warehouse_subcategory_id`;
+  }
+  itemSql += ' WHERE poi.order_id = ?';
+  const [items] = await pool.query(itemSql, [id]);
   for (const it of items) {
     it.qty_remaining = Math.max(0, Number(it.qty_ordered) - Number(it.qty_received || 0));
     it.line_total = Number(it.unit_price) * Number(it.qty_ordered);
+    const disp = primaryStockDisplay({
+      unit_code: it.p_unit_code,
+      unit: it.p_unit_legacy,
+      unit_legacy: it.p_unit_legacy,
+      stock_pieces: it.stock_pieces,
+      stock_qty: it.stock_qty,
+    });
+    it.stock_display_text = disp.text;
+    if (hasLineSup) {
+      it.supplier_label = it.line_supplier_name || o.supplier_name || '—';
+    }
   }
   o.items = items;
   const reqId = items.length && items[0].purchase_request_id ? items[0].purchase_request_id : null;
@@ -818,18 +885,27 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
   return { order: o };
 }
 
-async function listPurchaseOrders({ status, hidePrice } = {}) {
+async function listPurchaseOrders({ status, statuses, hidePrice } = {}) {
   let where = '1=1';
   const p = [];
-  if (status) {
+  if (statuses && Array.isArray(statuses) && statuses.length) {
+    const safe = statuses.map((s) => String(s).trim()).filter(Boolean);
+    if (safe.length) {
+      where += ` AND po.status IN (${safe.map(() => '?').join(',')})`;
+      p.push(...safe);
+    }
+  } else if (status) {
     where += ' AND po.status = ?';
     p.push(String(status));
   }
+  const exBs = await hasCol('purchase_orders', 'buyer_state');
   const [list] = await pool.query(
-    `SELECT po.id, po.order_code, po.supplier_id, po.project_id, po.order_date, po.delivery_date, po.status, po.currency, po.created_at,
-            s.name AS supplier_name, prj.project_code
+    `SELECT po.id, po.order_code, po.supplier_id, po.project_id, po.order_date, po.delivery_date, po.status, po.currency, po.created_at${
+      exBs ? ', po.buyer_state' : ''
+    },
+            COALESCE(s.name, CONCAT('Tedarikçi #', po.supplier_id)) AS supplier_name, prj.project_code
      FROM purchase_orders po
-     INNER JOIN suppliers s ON s.id = po.supplier_id
+     LEFT JOIN suppliers s ON s.id = po.supplier_id
      LEFT JOIN projects prj ON prj.id = po.project_id
      WHERE ${where}
      ORDER BY po.id DESC
@@ -844,7 +920,7 @@ async function listPurchaseOrders({ status, hidePrice } = {}) {
   return { orders: list };
 }
 
-async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber, note, lines }) {
+async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber, note, lines, auditReq } = {}) {
   if (!(await tableExists('warehouses'))) {
     return err('Depo tablosu yok (patch-5)', 'api.warehouse.migration');
   }
@@ -861,6 +937,7 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
     return err('Kabul satırları gerekli', 'api.pur.gr_lines_required');
   }
   const conn = await pool.getConnection();
+  const stockInAudit = [];
   try {
     await conn.beginTransaction();
     const [[por]] = await conn.query("SELECT * FROM purchase_orders po WHERE po.id = ? AND po.status != 'cancelled' FOR UPDATE", [oid]);
@@ -943,12 +1020,27 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         lineTotalUsd: 0,
         fxUzsPerUsd: 1,
         _useConn: conn,
+        movementSource: 'PURCHASE_RECEIPT',
+        purchaseOrderId: oid,
+        goodsReceiptId: grid,
+        bypassOpenPurchaseBlock: true,
       });
       if (mIn && mIn.error) {
         await conn.rollback();
         return mIn;
       }
       const smid = mIn?.movementId;
+      if (smid) {
+        stockInAudit.push({
+          movementId: smid,
+          productId: oi.product_id,
+          orderId: oid,
+          goodsReceiptId: grid,
+          rcode,
+          qtyAccepted: qa,
+          projectId: por.project_id,
+        });
+      }
       await conn.query(
         'INSERT INTO goods_receipt_items (goods_receipt_id, order_item_id, qty_waybill, qty_accepted, qty_rejected, qty_damaged, line_note, stock_movement_id) VALUES (?,?,?,?,?,?,?,?)',
         [grid, oiId, qw, qa, qr, qd, optionalNoteUpperTr(ln.lineNote) || null, smid || null]
@@ -962,11 +1054,47 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
     );
     const qo = Number(sum[0].qo);
     const qr = Number(sum[0].qr);
-    let st = 'ordered';
+    let st = 'awaiting_goods_receipt';
     if (qr + 0.0001 >= qo) st = 'completed';
     else if (qr > 0) st = 'partial';
     await conn.query('UPDATE purchase_orders SET status = ? WHERE id = ?', [st, oid]);
+    if (await hasCol('purchase_requests', 'procurement_state')) {
+      await conn.query(
+        `UPDATE purchase_requests pr
+         INNER JOIN (
+           SELECT DISTINCT pri.request_id AS rid
+           FROM purchase_order_items poi
+           INNER JOIN purchase_request_items pri ON pri.id = poi.request_item_id
+           WHERE poi.order_id = ?
+         ) t ON pr.id = t.rid
+         SET pr.procurement_state = IF(pr.procurement_state IS NULL, 'started', 'ongoing')`,
+        [oid]
+      );
+    }
     await conn.commit();
+    for (const ev of stockInAudit) {
+      await logActivity(auditReq || null, {
+        action_type: 'STOCK_IN',
+        module_name: 'stock',
+        table_name: 'stock_movements',
+        record_id: ev.movementId,
+        new_data: {
+          productId: ev.productId,
+          movementId: ev.movementId,
+          goodsReceiptId: ev.goodsReceiptId,
+          purchaseOrderId: ev.orderId,
+          receiptCode: ev.rcode,
+          qtyAccepted: ev.qtyAccepted,
+          projectId: ev.projectId,
+          source: 'goods_receipt',
+        },
+        description: 'Stok girişi (mal kabul)',
+        actor:
+          auditReq && auditReq.session && auditReq.session.user
+            ? undefined
+            : { userId, username: null, fullName: null },
+      });
+    }
     return { goodsReceiptId: grid, orderStatus: st };
   } catch (e) {
     await conn.rollback();
@@ -974,6 +1102,262 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
   } finally {
     conn.release();
   }
+}
+
+async function updatePurchaseOrder({ id, supplierId, orderDate, deliveryDate, currency, note, lines }) {
+  const oid = parseInt(String(id), 10);
+  if (!Number.isFinite(oid) || oid < 1) {
+    return err('Geçersiz sipariş', 'api.pur.id_invalid');
+  }
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[por]] = await conn.query('SELECT * FROM purchase_orders WHERE id = ? FOR UPDATE', [oid]);
+    if (!por) {
+      await conn.rollback();
+      return err('Sipariş yok', 'api.pur.order_not_found');
+    }
+    if (['cancelled', 'completed'].includes(String(por.status))) {
+      await conn.rollback();
+      return err('Bu durumdaki sipariş güncellenemez', 'api.pur.order_readonly');
+    }
+    const hasPoiSup = await hasCol('purchase_order_items', 'supplier_id');
+    const cur = String(currency != null && currency !== '' ? currency : por.currency)
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 3) || 'UZS';
+    const odate = orderDate != null && orderDate !== '' ? orderDate : por.order_date;
+    const ddate =
+      deliveryDate === undefined ? por.delivery_date : String(deliveryDate).trim() === '' ? null : deliveryDate;
+    const n = note !== undefined ? optionalNoteUpperTr(note) : por.note;
+    await conn.query('UPDATE purchase_orders SET order_date = ?, delivery_date = ?, currency = ?, note = ? WHERE id = ?', [
+      odate,
+      ddate || null,
+      cur,
+      n || null,
+      oid,
+    ]);
+    if (Array.isArray(lines) && lines.length) {
+      for (const ln of lines) {
+        const oiId = parseInt(String(ln.orderItemId), 10);
+        if (!Number.isFinite(oiId) || oiId < 1) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        const up = Number(ln.unitPrice);
+        const lineCur = ln.currency != null && String(ln.currency).trim() !== ''
+          ? String(ln.currency).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || cur
+          : cur;
+        if (!Number.isFinite(up) || up < 0) {
+          await conn.rollback();
+          return err('Geçerli birim fiyat gerekli', 'api.pur.line_price_required');
+        }
+        const [[row]] = await conn.query('SELECT id FROM purchase_order_items WHERE id = ? AND order_id = ?', [oiId, oid]);
+        if (!row) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        if (hasPoiSup) {
+          const supL = ln.supplierId != null && ln.supplierId !== '' ? parseInt(String(ln.supplierId), 10) : null;
+          if (Number.isFinite(supL) && supL > 0) {
+            const [[srow]] = await conn.query('SELECT id FROM suppliers WHERE id = ?', [supL]);
+            if (srow) {
+              await conn.query('UPDATE purchase_order_items SET unit_price = ?, currency = ?, supplier_id = ? WHERE id = ?', [
+                up,
+                lineCur,
+                supL,
+                oiId,
+              ]);
+            } else {
+              await conn.query('UPDATE purchase_order_items SET unit_price = ?, currency = ?, supplier_id = NULL WHERE id = ?', [
+                up,
+                lineCur,
+                oiId,
+              ]);
+            }
+          } else {
+            await conn.query('UPDATE purchase_order_items SET unit_price = ?, currency = ?, supplier_id = NULL WHERE id = ?', [
+              up,
+              lineCur,
+              oiId,
+            ]);
+          }
+        } else {
+          await conn.query('UPDATE purchase_order_items SET unit_price = ?, currency = ? WHERE id = ?', [up, lineCur, oiId]);
+        }
+      }
+    }
+    const [[h]] = await conn.query(
+      'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL ORDER BY id ASC LIMIT 1',
+      [oid]
+    );
+    let newSid = h && h.sid != null ? parseInt(String(h.sid), 10) : null;
+    if (newSid == null || !Number.isFinite(newSid)) {
+      if (supplierId != null && supplierId !== '') {
+        newSid = parseInt(String(supplierId), 10);
+      }
+    }
+    if (newSid == null || !Number.isFinite(newSid) || newSid < 1) {
+      newSid = parseInt(String(por.supplier_id), 10);
+    }
+    const [[sup]] = await conn.query('SELECT id FROM suppliers WHERE id = ?', [newSid]);
+    if (!sup) {
+      await conn.rollback();
+      return err('Tedarikçi bulunamadı', 'api.pur.supplier_not_found');
+    }
+    await conn.query('UPDATE purchase_orders SET supplier_id = ? WHERE id = ?', [newSid, oid]);
+    await conn.commit();
+    return { ok: true };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+async function setProcurementStateForOrderStart(orderId) {
+  const oid = parseInt(String(orderId), 10);
+  if (!Number.isFinite(oid) || oid < 1) {
+    return err('Geçersiz sipariş', 'api.pur.id_invalid');
+  }
+  if (!(await hasCol('purchase_requests', 'procurement_state'))) {
+    return { ok: true, skipped: true };
+  }
+  const [[r]] = await pool.query('SELECT id, status FROM purchase_orders WHERE id = ?', [oid]);
+  if (!r) {
+    return err('Sipariş yok', 'api.pur.order_not_found');
+  }
+  if (String(r.status) === 'cancelled') {
+    return err('İptal siparişte işlem yapılamaz', 'api.pur.order_readonly');
+  }
+  await pool.query(
+    `UPDATE purchase_requests pr
+     INNER JOIN (
+       SELECT DISTINCT pri.request_id AS rid
+       FROM purchase_order_items poi
+       INNER JOIN purchase_request_items pri ON pri.id = poi.request_item_id
+       WHERE poi.order_id = ?
+     ) t ON pr.id = t.rid
+     SET pr.procurement_state = IF(pr.procurement_state IS NULL, 'started', 'ongoing')`,
+    [oid]
+  );
+  return { ok: true };
+}
+
+async function runRequestBuyerAction({ userId, id, action, lines, orderDate, deliveryDate, note, currency }) {
+  const a = String(action || '').trim().toLowerCase();
+  if (!['process', 'complete'].includes(a)) {
+    return err('Geçersiz işlem', 'api.pur.action_invalid');
+  }
+  const rid = parseInt(String(id), 10);
+  if (!Number.isFinite(rid) || rid < 1) {
+    return err('Geçersiz talep', 'api.pur.id_invalid');
+  }
+  const [[pr]] = await pool.query('SELECT id, pr_status FROM purchase_requests WHERE id = ?', [rid]);
+  if (!pr) {
+    return err('Talep yok', 'api.pur.request_not_found');
+  }
+  const prs = String(pr.pr_status);
+  if (!['approved', 'partial'].includes(prs)) {
+    return err('Bu talep onaylı / kısmi değil', 'api.pur.request_not_approved');
+  }
+  if (a === 'process') {
+    if (await hasCol('purchase_requests', 'procurement_state')) {
+      await pool.query(
+        "UPDATE purchase_requests SET procurement_state = IF(procurement_state IS NULL OR procurement_state = '', 'started', 'ongoing') WHERE id = ?",
+        [rid]
+      );
+    }
+    return { ok: true, procurementState: 'ongoing' };
+  }
+  if (!Array.isArray(lines) || !lines.length) {
+    return err('En az bir satır için tedarikçi ve fiyat girin', 'api.pur.order_lines_required');
+  }
+  const groups = new Map();
+  for (const ln of lines) {
+    const riId = parseInt(String(ln && ln.requestItemId), 10);
+    const sid = parseInt(String(ln && ln.supplierId), 10);
+    const up = Number(ln && ln.unitPrice);
+    const cur = (ln && ln.currency) || currency;
+    if (!Number.isFinite(riId) || riId < 1) continue;
+    if (!Number.isFinite(sid) || sid < 1) continue;
+    if (!Number.isFinite(up) || up < 0) continue;
+    const k = String(sid);
+    if (!groups.has(k)) {
+      groups.set(k, { supplierId: sid, currency: cur, lines: [] });
+    }
+    groups.get(k).lines.push({ requestItemId: riId, unitPrice: up });
+  }
+  if (!groups.size) {
+    return err('En az bir satır için tedarikçi ve fiyat girin', 'api.pur.order_lines_required');
+  }
+  const orderIds = [];
+  for (const g of groups.values()) {
+    const out = await createPurchaseOrder({
+      userId,
+      supplierId: g.supplierId,
+      orderDate,
+      deliveryDate,
+      currency: g.currency,
+      note,
+      lines: g.lines,
+    });
+    if (out && out.error) {
+      return out;
+    }
+    orderIds.push(out.orderId);
+  }
+  if (await hasCol('purchase_orders', 'buyer_state') && orderIds.length) {
+    await pool.query(
+      `UPDATE purchase_orders SET buyer_state = 'ready_for_warehouse' WHERE id IN (${orderIds.map(() => '?').join(',')})`,
+      orderIds
+    );
+  }
+  if (await hasCol('purchase_requests', 'procurement_state')) {
+    await pool.query(
+      "UPDATE purchase_requests SET procurement_state = 'ongoing' WHERE id = ?",
+      [rid]
+    );
+  }
+  return { ok: true, orderIds };
+}
+
+async function runOrderBuyerAction({ id, action }) {
+  const a = String(action || '')
+    .trim()
+    .toLowerCase();
+  if (!['process', 'ready'].includes(a)) {
+    return err('Geçersiz işlem', 'api.pur.action_invalid');
+  }
+  const oid = parseInt(String(id), 10);
+  if (!Number.isFinite(oid) || oid < 1) {
+    return err('Geçersiz sipariş', 'api.pur.id_invalid');
+  }
+  const [[por]] = await pool.query('SELECT id, status FROM purchase_orders WHERE id = ?', [oid]);
+  if (!por) {
+    return err('Sipariş yok', 'api.pur.order_not_found');
+  }
+  if (String(por.status) === 'cancelled') {
+    return err('İptal siparişte işlem yapılamaz', 'api.pur.order_readonly');
+  }
+  if (String(por.status) === 'completed') {
+    return err('Tamamlanmış sipariş', 'api.pur.order_readonly');
+  }
+  const hasBs = await hasCol('purchase_orders', 'buyer_state');
+  if (a === 'process') {
+    if (hasBs) {
+      await pool.query("UPDATE purchase_orders SET buyer_state = 'in_progress' WHERE id = ?", [oid]);
+    }
+    return setProcurementStateForOrderStart(oid);
+  }
+  if (a === 'ready') {
+    if (hasBs) {
+      await pool.query("UPDATE purchase_orders SET buyer_state = 'ready_for_warehouse' WHERE id = ?", [oid]);
+    }
+    return { ok: true, buyerState: 'ready_for_warehouse' };
+  }
+  return err('Geçersiz işlem', 'api.pur.action_invalid');
 }
 
 async function countPendingRequests() {
@@ -1003,6 +1387,10 @@ module.exports = {
   listPurchaseOrders,
   getPurchaseOrderById,
   createGoodsReceipt,
+  updatePurchaseOrder,
+  setProcurementStateForOrderStart,
+  runOrderBuyerAction,
+  runRequestBuyerAction,
   countPendingRequests,
   loadProductForPurchasing,
   stripOrderForWarehouse,

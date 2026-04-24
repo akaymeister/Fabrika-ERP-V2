@@ -20,9 +20,9 @@ async function start() {
     process.exit(1);
   }
 
-  app.listen(port, () => {
+  app.listen(port, "0.0.0.0", () => {
     // eslint-disable-next-line no-console
-    console.log(`[Fabrika ERP V2] http://127.0.0.1:${port}  (NODE_ENV=${process.env.NODE_ENV || 'development'})`);
+    console.log(`Server running on port ${port}`);
   });
 }
 

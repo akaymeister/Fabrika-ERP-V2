@@ -270,6 +270,9 @@ async function init() {
     await window.i18n.loadDict(window.i18n.getLang());
     window.i18n.apply(document);
   }
+  if (typeof window.initAdminPageNav === 'function') {
+    await window.initAdminPageNav('admin');
+  }
   const me = await api('/api/auth/me');
   if (!me || !me.res.ok) return;
   const u = me.data.user;

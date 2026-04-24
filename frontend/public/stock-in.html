@@ -250,8 +250,22 @@
       </div>
     </div>
     <div id="navSlot"></div>
+    <p class="muted" style="font-size: 13px; margin: 0 0 10px" data-i18n="stock.in.purchaseGrHint">
+      Satınalma siparişlerinden stok, yalnızca <strong>Mal kabul / depo girişi</strong> ekranından girilir. Bu sayfa açılış, sayım, iade ve manuel giriş içindir.
+    </p>
     <div class="card stock-in-form-card">
       <form id="f">
+        <div class="form-row-2" style="max-width: 640px; margin-bottom: 12px">
+          <div class="form-field">
+            <label for="movementSource" data-i18n="stock.in.sourceType">Giriş türü</label>
+            <select id="movementSource" style="width: 100%; padding: 8px; border-radius: 8px">
+              <option value="MANUAL_STOCK_IN" data-i18n="stock.in.src.manual">Manuel stok girişi</option>
+              <option value="STOCK_ADJUSTMENT" data-i18n="stock.in.src.adjust">Sayım fazlası</option>
+              <option value="RETURN_IN" data-i18n="stock.in.src.return">İade girişi</option>
+              <option value="OPENING_BALANCE" data-i18n="stock.in.src.opening">Devir / açılış stoğu</option>
+            </select>
+          </div>
+        </div>
         <div class="form-stock-in-r1">
           <div class="form-field">
             <label for="projectId" data-i18n="stock.in.project">Proje</label>
@@ -1023,6 +1037,17 @@
       if (!m || !m.id) {
         return;
       }
+      if (m.movement_source === 'PURCHASE_RECEIPT') {
+        const msg = document.getElementById('msg');
+        if (msg) {
+          msg.textContent = tLoc(
+            'stock.in.cannotEditPurchaseMov',
+            'Mal kabul ile oluşan hareket bu ekranda değiştirilemez. Gerekirse stok hareketi listesinden iptal / mal kabul tarafını kullanın.'
+          );
+          msg.style.display = 'block';
+        }
+        return;
+      }
       const whR = m.warehouse_id;
       if (!whR) {
         const msg = document.getElementById('msg');
@@ -1049,6 +1074,12 @@
       const bs = document.getElementById('btnSubmit');
       if (bs) {
         bs.textContent = tLoc('stock.in.btnUpdate', 'Güncelle');
+      }
+      const msrc = document.getElementById('movementSource');
+      if (msrc) {
+        const v = m.movement_source || 'MANUAL_STOCK_IN';
+        msrc.value = ['STOCK_ADJUSTMENT', 'RETURN_IN', 'OPENING_BALANCE', 'MANUAL_STOCK_IN'].includes(v) ? v : 'MANUAL_STOCK_IN';
+        msrc.disabled = false;
       }
       if (m.ref_id) {
         const pj = document.getElementById('projectId');
@@ -1174,10 +1205,12 @@
         m.style.display = 'block';
         return;
       }
+      const msv = (document.getElementById('movementSource') && document.getElementById('movementSource').value) || 'MANUAL_STOCK_IN';
       const body = {
         productId,
         projectId,
         movementType: 'in',
+        movementSource: msv,
         qtyPieces: mode === 'pieces' ? qv : null,
         qtyM2: mode === 'm2' ? qv : null,
         inputCurrency: 'USD',
@@ -1193,6 +1226,7 @@
             body: JSON.stringify({
               productId: body.productId,
               projectId: body.projectId,
+              movementSource: body.movementSource,
               qtyPieces: body.qtyPieces,
               qtyM2: body.qtyM2,
               inputCurrency: body.inputCurrency,

@@ -7,7 +7,8 @@ async function getSummary(req, res) {
 }
 
 async function getActivity(req, res) {
-  const limit = req.query?.limit;
+  const raw = parseInt(String(req.query?.limit ?? ''), 10);
+  const limit = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 10) : 10;
   const movements = await getRecentMovements(limit);
   return res.json(jsonOk({ movements }));
 }

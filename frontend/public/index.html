@@ -82,30 +82,6 @@
       </div>
     </div>
 
-    <section class="card" style="margin-bottom: 30px;">
-      <div class="section-header">
-        <h3 data-i18n="dashboard.recentMov">Son stok hareketleri</h3>
-        <p data-i18n="dashboard.recentMovSub">Depo giriş/çıkış kayıtları (veri yoksa boş liste)</p>
-      </div>
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th data-i18n="dashboard.colDate">Tarih</th>
-              <th data-i18n="dashboard.colCode">Ürün kodu</th>
-              <th data-i18n="dashboard.colProduct">Ürün</th>
-              <th data-i18n="dashboard.colType">Tip</th>
-              <th data-i18n="dashboard.colQty">Miktar</th>
-              <th data-i18n="dashboard.colUser">Kullanıcı</th>
-            </tr>
-          </thead>
-          <tbody id="recentMovementsBody">
-            <tr><td colspan="6" data-i18n="dashboard.movLoading">Yükleniyor…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
     <section class="module-section">
       <div class="section-header">
         <h3 data-i18n="dashboard.modules">Ana modüller</h3>
@@ -204,6 +180,31 @@
         <a class="quick-link" href="/purchase-requests.html" data-i18n="nav.purch.requests">Talepler</a>
         <a class="quick-link" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
         <a class="quick-link" href="/purchasing.html" data-i18n="nav.purch.hub">Satınalma</a>
+        <a class="quick-link" href="/suppliers.html" data-i18n="nav.purch.suppliers">Tedarikçiler</a>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <div class="section-header">
+        <h3 data-i18n="dashboard.recentMov">Son stok hareketleri</h3>
+        <p data-i18n="dashboard.recentMovSub">Depo giriş/çıkış kayıtları (en fazla 10 hareket)</p>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="dashboard.colDate">Tarih</th>
+              <th data-i18n="dashboard.colCode">Ürün kodu</th>
+              <th data-i18n="dashboard.colProduct">Ürün</th>
+              <th data-i18n="dashboard.colType">Tip</th>
+              <th data-i18n="dashboard.colQty">Miktar</th>
+              <th data-i18n="dashboard.colUser">Kullanıcı</th>
+            </tr>
+          </thead>
+          <tbody id="recentMovementsBody">
+            <tr><td colspan="6" data-i18n="dashboard.movLoading">Yükleniyor…</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>

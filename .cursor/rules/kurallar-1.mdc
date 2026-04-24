@@ -1,0 +1,33 @@
+---
+alwaysApply: true
+---
+
+"Bu projeyi (Fabrika ERP V2) analiz etmeni ve geliştireceğimiz tüm yeni özelliklerde aşağıdaki 'Değişmez Kuralları' uygulamanı istiyorum:
+
+1. Tasarım ve Stil Standartları (UI/UX)
+Global Stil: Projedeki tüm sayfalar @style.css dosyasındaki tasarım diline sadık kalmalıdır.
+
+Layout Korunması: Yeni bir sayfa veya modül oluştururken, mevcut sayfaların (örneğin @projects.html veya @stock.html) header, sidebar ve ana konteyner yapısını birebir kopyala.
+
+Görsel Tutarlılık: Butonlar, tablolar ve form elemanları projenin genelindeki renk paleti ve padding/margin değerleriyle tam uyumlu olmalıdır.
+
+2. Çok Dilli Yapı ve i18n Zorunluluğu
+Hardcoded Metin Yasaktır: HTML dosyalarına doğrudan Türkçe veya İngilizce metin yazma.
+
+i18n Entegrasyonu: Tüm statik metinler @tr.json, @en.json, @uz.json ve @ru.json dosyalarından @i18n.js aracılığıyla çekilmelidir.
+
+Yeni Anahtar Ekleme: Yeni bir modül yaparken kullandığın metin anahtarlarını (örn: menu.new_module) tüm dil dosyalarına (başta tr.json ve en.json) eklemeyi unutma.
+
+3. Backend ve Veri Standartları
+Metin Normalizasyonu: Kullanıcıdan gelen tüm metin girişlerini (ad, soyad, ürün adı, not vb.) veritabanına kaydetmeden önce mutlaka @textNormalize.js içindeki toUpperTr fonksiyonundan geçir.
+
+FIFO ve Maliyet: Stok çıkış işlemlerinde @stockCostLayerService.js içindeki FIFO mantığını ve maliyet katmanlarını mutlaka işlet.
+
+Transaction Güvenliği: Birden fazla tabloyu etkileyen servis işlemlerinde _useConn parametresi ile transaction bütünlüğünü koru.
+
+4. Teknik Denetim (Sürekli Kontrol)
+Named Placeholders: SQL sorgularında :param formatını kullanırken mysql2 konfigürasyonunun (namedPlaceholders: true) etkin olduğundan emin ol.
+
+Negatif Stok: Hiçbir işlem stoğu negatife düşürmemeli; Math.max(0, ...) kullanımının ötesinde, işlem öncesi miktar kontrolü yap.
+
+Senden Beklentim: Sana yeni bir modül veya sayfa yap dediğimde, yukarıdaki stil ve dil kurallarını ben hatırlatmadan, projenin mevcut dokusuna (context) bakarak otomatik uygula."

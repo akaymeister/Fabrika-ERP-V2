@@ -1,6 +1,22 @@
 const { pool } = require('../config/database');
 const { err } = require('../utils/serviceError');
 const { optionalNoteUpperTr } = require('../utils/textNormalize');
+
+const IN_SOURCE = {
+  MANUAL: 'MANUAL_STOCK_IN',
+  PURCHASE: 'PURCHASE_RECEIPT',
+  ADJUST: 'STOCK_ADJUSTMENT',
+  RETURN: 'RETURN_IN',
+  OPENING: 'OPENING_BALANCE',
+};
+
+/** API / manuel stok girişinden izinli kaynaklar (PURCHASE_RECEIPT sadece mal kabul servisi) */
+const MANUAL_IN_SOURCES = new Set([
+  IN_SOURCE.MANUAL,
+  IN_SOURCE.ADJUST,
+  IN_SOURCE.RETURN,
+  IN_SOURCE.OPENING,
+]);
 const { addLayer, consumeFifoM2, consumeFifoM2ForOut } = require('./stockCostLayerService');
 const { getValue, KEYS, usdToSystemAmount } = require('./systemSettingsService');
 const { m3FromStockM2AndDepth } = require('./stockProductService');
@@ -36,6 +52,10 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   const unitJoin = hasUnitId ? 'LEFT JOIN units u2 ON u2.id = p.unit_id' : '';
   const hasDirectM2 = await columnExists('stock_movements', 'direct_m2_entry');
   const directM2Sel = hasDirectM2 ? 'sm.direct_m2_entry' : 'NULL AS direct_m2_entry';
+  const hasMs = await columnExists('stock_movements', 'movement_source');
+  const msSel = hasMs
+    ? 'sm.movement_source, sm.purchase_order_id, sm.goods_receipt_id'
+    : 'NULL AS movement_source, NULL AS purchase_order_id, NULL AS goods_receipt_id';
   const hasProjects = await tableExists('projects');
   const projSel = hasProjects ? 'pr.name AS project_name, pr.project_code AS project_code' : 'NULL AS project_name, NULL AS project_code';
   const projJoin = hasProjects
@@ -45,6 +65,7 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   const whSel = hasWh ? 'p.warehouse_id, p.warehouse_subcategory_id' : 'NULL AS warehouse_id, NULL AS warehouse_subcategory_id';
   const [rows] = await pool.query(
     `SELECT sm.id, sm.product_id, sm.movement_type, sm.qty, sm.note, sm.ref_type, sm.ref_id, sm.created_at,
+            ${msSel},
             p.product_code, p.name AS product_name, p.m2_per_piece, p.unit AS p_unit, ${unitCol},
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS user_username, ${directM2Sel}, ${whSel}, ${projSel}${extra}
      FROM stock_movements sm
@@ -67,6 +88,47 @@ async function columnExists(table, col) {
     [table, col]
   );
   return r[0].c > 0;
+}
+
+function normalizeInSource(raw) {
+  const s = String(raw || IN_SOURCE.MANUAL).trim().toUpperCase();
+  if (s === 'MANUAL' || s === 'MANUAL_STOCK' || s === '') {
+    return IN_SOURCE.MANUAL;
+  }
+  if (Object.values(IN_SOURCE).includes(s)) {
+    return s;
+  }
+  return IN_SOURCE.MANUAL;
+}
+
+/** Bekleyen satınalma siparişi satırı varken manuel stok artışı yapılmasın */
+async function isProductTiedToOpenPurchaseOnConn(conn, productId) {
+  const [rows] = await conn.query(
+    `SELECT 1 AS x
+     FROM purchase_order_items poi
+     INNER JOIN purchase_orders po ON po.id = poi.order_id
+     WHERE poi.product_id = ?
+       AND (poi.qty_received < poi.qty_ordered - 0.0001)
+       AND po.status NOT IN ('cancelled', 'completed')
+     LIMIT 1`,
+    [productId]
+  );
+  return rows && rows.length > 0;
+}
+
+async function applyStockMovementInMeta(conn, movementId, { movementSource, purchaseOrderId, goodsReceiptId } = {}) {
+  if (!(await columnExists('stock_movements', 'movement_source')) || !movementId) {
+    return;
+  }
+  const src = normalizeInSource(movementSource);
+  const po = purchaseOrderId != null && purchaseOrderId !== '' ? parseInt(String(purchaseOrderId), 10) : null;
+  const gr = goodsReceiptId != null && goodsReceiptId !== '' ? parseInt(String(goodsReceiptId), 10) : null;
+  await conn.query('UPDATE stock_movements SET movement_source = ?, purchase_order_id = ?, goods_receipt_id = ? WHERE id = ?', [
+    src,
+    Number.isFinite(po) && po > 0 ? po : null,
+    Number.isFinite(gr) && gr > 0 ? gr : null,
+    movementId,
+  ]);
 }
 
 /**
@@ -182,6 +244,18 @@ async function replaceStockInMovement({ oldMovementId, userId, reason, inParams 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
+    if (await columnExists('stock_movements', 'movement_source')) {
+      const [[oldRow]] = await conn.query('SELECT movement_source FROM stock_movements WHERE id = ?', [
+        oldMovementId,
+      ]);
+      if (oldRow && String(oldRow.movement_source) === IN_SOURCE.PURCHASE) {
+        await conn.rollback();
+        return err(
+          'Mal kabul kaydına bağlı hareket buradan değiştirilemez; mal kabul / düzeltme akışını kullanın',
+          'api.stock.cannot_replace_purchase_receipt'
+        );
+      }
+    }
     const v = await voidStockInMovementOnConn({
       conn,
       movementId: oldMovementId,
@@ -374,7 +448,12 @@ async function recordMovementIn(params) {
     lineTotalUzs,
     lineTotalUsd,
     fxUzsPerUsd,
+    movementSource: movementSourceRaw,
+    purchaseOrderId,
+    goodsReceiptId,
+    bypassOpenPurchaseBlock = false,
   } = params;
+  const srcNorm = normalizeInSource(movementSourceRaw);
 
   const ownConn = !_useConn;
   const conn = _useConn || (await pool.getConnection());
@@ -436,6 +515,27 @@ async function recordMovementIn(params) {
         await conn.rollback();
       }
       return err('Proje bulunamadı veya pasif', 'api.stock.project_invalid');
+    }
+    if (srcNorm === IN_SOURCE.PURCHASE) {
+      const poid = parseInt(String(purchaseOrderId), 10);
+      const grid = parseInt(String(goodsReceiptId), 10);
+      if (!Number.isFinite(poid) || poid < 1 || !Number.isFinite(grid) || grid < 1) {
+        if (ownConn) {
+          await conn.rollback();
+        }
+        return err('Mal kabul hareketi için sipariş ve kabul kaydı gerekli', 'api.stock.purchase_receipt_meta_required');
+      }
+    }
+    if (srcNorm !== IN_SOURCE.PURCHASE && !bypassOpenPurchaseBlock) {
+      if (await isProductTiedToOpenPurchaseOnConn(conn, pid)) {
+        if (ownConn) {
+          await conn.rollback();
+        }
+        return err(
+          'Bu ürün için bekleyen satınalma siparişi var. Stok artışı yalnızca Mal Kabul ekranından yapılabilir (yönetici istisnası: süper yönetici).',
+          'api.stock.manual_blocked_pending_po'
+        );
+      }
     }
     const refTypeRow = 'project';
     const refIdRow = pj;
@@ -547,6 +647,11 @@ async function recordMovementIn(params) {
       );
       mid = r.insertId;
     }
+    await applyStockMovementInMeta(conn, mid, {
+      movementSource: srcNorm,
+      purchaseOrderId,
+      goodsReceiptId,
+    });
     if (await tableExists('stock_cost_layers')) {
       await addLayer(conn, {
         productId: pid,
@@ -717,8 +822,9 @@ async function tableExists(t) {
 }
 
 /** Eski basit in/out (para yok) */
-async function recordMovement({ productId, movementType, qty, userId, note, refType, refId }) {
+async function recordMovement({ productId, movementType, qty, userId, note, refType, refId, movementSource, bypassOpenPurchaseBlock }) {
   const type = String(movementType);
+  const inSrc = normalizeInSource(movementSource);
   if (type === 'in' && (await columnExists('stock_movements', 'line_total_uzs'))) {
     // yeni yol: body'de finans beklenir — controller ayrı çağırır
     return err('USE_DETAILED_IN', 'api.stock.use_detailed_in');
@@ -744,6 +850,15 @@ async function recordMovement({ productId, movementType, qty, userId, note, refT
       await poolConn.rollback();
       return err('Ürün yok', 'api.stock.product_not_found');
     }
+    if (type === 'in' && inSrc !== IN_SOURCE.PURCHASE && !bypassOpenPurchaseBlock) {
+      if (await isProductTiedToOpenPurchaseOnConn(poolConn, pid)) {
+        await poolConn.rollback();
+        return err(
+          'Bu ürün için bekleyen satınalma siparişi var. Stok artışı yalnızca Mal Kabul ekranından yapılabilir (yönetici istisnası: süper yönetici).',
+          'api.stock.manual_blocked_pending_po'
+        );
+      }
+    }
     const curM2 = Number(row.stock_m2) || Number(row.stock_qty) || 0;
     let newStock;
     if (type === 'in') {
@@ -761,6 +876,9 @@ async function recordMovement({ productId, movementType, qty, userId, note, refT
       `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, ref_type, ref_id, note) VALUES (?,?,?,?,?,?,?)`,
       [pid, userId, type, q, refType || 'manual', refId, noteRow]
     );
+    if (type === 'in') {
+      await applyStockMovementInMeta(poolConn, ins.insertId, { movementSource: inSrc, purchaseOrderId: null, goodsReceiptId: null });
+    }
     await poolConn.commit();
     return { movementId: ins.insertId, newStock: String(newStock) };
   } catch (e) {

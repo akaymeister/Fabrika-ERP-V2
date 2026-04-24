@@ -25,6 +25,7 @@
     <button type="button" class="logout-btn" id="btnPr" data-i18n="purch.print.btn">Yazdır</button>
     <a href="/purchase-processing.html" class="version-btn" data-i18n="purch.print.back">İşleme dön</a>
   </p>
+  <div id="navSlot" class="no-print" style="padding:0 12px 10px;max-width:1200px;margin:0 auto"></div>
   <div class="print-root" id="root"></div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/purchasing-common.js" defer></script>
@@ -48,14 +49,18 @@
       const o = data.order;
       const rows = (o.items || [])
         .map(
-          (it) => `<tr>
+          (it) => {
+            const lineSup = (it.supplier_label || it.line_supplier_name || o.supplier_name || '—').toString().replace(/</g, '');
+            return `<tr>
           <td>${(it.product_code || '').replace(/</g, '')}</td>
           <td>${(it.product_name || '').replace(/</g, '')}</td>
+          <td style="font-size:11px">${lineSup}</td>
           <td style="text-align:right">${(Number(it.qty_ordered) || 0).toFixed(4)}</td>
           <td>${money(it.unit_price)}</td>
           <td style="text-align:right">${money(it.line_total)}</td>
           <td style="font-size:11px">${it.request_line_image_path || it.request_line_pdf_path ? '●' : '—'}</td>
-        </tr>`
+        </tr>`;
+          }
         )
         .join('');
       const atts = (o.items || [])
@@ -86,13 +91,14 @@
             <tr>
               <th>Kod</th>
               <th>Ürün</th>
+              <th>${tK('purch.col.supplier')}</th>
               <th>Miktar</th>
               <th>${tK('purch.col.unitPrice')}</th>
               <th>Toplam</th>
               <th>Ek</th>
             </tr>
           </thead>
-          <tbody>${rows || '<tr><td colspan="6">—</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="7">—</td></tr>'}</tbody>
         </table>
         <p style="text-align:right;font-weight:700">Genel: ${grand}</p>
         <div class="pl-atch-wrap">${atts}</div>
@@ -100,6 +106,14 @@
       `;
       if (window.i18n && window.i18n.apply) {
         window.i18n.apply(document.getElementById('root'));
+      }
+      const ap = new URLSearchParams(window.location.search).get('autoprint');
+      if (ap === '1' || ap === 'true') {
+        setTimeout(() => {
+          if (globalThis.print) {
+            globalThis.print();
+          }
+        }, 450);
       }
     }
     document.getElementById('btnPr').addEventListener('click', () => globalThis.print && globalThis.print());
@@ -109,6 +123,9 @@
       }
       if (window.loadErpPublicConfig) {
         await loadErpPublicConfig();
+      }
+      if (window.initPurchasingPageNav) {
+        await window.initPurchasingPageNav('proc');
       }
       await go();
     })();

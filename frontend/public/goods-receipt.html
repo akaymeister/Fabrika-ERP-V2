@@ -106,8 +106,8 @@
     async function loadOrderList() {
       const { ok, data } = await purApi('/api/purchasing/orders');
       if (!ok || !data || !data.ok) return;
-      ordersCache = (data.orders || []).filter(
-        (o) => o.status === 'ordered' || o.status === 'partial'
+      ordersCache = (data.orders || []).filter((o) =>
+        ['awaiting_goods_receipt', 'ordered', 'partial'].includes(o.status)
       );
       fillOrderSelect();
     }

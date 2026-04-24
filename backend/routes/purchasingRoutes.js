@@ -25,6 +25,10 @@ const {
   postOrder,
   getOrders,
   getOrder,
+  putOrder,
+  postOrderStartProcessing,
+  postOrderBuyerAction,
+  postRequestBuyerAction,
   postGoodsReceipt,
 } = require('../controllers/purchasingController');
 
@@ -42,6 +46,9 @@ router.get('/scope', getScope);
 router.get('/warehouses', requireAnyPermission(ANY), getWarehouses);
 router.get('/orders', requireAnyPermission(ANY), getOrders);
 router.get('/orders/:id', requireAnyPermission(ANY), getOrder);
+router.put('/orders/:id', requirePermission(PUR), putOrder);
+router.post('/orders/:id/start-processing', requirePermission(PUR), postOrderStartProcessing);
+router.post('/orders/:id/buyer-action', requirePermission(PUR), postOrderBuyerAction);
 router.post('/goods-receipts', requireAnyPermission(ANY), postGoodsReceipt);
 
 router.get('/next-request-code', requireAnyPermission(PUR_REQ), getNextRequestCode);
@@ -67,6 +74,7 @@ router.post('/requests', requireAnyPermission(PUR_REQ), postRequest);
 router.post('/requests/:id/submit', requireAnyPermission(PUR_REQ), postRequestSubmit);
 router.post('/requests/:id/cancel', requireAnyPermission(PUR_SEE), postRequestCancel);
 router.patch('/requests/:id/status', requireAnyPermission(PUR_APP), patchRequestStatus);
+router.post('/requests/:id/buyer-action', requirePermission(PUR), postRequestBuyerAction);
 router.get('/approved-request-items', requirePermission(PUR), getApprovedRequestItems);
 router.post('/orders', requirePermission(PUR), postOrder);
 

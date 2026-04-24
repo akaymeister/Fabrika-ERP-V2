@@ -20,16 +20,12 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
+        <a href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
         <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
       </div>
     </div>
-    <nav class="stock-nav" aria-label="Project module">
-      <a href="/projects.html" data-i18n="nav.project.hub">Özet</a>
-      <a href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
-      <a href="/project-costs.html" data-i18n="nav.project.costs">Proje maliyet kontrolü</a>
-      <a href="/project-quotes.html" class="active" data-i18n="nav.project.quotes">Proje fiyat teklifleri</a>
-    </nav>
+    <div id="navSlot"></div>
     <div class="card" style="max-width: 720px">
       <span class="module-tag plan-tag" data-i18n="dashboard.tagPlan">Yakında</span>
       <h2 data-i18n="project.placeholder.title" style="margin-top: 12px">Geliştirme aşamasında</h2>
@@ -37,6 +33,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/project-common.js" defer></script>
   <script>
     document.getElementById('languageSelect')?.addEventListener('change', (e) => {
       const v = e.target.value;
@@ -63,6 +60,9 @@
       if (sel) sel.value = lang;
       if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
       if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+      if (window.initProjectPageNav) {
+        await window.initProjectPageNav('quotes');
+      }
     })();
   </script>
 </body>

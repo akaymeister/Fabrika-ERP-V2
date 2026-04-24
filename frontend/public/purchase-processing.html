@@ -8,14 +8,30 @@
   <style>
     .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 900px; }
     @media (max-width: 700px) { .form-grid2 { grid-template-columns: 1fr; } }
+    .po-row-sel { background: #e0f2fe !important; }
+    .pur-line-scroll { max-width: 100%; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .pur-line-table { min-width: 960px; width: 100%; }
+    .pur-line-table th, .pur-line-table td { font-size: 13px; vertical-align: middle; padding: 8px 10px; }
+    .pur-line-table th { white-space: nowrap; background: #f8fafc; }
+    .pur-inp { min-height: 40px; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; font: inherit; }
+    select.pur-inp { min-height: 40px; min-width: 140px; }
+    .pur-d-img { max-height: 40px; max-width: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .r-stock { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .pur-req-btns { width: 100%; box-sizing: border-box; margin-top: 16px; text-align: right; }
+    .pur-req-btns-row { display: inline-flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .pur-req-btns .version-btn, .pur-req-btns .logout-btn, .pur-req-btns a.version-btn { width: auto; min-width: 0; flex: 0 0 auto; }
+    .proc-info-block { margin-top: 20px; opacity: 0.95; }
+    .proc-info-block h3 { font-size: 1rem; color: #64748b; font-weight: 600; }
+    .proc-info-block .pur-line-table { min-width: 700px; }
+    .save-link { background: none; border: none; color: #2563eb; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
   </style>
 </head>
 <body>
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
-        <h1 data-i18n="purch.proc.title">Satınalma işleme</h1>
-        <p class="subtitle" data-i18n="purch.proc.sub">Onaylı talep satırları → sipariş (birim fiyat, tedarikçi). Stok bu adımda artmaz.</p>
+        <h1 data-i18n="purch.proc.titleV2">Satınalma — işleme</h1>
+        <p class="subtitle" data-i18n="purch.proc.subV4">Ana ekran: üstte gelen siparişler, ortada sipariş işleme, altta talepler (yalnızca bilgi).</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
@@ -32,228 +48,102 @@
     <div id="navSlot"></div>
     <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
 
-    <section class="card" id="newOrderBlock">
-      <h3 data-i18n="purch.proc.createBlock">Sipariş oluştur</h3>
-      <div class="form-grid2" style="margin-top:8px">
-        <div>
-          <label for="sup" data-i18n="purch.col.supplier">Tedarikçi</label>
-          <select id="sup" style="width:100%;padding:8px;border-radius:8px"></select>
-        </div>
-        <div>
-          <label for="oDate" data-i18n="purch.wf.colDate">Sipariş tarihi</label>
-          <input type="date" id="oDate" style="width:100%;padding:8px;border-radius:8px" />
-        </div>
-        <div>
-          <label for="dDate" data-i18n="purch.delivery">Termin</label>
-          <input type="date" id="dDate" style="width:100%;padding:8px;border-radius:8px" />
-        </div>
-        <div>
-          <label for="oCur" data-i18n="purch.cur">Para birimi</label>
-          <input type="text" id="oCur" maxlength="3" style="width:100%;padding:8px;border-radius:8px" />
-        </div>
-        <div style="grid-column:1/-1">
-          <label for="oNote" data-i18n="purch.ordNote">Sipariş notu</label>
-          <textarea id="oNote" rows="2" style="width:100%;border-radius:8px;padding:8px;max-width:800px"></textarea>
-        </div>
-      </div>
-      <p class="muted" data-i18n="purch.proc.hint" style="font-size:13px">Aşağıda her satır için birim fiyat girin, işaretleyin, oluşturun.</p>
-      <div style="overflow-x:auto">
-        <table>
+    <section class="card">
+      <h3 data-i18n="purch.proc.blockIncoming">Gelen siparişler</h3>
+      <p class="muted" style="font-size:13px" data-i18n="purch.proc.incomingSub">Yönetici onayı almış talepler. Satıra tıklayarak sipariş işlemeye alın.</p>
+      <div class="pur-line-scroll">
+        <table class="pur-line-table">
           <thead>
             <tr>
               <th data-i18n="purch.req.lColCode">Talep</th>
-              <th data-i18n="purch.col.product">Ürün</th>
-              <th data-i18n="purch.req.colQty">Miktar</th>
-              <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
-              <th data-i18n="purch.proc.inOrder">Dahil</th>
-            </tr>
-          </thead>
-          <tbody id="apprBody"><tr><td colspan="5">—</td></tr></tbody>
-        </table>
-      </div>
-      <p><button type="button" class="logout-btn" style="background:#1d4ed8;border:none" id="btnCreate" data-i18n="purch.ord.create">Oluştur</button></p>
-    </section>
-
-    <section class="card" style="margin-top:16px">
-      <h3 data-i18n="purch.ordList">Sipariş listesi</h3>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr>
-              <th data-i18n="purch.ordCode">Sipariş no</th>
-              <th data-i18n="purch.col.supplier">Tedarikçi</th>
               <th data-i18n="purch.req.lColProject">Proje</th>
-              <th data-i18n="purch.delivery">Termin</th>
-              <th data-i18n="purch.ord.lColSt">Durum</th>
-              <th data-i18n="purch.ord.lColPr">Yazdır</th>
+              <th data-i18n="purch.req.lColUser">Talep eden</th>
+              <th data-i18n="purch.req.lColStatus">Durum</th>
+              <th data-i18n="purch.proc.colProcure">Tedarik</th>
+              <th data-i18n="purch.wf.colDate">Tarih</th>
             </tr>
           </thead>
           <tbody id="ordBody"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
         </table>
       </div>
     </section>
-  </div>
-  <script src="/js/i18n.js" defer></script>
-  <script src="/js/purchasing-common.js" defer></script>
-  <script>
-  (function () {
-    const msg = document.getElementById('msg');
-    function showMsg(t, e) { msg.textContent = t; msg.style.color = e ? '#b91c1c' : '#0f766e'; }
-    const tK = (k) => (window.i18n && window.i18n.t) ? window.i18n.t(k) : k;
-    let approvedItems = [];
-    let priceInputs = [];
-    let chkEls = [];
 
-    async function loadSuppliers() {
-      const { ok, data } = await purApi('/api/purchasing/suppliers');
-      const s = document.getElementById('sup');
-      s.innerHTML = '<option value="">—</option>';
-      if (ok && data && data.ok) {
-        (data.suppliers || []).forEach((r) => {
-          const o = document.createElement('option');
-          o.value = r.id;
-          o.textContent = r.name;
-          s.appendChild(o);
-        });
-      }
-    }
-    function stOrd(s) {
-      const m = { ordered: 'purch.status.ord.ordered', partial: 'purch.status.ord.partial', completed: 'purch.status.ord.completed', cancelled: 'purch.status.ord.cancelled' };
-      return tK(m[s] || s);
-    }
-    async function loadApproved() {
-      const { ok, data } = await purApi('/api/purchasing/approved-request-items');
-      const body = document.getElementById('apprBody');
-      if (!ok || !data || !data.ok) {
-        body.innerHTML = '<tr><td colspan="5">—</td></tr>';
-        return;
-      }
-      approvedItems = data.items || [];
-      priceInputs = [];
-      chkEls = [];
-      if (!approvedItems.length) {
-        body.innerHTML = '<tr><td colspan="5">' + tK('purch.proc.noLines') + '</td></tr>';
-        return;
-      }
-      body.innerHTML = approvedItems
-        .map((it, i) => {
-          const u = (it.request_unit || it.unit_code || 'm2');
-          return `<tr>
-            <td>${(it.request_code || '').replace(/</g, '')}</td>
-            <td>${(it.product_name || '').replace(/</g, '')}</td>
-            <td>${Number(it.quantity) || 0} ${(u + '').replace(/</g, '')}</td>
-            <td><input type="number" class="p-price" data-i="${i}" min="0" step="0.0001" style="width:120px;padding:6px" /></td>
-            <td><input type="checkbox" class="p-chk" data-i="${i}" checked /></td>
-          </tr>`;
-        })
-        .join('');
-      body.querySelectorAll('.p-price').forEach((el) => {
-        priceInputs[parseInt(el.getAttribute('data-i'), 10)] = el;
-      });
-      body.querySelectorAll('.p-chk').forEach((el) => {
-        chkEls[parseInt(el.getAttribute('data-i'), 10)] = el;
-      });
-    }
-    async function loadOrders() {
-      const { ok, data } = await purApi('/api/purchasing/orders');
-      const ob = document.getElementById('ordBody');
-      if (!ok || !data || !data.ok) {
-        ob.innerHTML = '<tr><td colspan="6">—</td></tr>';
-        return;
-      }
-      const ords = data.orders || [];
-      if (!ords.length) {
-        ob.innerHTML = '<tr><td colspan="6">' + tK('purch.req.empty') + '</td></tr>';
-        return;
-      }
-      ob.innerHTML = ords
-        .map(
-          (o) =>
-            `<tr>
-              <td><a href="/purchase-order-print.html?id=${o.id}">${(o.order_code || o.id + '').replace(/</g, '')}</a></td>
-              <td>${(o.supplier_name || '—').replace(/</g, '')}</td>
-              <td>${(o.project_code || '—').replace(/</g, '')}</td>
-              <td>${(o.delivery_date || '—').toString().replace(/</g, '')}</td>
-              <td>${stOrd(o.status)}</td>
-              <td><a class="version-btn" href="/purchase-order-print.html?id=${o.id}" target="_blank" rel="noopener" style="text-decoration:none;font-size:12px">PDF / yazdır</a></td>
-            </tr>`
-        )
-        .join('');
-      if (window.i18n && window.i18n.apply) {
-        window.i18n.apply(ob);
-      }
-    }
-    document.getElementById('btnCreate').addEventListener('click', async () => {
-      const sup = document.getElementById('sup').value;
-      const oDate = document.getElementById('oDate').value;
-      const dDate = document.getElementById('dDate').value;
-      const cur = (document.getElementById('oCur').value || window.__erpCurrency || 'UZS').trim().toUpperCase().slice(0, 3) || 'UZS';
-      const oNote = document.getElementById('oNote').value;
-      const lines = [];
-      for (let i = 0; i < approvedItems.length; i++) {
-        if (!chkEls[i] || !chkEls[i].checked) {
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        const p = priceInputs[i] && priceInputs[i].value !== '' ? parseFloat(String(priceInputs[i].value).replace(',', '.')) : NaN;
-        if (!Number.isFinite(p) || p < 0) {
-          showMsg(tK('purch.proc.priceEach'), true);
-          return;
-        }
-        lines.push({ requestItemId: approvedItems[i].id, unitPrice: p });
-      }
-      if (!lines.length) {
-        showMsg(tK('purch.proc.pickLine'), true);
-        return;
-      }
-      if (!sup) {
-        showMsg(tK('purch.proc.supplier'), true);
-        return;
-      }
-      const { ok, data } = await purApi('/api/purchasing/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          supplierId: parseInt(sup, 10),
-          orderDate: oDate,
-          deliveryDate: dDate || null,
-          currency: cur,
-          note: oNote,
-          lines,
-        }),
-      });
-      if (!ok) {
-        showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : 'Hata', true);
-        return;
-      }
-      showMsg(tK('purch.proc.ok'));
-      loadApproved();
-      loadOrders();
-    });
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
-    });
-    (async function init() {
-      if (window.initPurchasingPageNav) {
-        await initPurchasingPageNav('proc');
-      }
-      document.getElementById('oDate').value = new Date().toISOString().slice(0, 10);
-      const sc = window.getPurchasingScope ? getPurchasingScope() : { canPurchasing: true };
-      if (!sc.canPurchasing) {
-        const b = document.getElementById('newOrderBlock');
-        if (b) {
-          b.style.display = 'none';
-        }
-      } else {
-        await loadSuppliers();
-        loadApproved();
-      }
-      loadOrders();
-      if (window.i18n && window.i18n.apply) {
-        window.i18n.apply(document);
-      }
-    })();
-  })();
-  </script>
+    <section class="card" style="margin-top:16px">
+      <h3 data-i18n="purch.proc.blockProcessing">Sipariş işleme</h3>
+      <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
+      <div id="orderFormBlock" hidden>
+        <p id="orderMeta" style="font-weight:600;margin-bottom:12px"></p>
+        <div class="form-grid2" style="margin-bottom:12px">
+          <div>
+            <label for="fODate" data-i18n="purch.wf.colDate">Sipariş tarihi</label>
+            <input type="date" id="fODate" class="pur-inp" style="width:100%" />
+          </div>
+          <div>
+            <label for="fDDate" data-i18n="purch.delivery">Termin</label>
+            <input type="date" id="fDDate" class="pur-inp" style="width:100%" />
+          </div>
+          <div>
+            <label for="fCur" data-i18n="purch.proc.defaultCur">Varsayılan para birimi (PB)</label>
+            <input type="text" id="fCur" class="pur-inp" maxlength="3" style="width:100%;text-transform:uppercase" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label for="fNote" data-i18n="purch.ordNote">Sipariş notu</label>
+            <textarea id="fNote" class="pur-inp" rows="2" style="width:100%;max-width:900px"></textarea>
+          </div>
+        </div>
+        <div class="pur-line-scroll">
+          <table class="pur-line-table">
+            <thead>
+              <tr>
+                <th data-i18n="purch.proc.colProductName">Ürün adı</th>
+                <th data-i18n="purch.req.colQty">Talep miktarı</th>
+                <th data-i18n="purch.proc.colUnit">Birim</th>
+                <th data-i18n="purch.col.stockOnHand">Mevcut stok</th>
+                <th data-i18n="purch.col.supplier">Tedarikçi</th>
+                <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
+                <th data-i18n="purch.cur">Kur (PB)</th>
+                <th data-i18n="purch.proc.colLineTotal">Toplam</th>
+                <th data-i18n="purch.proc.colAttachShort">Ek</th>
+              </tr>
+            </thead>
+            <tbody id="linesDetailBody"></tbody>
+          </table>
+        </div>
+        <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
+          <div class="pur-req-btns-row">
+            <button type="button" class="version-btn" id="btnStart" style="background:#0d9488;border:none;color:#fff" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
+            <button type="button" class="version-btn" id="btnComplete" disabled data-i18n="purch.proc.btnComplete" style="background:#16a34a;border:none;color:#fff">Siparişi tamamla</button>
+            <button type="button" class="version-btn" id="btnPrint" style="background:#334155;border:none;color:#fff" data-i18n="purch.print.btn">Yazdır / PDF</button>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:10px" data-i18n="purch.proc.helpFooter">İşleme Al → durumu &quot;İşleniyor&quot; yapar. Siparişi Tamamla → satınalma siparişini oluşturup mal kabul ekranına yönlendirir. Yazdır → form ve ekleri tek sayfada yazdırır/PDF kaydeder.</p>
+      </div>
+    </section>
+
+    <section class="card proc-info-block">
+      <h3 data-i18n="purch.proc.infoRequestsH">Satınalma talepleri (bilgi amaçlı)</h3>
+      <p class="muted" style="font-size:12px;margin:0 0 10px" data-i18n="purch.proc.infoRequestsP">Güncel detay ve onay için talepler sayfasını kullanın.</p>
+      <div class="pur-line-scroll">
+        <table class="pur-line-table">
+          <thead>
+            <tr>
+              <th data-i18n="purch.req.lColCode">Talep</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.req.lColUser">Talep eden</th>
+              <th data-i18n="purch.req.lColStatus">Durum</th>
+              <th data-i18n="purch.proc.colProcure">Tedarik</th>
+              <th data-i18n="purch.wf.colDate">Tarih</th>
+            </tr>
+          </thead>
+          <tbody id="reqBody"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px"><a href="/purchase-requests.html" class="version-btn" data-i18n="purch.proc.linkRequests" style="text-decoration:none;font-size:12px">Talepler &amp; onay</a></p>
+    </section>
+
+  </div>
+  <script src="/js/i18n.js?v=14" defer></script>
+  <script src="/js/purchasing-common.js?v=14" defer></script>
+  <script src="/js/purchase-processing.js?v=14" defer></script>
 </body>
 </html>

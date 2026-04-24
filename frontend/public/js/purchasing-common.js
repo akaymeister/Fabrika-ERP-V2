@@ -1,7 +1,13 @@
+/**
+ * Hızlı menü standardı: sayfada <div id="navSlot"></div> + initPurchasingPageNav('anahtar').
+ * Anahtarlar: openreq | listreq | appr | proc | suppliers | hub
+ */
 const PUR_NAV_FALLBACK_TR = {
   'nav.purch.requisitionOpen': 'Talep aç',
   'nav.purch.requests': 'Talepler & onay',
+  'nav.purch.approvals': 'Yönetici onayları',
   'nav.purch.processing': 'Satınalma işleme',
+  'nav.purch.suppliers': 'Tedarikçiler',
   'nav.purch.hub': 'Satınalma',
 };
 
@@ -33,7 +39,9 @@ function purchasingNavHTML(active) {
   const items = [
     { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', need: 'request' },
     { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'see' },
+    { href: '/purchase-approvals.html', key: 'appr', k: 'nav.purch.approvals', need: 'approve' },
     { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'purch' },
+    { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'purch' },
     { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },
   ];
   return `<nav class="stock-nav" aria-label="Purchasing">
@@ -46,6 +54,9 @@ function purchasingNavHTML(active) {
           return '';
         }
         if (i.need === 'see' && !__purScope.canRequest && !__purScope.canApprove && !__purScope.canPurchasing) {
+          return '';
+        }
+        if (i.need === 'approve' && !__purScope.canApprove && !__purScope.canPurchasing) {
           return '';
         }
         if (i.need === 'purch' && !__purScope.canPurchasing) {

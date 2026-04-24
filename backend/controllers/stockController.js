@@ -1,7 +1,8 @@
 const multer = require('multer');
 const { pool } = require('../config/database');
 const { listBrands, createBrand, updateBrand, deleteBrand } = require('../services/stockBrandService');
-const { listProducts, createProduct, updateProduct, deleteProduct: deleteProductService } = require('../services/stockProductService');
+const { listProducts, createProduct, updateProduct, deleteProduct: deleteProductService, getProductById } = require('../services/stockProductService');
+const { logActivity } = require('../services/activityLogService');
 const { buildTemplateBuffer, importProductsFromExcelBuffer } = require('../services/stockProductImportService');
 const {
   listMovements,
@@ -12,6 +13,7 @@ const {
   voidStockOutMovement,
   replaceStockInMovement,
   replaceStockOutMovement,
+  columnExists,
 } = require('../services/stockMovementService');
 const { listActiveProjectsBrief } = require('../services/projectService');
 const {
@@ -24,6 +26,21 @@ const {
 } = require('../services/warehouseService');
 const { jsonOk, jsonError } = require('../utils/apiResponse');
 const { toUpperTr } = require('../utils/textNormalize');
+
+const API_MOVEMENT_IN_SOURCES = new Set(['MANUAL_STOCK_IN', 'STOCK_ADJUSTMENT', 'RETURN_IN', 'OPENING_BALANCE']);
+
+function movementSourceForStockIn(b) {
+  const s = String(b?.movementSource || 'MANUAL_STOCK_IN')
+    .trim()
+    .toUpperCase();
+  if (s === 'PURCHASE_RECEIPT' || s === 'PURCHASE') {
+    return { error: 'PURCHASE' };
+  }
+  if (!API_MOVEMENT_IN_SOURCES.has(s)) {
+    return { error: 'INVALID' };
+  }
+  return { source: s };
+}
 
 const productImportUpload = multer({
   storage: multer.memoryStorage(),
@@ -157,6 +174,15 @@ async function postProduct(req, res) {
   if (out.error) {
     return res.status(400).json(validationOut(out));
   }
+  const after = await getProductById(out.id);
+  await logActivity(req, {
+    action_type: 'CREATE',
+    module_name: 'products',
+    table_name: 'products',
+    record_id: out.id,
+    new_data: after || { id: out.id, productCode: out.productCode, name: out.name },
+    description: 'Ürün oluşturuldu',
+  });
   return res.status(201).json(
     jsonOk({
       id: out.id,
@@ -196,6 +222,7 @@ async function postProductImport(req, res) {
 async function patchProduct(req, res) {
   const id = parseInt(String(req.params.id), 10);
   const b = req.body;
+  const before = await getProductById(id);
   const out = await updateProduct(id, {
     materialLabel: b?.materialLabel,
     widthMm: b?.widthMm,
@@ -211,11 +238,22 @@ async function patchProduct(req, res) {
   if (out.error) {
     return res.status(400).json(validationOut(out));
   }
+  const after = await getProductById(id);
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'products',
+    table_name: 'products',
+    record_id: id,
+    old_data: before,
+    new_data: after,
+    description: 'Ürün güncellendi',
+  });
   return res.json(jsonOk(out));
 }
 
 async function removeProduct(req, res) {
   const id = parseInt(String(req.params.id), 10);
+  const before = await getProductById(id);
   const out = await deleteProductService(id);
   if (out.error) {
     if (out.messageKey === 'api.stock.product_not_found') {
@@ -223,6 +261,14 @@ async function removeProduct(req, res) {
     }
     return res.status(400).json(validationOut(out));
   }
+  await logActivity(req, {
+    action_type: 'DELETE',
+    module_name: 'products',
+    table_name: 'products',
+    record_id: id,
+    old_data: before,
+    description: 'Ürün silindi',
+  });
   return res.json(jsonOk({ ok: true }));
 }
 
@@ -270,6 +316,21 @@ async function postVoidMovement(req, res) {
     if (!row) {
       return res.status(404).json(jsonError('NOT_FOUND', 'Hareket bulunamadı', null, 'api.stock.movement_not_found'));
     }
+    if ((await columnExists('stock_movements', 'movement_source')) && String(row.t).toLowerCase() === 'in') {
+      const [[rsrc]] = await pool.query('SELECT movement_source AS ms FROM stock_movements WHERE id = ?', [id]);
+      if (String(rsrc && rsrc.ms) === 'PURCHASE_RECEIPT') {
+        return res
+          .status(400)
+          .json(
+            jsonError(
+              'VALIDATION',
+              'Mal kabul ile oluşan stok girişi bu ekrandan iptal edilemez; satınalma / depo süreci üzerinden düzeltin.',
+              null,
+              'api.stock.void_purchase_receipt_forbidden'
+            )
+          );
+      }
+    }
     const uid = req.session.user.id;
     const t = String(row.t || '').toLowerCase();
     let out;
@@ -285,6 +346,14 @@ async function postVoidMovement(req, res) {
     if (out.error) {
       return res.status(400).json(validationOut(out));
     }
+    await logActivity(req, {
+      action_type: 'DELETE',
+      module_name: 'stock',
+      table_name: 'stock_movements',
+      record_id: id,
+      new_data: { voided: true, movementType: t, reason: String(req.body.reason).slice(0, 500) },
+      description: t === 'in' ? 'Stok giriş hareketi iptal' : 'Stok çıkış hareketi iptal',
+    });
     return res.json(jsonOk(out));
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -302,6 +371,17 @@ async function postReplaceStockIn(req, res) {
         .status(400)
         .json(jsonError('VALIDATION', 'Açıklama zorunludur', null, 'api.stock.void_reason_required'));
     }
+    const msrc = movementSourceForStockIn(b);
+    if (msrc.error === 'PURCHASE') {
+      return res
+        .status(400)
+        .json(
+          jsonError('VALIDATION', 'Satınalma kaynaklı stok sadece Mal kabul ekranından girilir', null, 'api.stock.purchase_in_only_gr')
+        );
+    }
+    if (msrc.error === 'INVALID') {
+      return res.status(400).json(jsonError('VALIDATION', 'Geçersiz stok giriş türü', null, 'api.stock.movement_source_invalid'));
+    }
     const inParams = {
       productId: b.productId,
       note: b.note,
@@ -312,6 +392,8 @@ async function postReplaceStockIn(req, res) {
       lineTotalUzs: b.lineTotalUzs,
       lineTotalUsd: b.lineTotalUsd,
       fxUzsPerUsd: b.fxUzsPerUsd,
+      movementSource: msrc.source,
+      bypassOpenPurchaseBlock: !!req.session.user.isSuperAdmin,
     };
     const out = await replaceStockInMovement({
       oldMovementId: req.params.id,
@@ -322,6 +404,16 @@ async function postReplaceStockIn(req, res) {
     if (out.error) {
       return res.status(400).json(validationOut(out));
     }
+    const oid = parseInt(String(req.params.id), 10);
+    await logActivity(req, {
+      action_type: 'UPDATE',
+      module_name: 'stock',
+      table_name: 'stock_movements',
+      record_id: out.movementId,
+      old_data: { movementId: oid },
+      new_data: { newMovementId: out.movementId, replaceIn: true },
+      description: 'Stok girişi değiştir (iptal + yeni kayıt)',
+    });
     return res.status(201).json(jsonOk(out));
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -355,6 +447,16 @@ async function postReplaceStockOut(req, res) {
     if (out.error) {
       return res.status(400).json(validationOut(out));
     }
+    const oid = parseInt(String(req.params.id), 10);
+    await logActivity(req, {
+      action_type: 'UPDATE',
+      module_name: 'stock',
+      table_name: 'stock_movements',
+      record_id: out.movementId,
+      old_data: { movementId: oid },
+      new_data: { newMovementId: out.movementId, replaceOut: true },
+      description: 'Stok çıkışı değiştir (iptal + yeni kayıt)',
+    });
     return res.status(201).json(jsonOk(out));
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -369,6 +471,17 @@ async function postMovement(req, res) {
   const type = String(b?.movementType || '').toLowerCase();
 
   if (type === 'in') {
+    const msrc = movementSourceForStockIn(b);
+    if (msrc.error === 'PURCHASE') {
+      return res
+        .status(400)
+        .json(
+          jsonError('VALIDATION', 'Satınalma kaynaklı stok sadece Mal kabul ekranından girilir', null, 'api.stock.purchase_in_only_gr')
+        );
+    }
+    if (msrc.error === 'INVALID') {
+      return res.status(400).json(jsonError('VALIDATION', 'Geçersiz stok giriş türü', null, 'api.stock.movement_source_invalid'));
+    }
     const hasFin = (Number(b?.lineTotalUzs) > 0) || (Number(b?.lineTotalUsd) > 0);
     if (hasFin || b?.inputCurrency) {
       const out = await recordMovementIn({
@@ -382,10 +495,26 @@ async function postMovement(req, res) {
         lineTotalUzs: b.lineTotalUzs,
         lineTotalUsd: b.lineTotalUsd,
         fxUzsPerUsd: b.fxUzsPerUsd,
+        movementSource: msrc.source,
+        bypassOpenPurchaseBlock: !!req.session.user.isSuperAdmin,
       });
       if (out.error) {
         return res.status(400).json(validationOut(out));
       }
+      await logActivity(req, {
+        action_type: 'STOCK_IN',
+        module_name: 'stock',
+        table_name: 'stock_movements',
+        record_id: out.movementId,
+        new_data: {
+          productId: b.productId,
+          movementId: out.movementId,
+          qtyM2: b.qtyM2,
+          qtyPieces: b.qtyPieces,
+          projectId: b.projectId,
+        },
+        description: 'Stok girişi',
+      });
       return res.status(201).json(jsonOk(out));
     }
   }
@@ -402,9 +531,34 @@ async function postMovement(req, res) {
     if (out.error) {
       return res.status(400).json(validationOut(out));
     }
+    await logActivity(req, {
+      action_type: 'STOCK_OUT',
+      module_name: 'stock',
+      table_name: 'stock_movements',
+      record_id: out.movementId,
+      new_data: {
+        productId: b.productId,
+        movementId: out.movementId,
+        qtyM2: b.qtyM2,
+        qtyPieces: b.qtyPieces,
+        projectId: b.projectId,
+      },
+      description: 'Stok çıkışı',
+    });
     return res.status(201).json(jsonOk(out));
   }
 
+  const msrc2 = movementSourceForStockIn(b);
+  if (msrc2.error === 'PURCHASE') {
+    return res
+      .status(400)
+      .json(
+        jsonError('VALIDATION', 'Satınalma kaynaklı stok sadece Mal kabul ekranından girilir', null, 'api.stock.purchase_in_only_gr')
+      );
+  }
+  if (msrc2.error === 'INVALID') {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz stok giriş türü', null, 'api.stock.movement_source_invalid'));
+  }
   const out = await recordMovement({
     productId: b?.productId,
     movementType: b?.movementType,
@@ -413,10 +567,21 @@ async function postMovement(req, res) {
     note: b?.note,
     refType: b?.refType,
     refId: b?.refId,
+    movementSource: msrc2.source,
+    bypassOpenPurchaseBlock: !!req.session.user.isSuperAdmin,
   });
   if (out.error) {
     return res.status(400).json(validationOut(out));
   }
+  const at = String(b?.movementType).toLowerCase() === 'in' ? 'STOCK_IN' : 'STOCK_OUT';
+  await logActivity(req, {
+    action_type: at,
+    module_name: 'stock',
+    table_name: 'stock_movements',
+    record_id: out.movementId,
+    new_data: { productId: b?.productId, movementType: b?.movementType, qty: b?.qty, movementId: out.movementId },
+    description: 'Stok hareketi (basit kayıt)',
+  });
   return res.status(201).json(jsonOk(out));
 }
 

@@ -8,7 +8,15 @@
   <style>
     .pur-req-top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
     .pur-req-top label { display: block; font-size: 13px; color: #475569; margin-bottom: 4px; }
-    .pur-line-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0; }
+    /* Tablo geniş: kaydırma sadece bu kutuda; kart genişliğini zorlamasın (min-width:0) */
+    .pur-line-scroll {
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
     .pur-line-table { min-width: 1280px; width: 100%; }
     .pur-line-table th, .pur-line-table td { font-size: 13px; vertical-align: middle; padding: 8px 10px; }
     .pur-line-table th { white-space: nowrap; background: #f8fafc; }
@@ -24,17 +32,25 @@
     .pur-line-table .r-imgprev { max-height: 40px; max-width: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; }
     .r-stock { font-variant-numeric: tabular-nums; font-weight: 600; }
     .copy-row-btn { width: auto; padding: 6px 10px; font-size: 12px; }
+    /* Global style.css tüm button { width:100% } — yan yana 3 butonu şişirip ekran taşır; burada sıfırla */
     .pur-req-btns {
-      display: flex;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 16px;
+      text-align: right;
+    }
+    .pur-req-btns-row {
+      display: inline-flex;
       flex-direction: row;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
       gap: 10px;
-      margin-top: 16px;
+      vertical-align: middle;
     }
-    .pur-req-btns .version-btn, .pur-req-btns .logout-btn { flex: 0 0 auto; }
-    @media (min-width: 900px) {
-      .pur-req-btns { flex-wrap: nowrap; }
+    .pur-req-btns .version-btn, .pur-req-btns .logout-btn {
+      width: auto;
+      min-width: 0;
+      flex: 0 0 auto;
     }
   </style>
 </head>
@@ -101,9 +117,11 @@
         </table>
       </div>
       <div class="pur-req-btns">
-        <button type="button" id="addLine" class="version-btn" data-i18n="purch.req.addLine">Satır ekle</button>
-        <button type="button" id="submitReq" class="logout-btn" style="background:#1d4ed8;border:none" data-i18n="purch.req.submit">Talep oluştur</button>
-        <button type="button" id="saveDraft" class="version-btn" data-i18n="purch.req.saveDraft" style="background:#64748b;color:#fff;border:none">Taslak kaydet</button>
+        <div class="pur-req-btns-row" role="group" aria-label="Talep eylemleri">
+          <button type="button" id="addLine" class="version-btn" data-i18n="purch.req.addLine">Satır ekle</button>
+          <button type="button" id="submitReq" class="logout-btn" style="background:#1d4ed8;border:none" data-i18n="purch.req.submit">Talep oluştur</button>
+          <button type="button" id="saveDraft" class="version-btn" data-i18n="purch.req.saveDraft" style="background:#64748b;color:#fff;border:none">Taslak kaydet</button>
+        </div>
       </div>
     </section>
   </div>

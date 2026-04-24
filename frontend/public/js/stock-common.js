@@ -1,3 +1,7 @@
+/**
+ * Hızlı menü standardı: sayfada <div id="navSlot"></div> + initStockPageNav('anahtar').
+ * Anahtarlar: hub | brands | warehouses | products | in | out | receipt | mov
+ */
 const STOCK_PATH = '/stock.html';
 
 const NAV_FALLBACK_TR = {

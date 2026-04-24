@@ -25,12 +25,7 @@
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
       </div>
     </div>
-    <nav class="stock-nav" aria-label="Project module">
-      <a href="/projects.html" data-i18n="nav.project.hub">Özet</a>
-      <a href="/project-list.html" class="active" data-i18n="nav.project.add">Proje ekle</a>
-      <a href="/project-costs.html" data-i18n="nav.project.costs">Proje maliyet kontrolü</a>
-      <a href="/project-quotes.html" data-i18n="nav.project.quotes">Proje fiyat teklifleri</a>
-    </nav>
+    <div id="navSlot"></div>
 
     <section class="card" style="max-width: 640px; margin-bottom: 20px">
       <h3 data-i18n="project.form.addTitle">Yeni proje</h3>
@@ -352,6 +347,9 @@
         if (sel) sel.value = lang;
         if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
         if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        if (window.initProjectPageNav) {
+          await window.initProjectPageNav('add');
+        }
         await loadList();
         document.getElementById('projectName')?.focus();
       })();

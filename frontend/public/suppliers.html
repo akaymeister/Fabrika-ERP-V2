@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="suppliers.title">Tedarikçiler</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .sup-form { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:14px; }
+    .sup-form input, .sup-form textarea { min-height:40px; padding:6px 10px; border:1px solid #e2e8f0; border-radius:8px; font:inherit; width:100%; box-sizing:border-box; }
+    .sup-form .full { grid-column:1 / -1; }
+    .sup-list { width:100%; border-collapse:collapse; }
+    .sup-list th, .sup-list td { border:1px solid #e2e8f0; padding:8px 10px; font-size:13px; }
+    .sup-list th { background:#f8fafc; text-align:left; }
+    .sup-muted { color:#64748b; font-size:12px; }
+    .sup-filter { margin-bottom:10px; }
+    .sup-filter input { padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; min-width:220px; font:inherit; }
+  </style>
+</head>
+<body>
+  <div class="container pur-wide">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="suppliers.title">Tedarikçiler</h1>
+        <p class="subtitle" data-i18n="suppliers.sub">Tedarikçi listesi, yeni tedarikçi ekleme. Sipariş işleme ekranında bu liste kullanılır.</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
+      </div>
+    </div>
+    <div id="navSlot"></div>
+    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+
+    <section class="card">
+      <h3 data-i18n="suppliers.addH">Yeni tedarikçi</h3>
+      <div class="sup-form">
+        <div><input id="sName" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.name" /></div>
+        <div><input id="sPhone" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.phone" /></div>
+        <div><input id="sEmail" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.email" /></div>
+        <div><input id="sTax" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.tax" /></div>
+        <div class="full"><input id="sAddress" maxlength="500" placeholder="" data-i18n-placeholder="suppliers.address" /></div>
+        <div class="full"><textarea id="sNote" rows="2" placeholder="" data-i18n-placeholder="suppliers.note"></textarea></div>
+      </div>
+      <p style="text-align:right;margin:0">
+        <button type="button" class="logout-btn" id="btnAdd" style="background:#1d4ed8;border:none" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
+      </p>
+      <p class="sup-muted" data-i18n="suppliers.futureNote">İleride: cari hesap, borç/alacak, bakiye ekranları bu modül altında açılacak.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3 data-i18n="suppliers.listH">Tedarikçi listesi</h3>
+      <div class="sup-filter">
+        <input id="q" placeholder="" data-i18n-placeholder="suppliers.filterPh" />
+      </div>
+      <div style="overflow-x:auto">
+        <table class="sup-list">
+          <thead>
+            <tr>
+              <th data-i18n="suppliers.colName">Ad</th>
+              <th data-i18n="suppliers.colPhone">Telefon</th>
+              <th data-i18n="suppliers.colEmail">E-posta</th>
+              <th data-i18n="suppliers.colTax">Vergi no</th>
+              <th data-i18n="suppliers.colAddress">Adres</th>
+              <th data-i18n="suppliers.colNote">Not</th>
+            </tr>
+          </thead>
+          <tbody id="tb"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="/js/i18n.js?v=14" defer></script>
+  <script src="/js/purchasing-common.js?v=14" defer></script>
+  <script>
+    (function () {
+      const msg = document.getElementById('msg');
+      const tb = document.getElementById('tb');
+      const q = document.getElementById('q');
+      let all = [];
+      function tK(k) { return (window.i18n && window.i18n.t) ? window.i18n.t(k) : k; }
+      function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      function showMsg(t, err) { if (!msg) return; msg.textContent = t; msg.style.color = err ? '#b91c1c' : '#0f766e'; }
+      function render() {
+        const f = String(q.value || '').trim().toLowerCase();
+        const rows = !f ? all : all.filter((r) => (
+          String(r.name || '').toLowerCase().includes(f) ||
+          String(r.phone || '').toLowerCase().includes(f) ||
+          String(r.email || '').toLowerCase().includes(f) ||
+          String(r.tax_number || '').toLowerCase().includes(f)
+        ));
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="6">—</td></tr>'; return; }
+        tb.innerHTML = rows.map((r) => `<tr>
+          <td>${esc(r.name || '')}</td>
+          <td>${esc(r.phone || '—')}</td>
+          <td>${esc(r.email || '—')}</td>
+          <td>${esc(r.tax_number || '—')}</td>
+          <td>${esc(r.address || '—')}</td>
+          <td>${esc(r.note || '—')}</td>
+        </tr>`).join('');
+      }
+      async function load() {
+        const { ok, data } = await window.purApi('/api/purchasing/suppliers');
+        if (!ok || !data || !data.ok) { tb.innerHTML = '<tr><td colspan="6">—</td></tr>'; return; }
+        all = data.suppliers || [];
+        render();
+      }
+      async function add() {
+        const body = {
+          name: document.getElementById('sName').value,
+          phone: document.getElementById('sPhone').value,
+          email: document.getElementById('sEmail').value,
+          tax_number: document.getElementById('sTax').value,
+          address: document.getElementById('sAddress').value,
+          note: document.getElementById('sNote').value,
+        };
+        if (!body.name || !body.name.trim()) { showMsg(tK('suppliers.errName'), true); return; }
+        const { ok, data } = await window.purApi('/api/purchasing/suppliers', {
+          method: 'POST', body: JSON.stringify(body),
+        });
+        if (!ok) { showMsg((data && (data.message || data.messageKey)) || tK('api.error.unknown'), true); return; }
+        showMsg(tK('suppliers.okAdded'));
+        ['sName','sPhone','sEmail','sTax','sAddress','sNote'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+        load();
+      }
+      document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).finally(() => location.href='/login.html'); });
+      document.getElementById('btnAdd').addEventListener('click', add);
+      q.addEventListener('input', render);
+      (async function init() {
+        if (window.initPurchasingPageNav) await window.initPurchasingPageNav('suppliers');
+        await load();
+        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+      })();
+    })();
+  </script>
+</body>
+</html>

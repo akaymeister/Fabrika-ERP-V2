@@ -24,13 +24,7 @@
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
       </div>
     </div>
-
-    <nav class="stock-nav" aria-label="Project module">
-      <a href="/projects.html" class="active" data-i18n="nav.project.hub">Özet</a>
-      <a href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
-      <a href="/project-costs.html" data-i18n="nav.project.costs">Proje maliyet kontrolü</a>
-      <a href="/project-quotes.html" data-i18n="nav.project.quotes">Proje fiyat teklifleri</a>
-    </nav>
+    <div id="navSlot"></div>
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
       <div class="hero-text">
@@ -74,13 +68,17 @@
         if (sel) sel.value = lang;
         if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
         if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        if (window.initProjectPageNav) {
+          await window.initProjectPageNav('hub');
+        }
         document.getElementById('languageSelect')?.addEventListener('change', (e) => {
           const v = e.target.value;
           if (v && window.i18n) {
             localStorage.setItem('erp_lang', v);
-            window.i18n.loadDict(v).then(() => {
+            window.i18n.loadDict(v).then(async () => {
               window.i18n.apply(document);
               if (window.i18n.setDocumentLang) window.i18n.setDocumentLang(v);
+              if (window.initProjectPageNav) await window.initProjectPageNav('hub');
             });
           }
         });

@@ -5,6 +5,7 @@ const {
   updateLastLogin,
 } = require('../services/authService');
 const { jsonOk, jsonError } = require('../utils/apiResponse');
+const { logActivity } = require('../services/activityLogService');
 
 async function postLogin(req, res) {
   const username = String(req.body?.username || '').trim();
@@ -32,10 +33,31 @@ async function postLogin(req, res) {
     // last_login kritik değil
   }
 
+  await logActivity(req, {
+    action_type: 'LOGIN',
+    module_name: 'auth',
+    table_name: 'users',
+    record_id: user.id,
+    new_data: { id: user.id, username: user.username, role: user.role?.slug },
+    description: 'Oturum açma',
+    actor: { userId: user.id, username: user.username, fullName: user.fullName },
+  });
+
   return res.json(jsonOk({ user }));
 }
 
-function postLogout(req, res) {
+async function postLogout(req, res) {
+  const u = req.session?.user;
+  if (u) {
+    await logActivity(req, {
+      action_type: 'LOGOUT',
+      module_name: 'auth',
+      table_name: 'users',
+      record_id: u.id,
+      description: 'Oturum kapatma',
+      actor: { userId: u.id, username: u.username, fullName: u.fullName },
+    });
+  }
   if (!req.session) {
     return res.json(jsonOk());
   }

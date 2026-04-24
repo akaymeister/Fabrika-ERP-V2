@@ -10,6 +10,15 @@ function createSessionMiddleware() {
     console.warn('[session] UYARI: SESSION_SECRET kısa veya eksik. .env dosyasını doldurun.');
   }
 
+  // Production + düz HTTP (ör. şirket içi ağ): tarayıcı Secure çerezleri göndermez.
+  // Gerekirse .env: SESSION_COOKIE_SECURE=false (sadece HTTPS yokken)
+  const secureDefault = process.env.NODE_ENV === 'production';
+  const secureEnv = process.env.SESSION_COOKIE_SECURE;
+  const secure =
+    secureEnv != null && secureEnv !== ''
+      ? !/^(0|false|no|off)$/i.test(String(secureEnv).trim())
+      : secureDefault;
+
   return session({
     name: 'fabrika.sid',
     secret: process.env.SESSION_SECRET || 'dev-only-never-use-in-prod-........',
@@ -19,7 +28,7 @@ function createSessionMiddleware() {
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 gün
-      secure: process.env.NODE_ENV === 'production',
+      secure,
     },
   });
 }

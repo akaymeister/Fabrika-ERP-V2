@@ -29,6 +29,19 @@
     return tKey(ST[s] || s || '—');
   }
 
+  function procLabel(state) {
+    if (!state) {
+      return '—';
+    }
+    if (state === 'started') {
+      return tKey('purch.proc.procStarted');
+    }
+    if (state === 'ongoing') {
+      return tKey('purch.proc.procOngoing');
+    }
+    return '—';
+  }
+
   function showMsg(t, isErr) {
     msg.textContent = t;
     msg.style.color = isErr ? '#b91c1c' : '#0f766e';
@@ -44,7 +57,9 @@
   function renderRow(r) {
     return `<tr data-id="${r.id}" class="pr-row" style="cursor:pointer"><td>${esc(r.request_code || r.id)}</td><td>${esc(
       r.project_code || '—'
-    )}</td><td>${esc(r.requester_name || '—')}</td><td>${stLabel(r.pr_status)}</td><td>${esc(r.created_at || '').slice(0, 10)}</td></tr>`;
+    )}</td><td>${esc(r.requester_name || '—')}</td><td>${stLabel(r.pr_status)}</td><td>${esc(procLabel(r.procurement_state))}</td><td>${esc(
+      r.created_at || ''
+    ).slice(0, 10)}</td></tr>`;
   }
 
   function imgCell(url) {
@@ -78,11 +93,15 @@
       r.pr_status === 'revision_requested' || r.pr_status === 'draft'
         ? `<p><a class="version-btn" href="/purchase-requisition-open.html?id=${r.id}" style="text-decoration:none">${tKey('purch.wf.editReq')}</a></p>`
         : '';
+    const procExtra = r.procurement_state
+      ? `<p style="color:#0369a1;font-size:14px"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
+      : '';
     det.innerHTML = `
       <h4>${esc(r.request_code || r.id)}</h4>
       <p>${tKey('purch.wf.project')}: <strong>${esc(r.project_code || '—')}</strong> — ${esc(r.project_name || '')}</p>
       <p>${tKey('purch.wf.requester')}: ${esc(r.requester_name || '—')}</p>
       <p>${tKey('purch.req.lColStatus')}: <strong>${stLabel(r.pr_status)}</strong></p>
+      ${procExtra}
       ${note}${appr}
       ${editL}
       <p>${tKey('purch.req.note')}: ${esc(r.note || '—')}</p>
@@ -144,12 +163,12 @@
     const q = st ? '?status=' + encodeURIComponent(st) : '';
     const { ok, data } = await window.purApi('/api/purchasing/requests' + q);
     if (!ok || !data || !data.ok) {
-      tbody.innerHTML = '<tr><td colspan="5">—</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6">—</td></tr>';
       return;
     }
     list = data.requests || [];
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="5">' + tKey('purch.req.empty') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6">' + tKey('purch.req.empty') + '</td></tr>';
       return;
     }
     tbody.innerHTML = list.map(renderRow).join('');

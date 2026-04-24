@@ -94,7 +94,7 @@ async function loadSummary() {
 }
 
 async function loadActivity() {
-  const res = await fetch('/api/dashboard/activity?limit=8', { credentials: 'same-origin' });
+  const res = await fetch('/api/dashboard/activity?limit=10', { credentials: 'same-origin' });
   if (res.status === 401) {
     window.location.href = '/login.html';
     return;

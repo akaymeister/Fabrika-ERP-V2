@@ -1,6 +1,6 @@
 /**
- * Proje API + metin. Alt menü, proje sayfalarında HTML içinde `stock-nav` ile sabit
- * (stok modülü gibi); i18n `data-i18n` ile doldurur.
+ * Hızlı menü standardı: sayfada <div id="navSlot"></div> + initProjectPageNav('anahtar').
+ * Anahtarlar: hub | add | cost | quotes — stok/satınalma ile aynı .stock-nav şeridi.
  */
 const PROJECT_HUB = '/projects.html';
 
