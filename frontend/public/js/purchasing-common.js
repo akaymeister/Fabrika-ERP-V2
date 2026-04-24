@@ -21,7 +21,7 @@ function tNav(k) {
   return PUR_NAV_FALLBACK_TR[k] || k;
 }
 
-let __purScope = { canPurchasing: false, canRequest: false, canApprove: false, canReceipt: false };
+let __purScope = { canPurchasing: false, canRequest: false, canApprove: false, canReceipt: false, canStock: false };
 
 /**
  * Görünebilir herhangi bir satınalma ekranı var mı
@@ -31,7 +31,8 @@ function hasAnyPurchasingNav() {
     __purScope.canPurchasing ||
     __purScope.canRequest ||
     __purScope.canApprove ||
-    __purScope.canReceipt
+    __purScope.canReceipt ||
+    __purScope.canStock
   );
 }
 
@@ -41,6 +42,7 @@ function purchasingNavHTML(active) {
     { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'see' },
     { href: '/purchase-approvals.html', key: 'appr', k: 'nav.purch.approvals', need: 'approve' },
     { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'purch' },
+    { href: '/goods-receipt.html', key: 'receipt', k: 'nav.purch.receipt', need: 'receipt' },
     { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'purch' },
     { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },
   ];
@@ -60,6 +62,9 @@ function purchasingNavHTML(active) {
           return '';
         }
         if (i.need === 'purch' && !__purScope.canPurchasing) {
+          return '';
+        }
+        if (i.need === 'receipt' && !(__purScope.canReceipt || __purScope.canPurchasing || __purScope.canStock)) {
           return '';
         }
         return `<a href="${i.href}" class="${i.key === active ? 'active' : ''}" data-i18n="${i.k}">${tNav(i.k)}</a>`;
@@ -131,9 +136,10 @@ async function loadPurchasingScope() {
       canRequest: !!data.canRequest,
       canApprove: !!data.canApprove,
       canReceipt: !!data.canReceipt,
+      canStock: !!data.canStock,
     };
   } else {
-    __purScope = { canPurchasing: true, canRequest: true, canApprove: true, canReceipt: true };
+    __purScope = { canPurchasing: true, canRequest: true, canApprove: true, canReceipt: true, canStock: true };
   }
   return __purScope;
 }
@@ -146,6 +152,56 @@ async function initPurchasingPageNav(active) {
   const slot = document.getElementById('navSlot');
   if (slot) {
     slot.innerHTML = purchasingNavHTML(active);
+  }
+  if (window.i18n && window.i18n.apply) {
+    window.i18n.apply(document);
+  }
+  if (window.loadErpPublicConfig) {
+    await window.loadErpPublicConfig();
+  } else {
+    try {
+      const r = await fetch('/api/public/config', { cache: 'no-store' });
+      const d = await r.json();
+      if (d && d.data && d.data.defaultCurrency) {
+        window.__erpCurrency = String(d.data.defaultCurrency).toUpperCase();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Mal kabul: üstte stok modülü hızlı menüsü, altında satınalma modülü (depo + satınalmacı için).
+ * @param {string} stockActive stock-common anahtarı (örn. 'receipt')
+ * @param {string} purActive purchasing-common anahtarı (örn. 'receipt')
+ */
+async function initStockAndPurchasingPageNav(stockActive, purActive) {
+  if (window.i18n && window.i18n.loadDict) {
+    await window.i18n.loadDict(window.i18n.getLang());
+  }
+  await loadPurchasingScope();
+  let showStockIn = false;
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (r.ok) {
+      const d = await r.json();
+      const u = d && d.user;
+      showStockIn = !!(u && (u.isSuperAdmin === true || (u.role && u.role.slug === 'super_admin')));
+    }
+  } catch {
+    /* ignore */
+  }
+  const slot = document.getElementById('navSlot');
+  if (slot) {
+    slot.className = 'page-nav-stack';
+    const sNav = window.stockNavHTML ? window.stockNavHTML(stockActive, { showStockIn }) : '';
+    const pNav = purchasingNavHTML(purActive);
+    slot.innerHTML = sNav + pNav;
+  }
+  const panelIn = document.getElementById('stockPanelLinkIn');
+  if (panelIn) {
+    panelIn.style.display = showStockIn ? '' : 'none';
   }
   if (window.i18n && window.i18n.apply) {
     window.i18n.apply(document);
@@ -182,6 +238,7 @@ function fmtPrice(p) {
 window.purApi = purApi;
 window.purApiUploadFile = purApiUploadFile;
 window.initPurchasingPageNav = initPurchasingPageNav;
+window.initStockAndPurchasingPageNav = initStockAndPurchasingPageNav;
 window.loadPurchasingScope = loadPurchasingScope;
 window.getPurchasingScope = () => __purScope;
 window.purchasingNavHTML = purchasingNavHTML;

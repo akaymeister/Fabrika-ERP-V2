@@ -117,7 +117,12 @@ app.get(
 app.get('/stock.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock.html'));
 app.get('/stock-brands.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-brands.html'));
 app.get('/stock-products.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-products.html'));
-app.get('/stock-in.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-in.html'));
+app.get(
+  '/stock-in.html',
+  requirePageAuth,
+  requirePageSuperAdmin,
+  sendPage('stock-in.html')
+);
 app.get('/stock-out.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-out.html'));
 app.get('/stock-movements.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-movements.html'));
 

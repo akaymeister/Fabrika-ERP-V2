@@ -21,7 +21,7 @@
     rejected: 'purch.status.req.rejected',
     revision_requested: 'purch.status.reqV2.revision',
     ordered: 'purch.status.reqV2.ordered',
-    partial: 'purch.status.ord.partial',
+    partial: 'purch.status.req.partial',
     cancelled: 'purch.status.ord.cancelled',
   };
 

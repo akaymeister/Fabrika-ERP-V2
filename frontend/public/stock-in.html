@@ -235,7 +235,7 @@
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
         <h1 data-i18n="stock.in.title">Stok giriş</h1>
-        <p class="subtitle" data-i18n="stock.in.sub">—</p>
+        <p class="subtitle" data-i18n="stock.in.superOnlySub">Süper yönetici — manuel stok (başlangıç, düzeltme, sayım, acil giriş)</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
@@ -651,6 +651,9 @@
       }
       if (Number.isFinite(q) && q > 0 && m2p > 0) {
         return q * m2p;
+      }
+      if (Number.isFinite(q) && q > 0 && m2p <= 0) {
+        return q;
       }
       return 0;
     }

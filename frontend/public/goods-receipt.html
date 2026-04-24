@@ -4,17 +4,106 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.gr.title">Mal kabul</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=gr10" />
+  <style>
+    .gr-po-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .gr-po-table {
+      min-width: 720px;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .gr-po-table th {
+      background: #f8fafc;
+      text-align: left;
+      padding: 10px;
+      white-space: nowrap;
+    }
+    .gr-po-table td {
+      padding: 10px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .gr-po-table tbody tr {
+      cursor: pointer;
+    }
+    .gr-po-table tbody tr:hover {
+      background: #f8fafc;
+    }
+    .gr-po-table tbody tr.gr-po-sel {
+      background: #e0f2fe;
+    }
+    .gr-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 700px) {
+      .gr-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .gr-form-grid .gr-span2 {
+      grid-column: 1 / -1;
+    }
+    .gr-line-scroll {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .gr-line-table {
+      min-width: 1100px;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .gr-line-table th {
+      background: #f1f5f9;
+      padding: 8px;
+      text-align: left;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+    .gr-line-table td {
+      padding: 6px 8px;
+      border-top: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    .gr-line-table .gr-inp {
+      width: 88px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      box-sizing: border-box;
+    }
+    .gr-line-table .gr-inp-wide {
+      min-width: 120px;
+      width: 100%;
+    }
+    .gr-att {
+      max-height: 48px;
+      max-width: 64px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
-        <h1 data-i18n="purch.gr.title">Mal kabul / depo girişi</h1>
-        <p class="subtitle">Kabul m² stoka işlenir; kısmi teslim desteklenir</p>
+        <h1 data-i18n="purch.gr.title">Mal kabul</h1>
+        <p class="subtitle" data-i18n="purch.gr.subShort">Depo: siparişe göre miktarsal kabul. Fiyat / maliyet satınalma tarafında.</p>
       </div>
       <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+        <select id="languageSelect" style="max-width: 120px; padding: 8px; border-radius: 8px" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -26,211 +115,321 @@
       </div>
     </div>
     <div id="navSlot"></div>
-    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+    <p id="msg" style="min-height: 1.2em; margin: 8px 0" role="status"></p>
 
     <section class="card">
-      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:800px;align-items:end;flex-wrap:wrap">
-        <div>
-          <label style="display:block;font-size:13px" data-i18n="purch.col.waybill">İrsaliye no</label>
-          <input id="waybill" type="text" style="width:100%;padding:8px;border-radius:8px" />
-        </div>
-        <div>
-          <label style="display:block;font-size:13px" data-i18n="purch.col.warehouse">Depo</label>
-          <select id="wh" style="width:100%;padding:8px;border-radius:8px"></select>
-        </div>
-        <div style="grid-column:1/-1;max-width:500px">
-          <label style="display:block;font-size:13px">Sipariş</label>
-          <select id="ordSel" style="width:100%;padding:8px;border-radius:8px"></select>
-        </div>
-        <div style="grid-column:1/-1">
-          <label style="display:block;font-size:13px">Not (isteğe bağlı)</label>
-          <textarea id="grNote" rows="2" style="width:100%;max-width:640px;border-radius:8px;padding:8px"></textarea>
-        </div>
-      </div>
-
-      <div style="overflow-x:auto;margin-top:16px" id="linesWrap" hidden>
-        <p style="font-size:13px;color:#64748b" id="ordSummary"></p>
-        <table>
+      <h3 style="margin-top: 0" data-i18n="purch.gr.blockOrders">Gelen siparişler</h3>
+      <p class="muted" style="font-size: 13px" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
+      <div class="gr-po-scroll">
+        <table class="gr-po-table">
           <thead>
             <tr>
-              <th>Ürün</th>
-              <th>Kalan (m²-sistem)</th>
-              <th>Gelen</th>
-              <th>Kabul</th>
-              <th>Red</th>
-              <th>Hasar</th>
-              <th>Not</th>
+              <th data-i18n="purch.gr.colOrderCode">Sipariş</th>
+              <th data-i18n="purch.gr.colSupplier">Tedarikçi</th>
+              <th data-i18n="purch.gr.colProject">Proje</th>
+              <th data-i18n="purch.gr.colStatus">Durum</th>
+              <th data-i18n="purch.gr.colDate">Tarih</th>
             </tr>
           </thead>
-          <tbody id="grLines"></tbody>
+          <tbody id="grPoBody">
+            <tr>
+              <td colspan="5" data-i18n="purch.req.loading">Yükleniyor…</td>
+            </tr>
+          </tbody>
         </table>
-        <p>
-          <button type="button" class="logout-btn" style="background:#15803d;border:none" id="btnSave" data-i18n="purch.gr.save">Kaydet</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 16px">
+      <h3 style="margin-top: 0" data-i18n="purch.gr.blockReceipt">Seçili sipariş — kabul formu</h3>
+      <p id="grDetailEmpty" class="muted" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
+      <div id="grDetailBlock" hidden>
+        <p id="grOrderMeta" style="font-weight: 600; margin: 0 0 10px" class="display-upper"></p>
+        <div class="gr-form-grid">
+          <div>
+            <label for="grWaybill" data-i18n="purch.col.waybill">İrsaliye no</label>
+            <input type="text" id="grWaybill" class="input-upper" style="width: 100%; padding: 8px; border-radius: 8px" />
+          </div>
+          <div>
+            <label for="grWh" data-i18n="purch.col.warehouse">Depo</label>
+            <select id="grWh" style="width: 100%; padding: 8px; border-radius: 8px"></select>
+          </div>
+          <div class="gr-span2">
+            <label for="grNote" data-i18n="purch.gr.headerNote">Genel not (isteğe bağlı)</label>
+            <textarea id="grNote" class="input-upper" rows="2" style="width: 100%; max-width: 900px; border-radius: 8px; padding: 8px"></textarea>
+          </div>
+        </div>
+        <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
+        <div class="gr-line-scroll">
+          <table class="gr-line-table" id="grLineTable">
+            <thead>
+              <tr>
+                <th data-i18n="purch.gr.colProduct">Ürün</th>
+                <th data-i18n="purch.gr.colOrderQty">Sipariş</th>
+                <th data-i18n="purch.gr.colPrevRecv">Önceki kabul</th>
+                <th data-i18n="purch.gr.colRemain">Kalan</th>
+                <th data-i18n="purch.gr.colThisAccept">Bu girişte kabul</th>
+                <th data-i18n="purch.gr.colReject">Red</th>
+                <th data-i18n="purch.gr.colDamage">Hasar</th>
+                <th data-i18n="purch.gr.colLineNote">Açıklama</th>
+              </tr>
+            </thead>
+            <tbody id="grLineBody"></tbody>
+          </table>
+        </div>
+        <p class="pur-req-btns" style="margin-top: 16px">
+          <button type="button" class="module-button" id="grBtnSave" data-i18n="purch.gr.btnSubmit">Giriş yap</button>
         </p>
       </div>
     </section>
   </div>
-  <script src="/js/stock-common.js" defer></script>
-  <script src="/js/i18n.js" defer></script>
-  <script src="/js/purchasing-common.js" defer></script>
+  <script src="/js/stock-common.js?v=gr10"></script>
+  <script src="/js/i18n.js?v=gr10"></script>
+  <script src="/js/purchasing-common.js?v=gr10"></script>
   <script>
-    const msg = document.getElementById('msg');
-    function showMsg(t, e) { msg.textContent = t; msg.style.color = e ? '#b91c1c' : '#0f766e'; }
-    let currentOrder = null;
-    let ordersCache = [];
-    async function loadWarehouses() {
-      const { ok, data } = await purApi('/api/purchasing/warehouses');
-      const s = document.getElementById('wh');
-      s.innerHTML = '<option value="">—</option>';
-      if (ok && data && data.ok) {
-        (data.warehouses || []).forEach((w) => {
-          const o = document.createElement('option');
-          o.value = w.id;
-          o.textContent = w.name || w.code || w.id;
-          s.appendChild(o);
-        });
+    (function () {
+      const msg = document.getElementById('msg');
+      const poBody = document.getElementById('grPoBody');
+      const detailEmpty = document.getElementById('grDetailEmpty');
+      const detailBlock = document.getElementById('grDetailBlock');
+      const lineBody = document.getElementById('grLineBody');
+      const orderMeta = document.getElementById('grOrderMeta');
+      let selectedOrderId = null;
+      let currentOrder = null;
+      let ordersList = [];
+      function tK(k) {
+        return window.i18n && window.i18n.t ? window.i18n.t(k) : k;
       }
-    }
-    function fillOrderSelect() {
-      const s = document.getElementById('ordSel');
-      const fromUrl = new URLSearchParams(window.location.search).get('orderId');
-      s.innerHTML = '<option value="">— sipariş seçin —</option>';
-      ordersCache.forEach((o) => {
-        const e = document.createElement('option');
-        e.value = o.id;
-        e.textContent = (o.order_code || o.id) + ' — ' + (o.supplier_name || '') + ' / ' + (o.project_code || '');
-        s.appendChild(e);
-        if (fromUrl && String(o.id) === String(fromUrl)) e.selected = true;
-      });
-    }
-    async function loadOrderList() {
-      const { ok, data } = await purApi('/api/purchasing/orders');
-      if (!ok || !data || !data.ok) return;
-      ordersCache = (data.orders || []).filter((o) =>
-        ['awaiting_goods_receipt', 'ordered', 'partial'].includes(o.status)
-      );
-      fillOrderSelect();
-    }
-    function renderOrderDetail() {
-      const w = document.getElementById('linesWrap');
-      const tb = document.getElementById('grLines');
-      const su = document.getElementById('ordSummary');
-      if (!currentOrder || !currentOrder.items) {
-        w.hidden = true;
-        return;
+      function showMsg(t, err) {
+        msg.textContent = t;
+        msg.style.color = err ? '#b91c1c' : '#0f766e';
       }
-      const s = getPurchasingScope();
-      su.textContent = (currentOrder.order_code || '') + (s.canPurchasing ? ' — tedarikçi: fiyat sadece satınalmada' : ' — fiyat gizli');
-      tb.innerHTML = (currentOrder.items || [])
-        .map((it) => {
-          const rem = (typeof it.qty_remaining !== 'undefined') ? it.qty_remaining : (Number(it.qty_ordered) - Number(it.qty_received || 0));
-          if (rem <= 0) return '';
-          return `<tr data-oi="${it.id}">
-            <td>${it.product_name || it.product_id}</td>
-            <td>${(window.fmtQty || ((n) => n))(rem)}</td>
-            <td><input type="number" class="f-gel" data-oi="${it.id}" min="0" step="0.0001" value="" style="width:88px" /></td>
-            <td><input type="number" class="f-kab" data-oi="${it.id}" min="0" step="0.0001" value="" style="width:88px" /></td>
-            <td><input type="number" class="f-red" data-oi="${it.id}" min="0" step="0.0001" value="0" style="width:72px" /></td>
-            <td><input type="number" class="f-hsr" data-oi="${it.id}" min="0" step="0.0001" value="0" style="width:72px" /></td>
-            <td><input type="text" class="f-nt" data-oi="${it.id}" style="min-width:100px" /></td>
-          </tr>`;
-        })
-        .join('');
-      w.hidden = !tb.querySelector('tr');
-    }
-    async function loadOrder(id) {
-      if (!id) {
-        currentOrder = null;
-        document.getElementById('linesWrap').hidden = true;
-        return;
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
       }
-      const { ok, data } = await purApi(`/api/purchasing/orders/${id}`);
-      if (!ok || !data || !data.ok) {
-        showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : 'Hata', true);
-        return;
+      function statusLabel(s) {
+        if (s == null) return '—';
+        const k = 'purch.status.ord.' + s;
+        const v = tK(k);
+        return v && v !== k ? v : String(s);
       }
-      currentOrder = data.order;
-      renderOrderDetail();
-    }
-    document.getElementById('ordSel').addEventListener('change', (e) => {
-      loadOrder(e.target.value);
-    });
-    document.getElementById('btnSave').addEventListener('click', async () => {
-      const oid = document.getElementById('ordSel').value;
-      const wid = document.getElementById('wh').value;
-      if (!oid || !wid) {
-        showMsg('Sipariş ve depo seçin', true);
-        return;
+      function fmtQ(n) {
+        return (window.fmtQty || ((x) => x))(n);
       }
-      const lines = [];
-      document.getElementById('grLines').querySelectorAll('tr[data-oi]').forEach((tr) => {
-        const oiId = tr.getAttribute('data-oi');
-        const k = (sel) => tr.querySelector(sel) && tr.querySelector(sel).value;
-        const qa = parseFloat(String(k('.f-kab') || '0').replace(',', '.')) || 0;
-        const qr = parseFloat(String(k('.f-red') || '0').replace(',', '.')) || 0;
-        const qd = parseFloat(String(k('.f-hsr') || '0').replace(',', '.')) || 0;
-        const gw = k('.f-gel');
-        const gwn = gw !== '' && gw != null ? parseFloat(String(gw).replace(',', '.')) : null;
-        if (!oiId) return;
-        lines.push({
-          orderItemId: parseInt(oiId, 10),
-          qtyWaybill: gwn,
-          qtyAccepted: qa,
-          qtyRejected: qr,
-          qtyDamaged: qd,
-          lineNote: k('.f-nt') || undefined,
-        });
-      });
-      if (!lines.length) {
-        showMsg('Kabul edilecek satır yok veya tüm kalanlar 0', true);
-        return;
+      function clearPoSelection() {
+        document.querySelectorAll('#grPoBody tr[data-oid]').forEach((r) => r.classList.remove('gr-po-sel'));
       }
-      const { ok, data } = await purApi('/api/purchasing/goods-receipts', {
-        method: 'POST',
-        body: JSON.stringify({
-          orderId: parseInt(oid, 10),
-          warehouseId: parseInt(wid, 10),
-          waybillNumber: document.getElementById('waybill').value,
-          note: document.getElementById('grNote').value,
-          lines,
-        }),
-      });
-      if (!ok) {
-        showMsg((window.i18n && window.i18n.apiErrorText) ? window.i18n.apiErrorText(data) : (data && data.message) || 'Hata', true);
-        return;
-      }
-      showMsg('Mal kabul kaydedildi' + (data && data.orderStatus ? '; sipariş: ' + data.orderStatus : ''));
-      document.getElementById('waybill').value = '';
-      document.getElementById('grNote').value = '';
-      loadOrderList();
-      loadOrder(oid);
-    });
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
-    });
-    (async function init() {
-      if (window.initStockPageNav) await initStockPageNav('receipt');
-      await loadWarehouses();
-      await loadOrderList();
-      const q = new URLSearchParams(window.location.search).get('orderId');
-      if (q) {
-        const sel = document.getElementById('ordSel');
-        if (sel && !Array.from(sel.options).some((o) => o.value === String(q))) {
-          const o = document.createElement('option');
-          o.value = q;
-          o.textContent = 'Sipariş #' + q;
-          sel.appendChild(o);
-          o.selected = true;
+      function renderLineRows() {
+        lineBody.innerHTML = '';
+        if (!currentOrder || !currentOrder.items) {
+          return;
         }
-        loadOrder(q);
-      } else {
-        const sel = document.getElementById('ordSel');
-        if (sel && sel.value) loadOrder(sel.value);
+        const items = currentOrder.items || [];
+        for (const it of items) {
+          const rem = typeof it.qty_remaining !== 'undefined' ? it.qty_remaining : (Number(it.qty_ordered) - Number(it.qty_received || 0));
+          if (rem <= 0) continue;
+          const oi = it.id;
+          const tr = document.createElement('tr');
+          tr.setAttribute('data-oi', String(oi));
+          tr.innerHTML =
+            '<td><span style="font-size:11px;color:#64748b">' +
+            esc(it.product_code || '') +
+            '</span><br/><span class="display-upper">' +
+            esc(it.product_name || '') +
+            '</td>' +
+            '<td class="r-stock">' +
+            esc(fmtQ(it.qty_ordered)) +
+            '</td>' +
+            '<td class="r-stock">' +
+            esc(fmtQ(it.qty_received || 0)) +
+            '</td>' +
+            '<td class="r-stock"><strong>' +
+            esc(fmtQ(rem)) +
+            '</strong></td>' +
+            '<td><input type="number" class="gr-inp f-kab" min="0" step="0.0001" value=""/></td>' +
+            '<td><input type="number" class="gr-inp f-red" min="0" step="0.0001" value="0"/></td>' +
+            '<td><input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/></td>' +
+            '<td><input type="text" class="gr-inp gr-inp-wide f-nt input-upper" /></td>';
+          lineBody.appendChild(tr);
+        }
       }
-      if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+      async function loadPoList() {
+        const { ok, data } = await purApi('/api/purchasing/orders?openForReceipt=1');
+        if (!ok || !data || !data.ok) {
+          const errTxt = window.i18n && window.i18n.t ? window.i18n.t('purch.gr.ordersLoadError') : 'Liste yüklenemedi.';
+          poBody.innerHTML = '<tr><td colspan="5" style="color:#b91c1c">' + esc(errTxt) + '</td></tr>';
+          return;
+        }
+        ordersList = data.orders || [];
+        if (!ordersList.length) {
+          poBody.innerHTML = '<tr><td colspan="5">' + esc(tK('purch.gr.noOpenOrders')) + '</td></tr>';
+          return;
+        }
+        poBody.innerHTML = ordersList
+          .map(
+            (o) =>
+              '<tr data-oid="' +
+              esc(o.id) +
+              '" class="gr-po-row" tabindex="0"><td><strong>' +
+              esc(o.order_code || o.id) +
+              '</strong></td><td class="display-upper">' +
+              esc(o.supplier_name || '—') +
+              '</td><td>' +
+              esc(o.project_code || '—') +
+              '</td><td>' +
+              esc(statusLabel(o.receipt_status || o.status)) +
+              '</td><td>' +
+              esc(String(o.order_date || o.created_at || '').slice(0, 10)) +
+              '</td></tr>'
+          )
+          .join('');
+        poBody.querySelectorAll('tr.gr-po-row').forEach((tr) => {
+          tr.addEventListener('click', () => {
+            selectOrder(tr.getAttribute('data-oid'));
+          });
+        });
+        const fromUrl = new URLSearchParams(window.location.search).get('orderId');
+        if (fromUrl && ordersList.some((o) => String(o.id) === String(fromUrl))) {
+          selectOrder(fromUrl);
+        }
+      }
+      async function loadWarehouses() {
+        const { ok, data } = await purApi('/api/purchasing/warehouses');
+        const s = document.getElementById('grWh');
+        s.innerHTML = '<option value="">' + esc(tK('purch.col.warehouse')) + ' —</option>';
+        if (ok && data && data.ok) {
+          (data.warehouses || []).forEach((w) => {
+            s.add(new Option(w.name || w.code || w.id, w.id));
+          });
+        }
+      }
+      async function selectOrder(oid) {
+        if (!oid) return;
+        selectedOrderId = String(oid);
+        clearPoSelection();
+        const tr = poBody.querySelector('tr[data-oid="' + selectedOrderId + '"]');
+        if (tr) tr.classList.add('gr-po-sel');
+        const { ok, data } = await purApi('/api/purchasing/orders/' + encodeURIComponent(selectedOrderId));
+        if (!ok || !data || !data.ok || !data.order) {
+          showMsg(window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : tK('api.error.unknown'), true);
+          return;
+        }
+        currentOrder = data.order;
+        detailEmpty.hidden = true;
+        detailBlock.hidden = false;
+        const o = currentOrder;
+        const meta =
+          (o.order_code || o.id) + ' — ' + (o.supplier_name || '—') + ' — ' + (o.project_code || tK('purch.gr.project'));
+        orderMeta.textContent = meta;
+        document.getElementById('grWaybill').value = '';
+        document.getElementById('grNote').value = '';
+        renderLineRows();
+        if (window.i18n && window.i18n.apply) {
+          window.i18n.apply(detailBlock);
+        }
+      }
+      document.getElementById('grBtnSave').addEventListener('click', async () => {
+        if (!selectedOrderId || !currentOrder) {
+          showMsg(tK('purch.gr.selectPoFirst'), true);
+          return;
+        }
+        const wid = document.getElementById('grWh').value;
+        if (!wid) {
+          showMsg(tK('purch.gr.warehouseRequired'), true);
+          return;
+        }
+        const lines = [];
+        lineBody.querySelectorAll('tr[data-oi]').forEach((row) => {
+          const oiId = row.getAttribute('data-oi');
+          const v = (sel) => (row.querySelector(sel) && row.querySelector(sel).value) || '';
+          const qa = parseFloat(String(v('.f-kab') || '0').replace(',', '.')) || 0;
+          if (qa <= 0) return;
+          const qr = parseFloat(String(v('.f-red') || '0').replace(',', '.')) || 0;
+          const qd = parseFloat(String(v('.f-hsr') || '0').replace(',', '.')) || 0;
+          lines.push({
+            orderItemId: parseInt(oiId, 10),
+            qtyAccepted: qa,
+            qtyRejected: qr,
+            qtyDamaged: qd,
+            lineNote: v('.f-nt') || undefined,
+          });
+        });
+        if (!lines.length) {
+          showMsg(tK('purch.gr.noLinesToSave'), true);
+          return;
+        }
+        const { ok, data } = await purApi('/api/purchasing/goods-receipts', {
+          method: 'POST',
+          body: JSON.stringify({
+            orderId: parseInt(selectedOrderId, 10),
+            warehouseId: parseInt(wid, 10),
+            waybillNumber: document.getElementById('grWaybill').value,
+            note: document.getElementById('grNote').value,
+            lines,
+          }),
+        });
+        if (!ok) {
+          showMsg(window.i18n && window.i18n.apiErrorText ? window.i18n.apiErrorText(data) : data && data.message, true);
+          return;
+        }
+        showMsg(
+          tK('purch.gr.savedOk') +
+            (data && (data.receiptStatus || data.orderStatus) ? ' — ' + statusLabel(data.receiptStatus || data.orderStatus) : '')
+        );
+        document.getElementById('grWaybill').value = '';
+        document.getElementById('grNote').value = '';
+        await loadPoList();
+        if (selectedOrderId) {
+          const still = ordersList.some((x) => String(x.id) === String(selectedOrderId));
+          if (still) {
+            await selectOrder(selectedOrderId);
+          } else {
+            currentOrder = null;
+            selectedOrderId = null;
+            detailBlock.hidden = true;
+            detailEmpty.hidden = false;
+          }
+        }
+      });
+      document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(function () {
+          location.href = '/login.html';
+        });
+      });
+      async function boot() {
+        try {
+          if (window.i18n && window.i18n.loadDict) {
+            await window.i18n.loadDict(window.i18n.getLang());
+          }
+          if (window.initStockAndPurchasingPageNav) {
+            await window.initStockAndPurchasingPageNav('receipt', 'receipt');
+          } else if (window.initStockPageNav) {
+            await window.initStockPageNav('receipt');
+          }
+          await loadWarehouses();
+          await loadPoList();
+          if (window.i18n && window.i18n.apply) {
+            window.i18n.apply(document);
+          }
+        } catch (e) {
+          showMsg(
+            (e && e.message) || (tK('api.error.unknown') + ''),
+            true
+          );
+        }
+      }
+      boot();
     })();
   </script>
-  <style>@media (max-width: 800px) { .form-row { grid-template-columns: 1fr !important; } }</style>
+  <style>
+    .r-stock {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
 </body>
 </html>

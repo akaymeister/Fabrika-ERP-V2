@@ -647,6 +647,9 @@
       if (Number.isFinite(q) && q > 0 && m2p > 0) {
         return q * m2p;
       }
+      if (Number.isFinite(q) && q > 0 && m2p <= 0) {
+        return q;
+      }
       return 0;
     }
     ['qtyInput'].forEach((id) => {
@@ -954,6 +957,9 @@
       }
       if (Number.isFinite(qv) && qv > 0 && m2p > 0) {
         return qv * m2p;
+      }
+      if (Number.isFinite(qv) && qv > 0 && m2p <= 0) {
+        return qv;
       }
       return 0;
     }

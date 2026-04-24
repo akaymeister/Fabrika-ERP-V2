@@ -1085,6 +1085,18 @@ th {
   flex: 0 0 auto;
 }
 
+/** Mal kabul vb.: stok + satınalma hızlı menü üst üste */
+.page-nav-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.page-nav-stack > .stock-nav {
+  margin-bottom: 0;
+}
+
 .stock-nav {
   display: flex;
   flex-wrap: wrap;

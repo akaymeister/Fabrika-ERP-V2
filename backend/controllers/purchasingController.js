@@ -24,9 +24,11 @@ const {
   listApprovedRequestItems,
   createPurchaseOrder,
   listPurchaseOrders,
+  listOpenOrderIdsForRequest,
   getPurchaseOrderById,
   createGoodsReceipt,
   updatePurchaseOrder,
+  updatePurchaseOrderPricing,
   setProcurementStateForOrderStart,
   runOrderBuyerAction,
   runRequestBuyerAction,
@@ -87,7 +89,8 @@ async function getScope(req, res) {
   const canRequest = canRequestRaw || canPurchasing;
   const canApprove = canApproveRaw || canPurchasing;
   const canReceipt = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.receipt');
-  return res.json(jsonOk({ canPurchasing, canRequest, canApprove, canReceipt }));
+  const canStock = await userHasPermission(u.id, u.role?.slug, 'module.stock');
+  return res.json(jsonOk({ canPurchasing, canRequest, canApprove, canReceipt, canStock }));
 }
 
 async function getProductOptions(_req, res) {
@@ -173,11 +176,15 @@ async function postSupplier(req, res) {
 async function getRequests(req, res) {
   const q = req.query?.statuses;
   const statuses = q != null && String(q).trim() !== '' ? String(q).split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+  const receiptInbox =
+    String(req.query.receiptInbox || req.query.receipt_inbox || '') === '1' ||
+    String(req.query.receiptInbox || '') === 'true';
   const out = await listPurchaseRequests({
     status: req.query?.status,
     statuses,
     projectId: req.query?.projectId,
     requestId: req.query?.id,
+    receiptInbox,
   });
   if (out.error) {
     return res.status(500).json(validationOut(out));
@@ -197,6 +204,16 @@ async function getRequestById(req, res) {
     return res.status(is404 ? 404 : 400).json(validationOut(out));
   }
   return res.json(jsonOk({ request: out.request }));
+}
+
+/** GET /api/purchasing/requests/:id/receipt-orders — talebe bağlı açık siparişler (depo mal kabul) */
+async function getRequestReceiptOrders(req, res) {
+  const id = parseId(req.params.id);
+  if (id == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const out = await listOpenOrderIdsForRequest(id);
+  return res.json(jsonOk({ orderIds: out.orderIds || [] }));
 }
 
 /** PUT /api/purchasing/requests/:id */
@@ -426,7 +443,11 @@ async function getOrders(req, res) {
   const hidePrice = !(await userHasPermission(u.id, u.role?.slug, 'module.purchasing'));
   const q = req.query?.statuses;
   const statuses = q != null && String(q).trim() !== '' ? String(q).split(',').map((s) => s.trim()).filter(Boolean) : undefined;
-  const out = await listPurchaseOrders({ status: req.query?.status, statuses, hidePrice });
+  const openForReceipt =
+    String(req.query.openForReceipt || req.query.forReceipt || '') === '1' || String(req.query.openForReceipt || '') === 'true';
+  const forPricing =
+    String(req.query.forPricing || '') === '1' || String(req.query.forPricing || '') === 'true';
+  const out = await listPurchaseOrders({ status: req.query?.status, statuses, hidePrice, openForReceipt, forPricing });
   if (out.error) {
     return res.status(500).json(validationOut(out));
   }
@@ -474,6 +495,37 @@ async function putOrder(req, res) {
     description: 'Sipariş güncellendi (satınalma işleme)',
   });
   return res.json(jsonOk({ ok: true }));
+}
+
+async function putOrderPricing(req, res) {
+  const id = parseId(req.params.id);
+  if (id == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const u = req.session.user;
+  const b = req.body || {};
+  const out = await updatePurchaseOrderPricing({
+    id,
+    supplierId: b.supplierId,
+    orderDate: b.orderDate,
+    deliveryDate: b.deliveryDate,
+    currency: b.currency,
+    note: b.note,
+    lines: b.lines,
+    userId: u.id,
+  });
+  if (out.error) {
+    const code = out.messageKey === 'api.pur.order_readonly' ? 409 : 400;
+    return res.status(code).json(validationOut(out));
+  }
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'purchasing',
+    table_name: 'purchase_orders',
+    record_id: id,
+    description: 'Sipariş fiyatları güncellendi (satınalma işleme)',
+  });
+  return res.json(jsonOk(out));
 }
 
 async function postOrderStartProcessing(req, res) {
@@ -598,6 +650,7 @@ module.exports = {
   postSupplier,
   getRequests,
   getRequestById,
+  getRequestReceiptOrders,
   putRequest,
   postRequest,
   postRequestSubmit,
@@ -608,6 +661,7 @@ module.exports = {
   getOrders,
   getOrder,
   putOrder,
+  putOrderPricing,
   postOrderStartProcessing,
   postOrderBuyerAction,
   postRequestBuyerAction,

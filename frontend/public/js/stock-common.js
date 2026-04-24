@@ -25,17 +25,26 @@ function tNav(k) {
   return NAV_FALLBACK_TR[k] || k;
 }
 
-function stockNavHTML(active) {
+/**
+ * @param {string} active
+ * @param {{ showStockIn?: boolean }} [opts] — Eski "Stok giriş" (manuel) sadece süper yönetici menüsünde
+ */
+function stockNavHTML(active, opts = {}) {
+  const showStockIn = opts.showStockIn === true;
   const items = [
     { href: '/stock.html', key: 'hub', k: 'nav.stock.hub' },
     { href: '/stock-brands.html', key: 'brands', k: 'nav.stock.brands' },
     { href: '/stock-warehouses.html', key: 'warehouses', k: 'nav.stock.warehouses' },
     { href: '/stock-products.html', key: 'products', k: 'nav.stock.products' },
-    { href: '/stock-in.html', key: 'in', k: 'nav.stock.in' },
+  ];
+  if (showStockIn) {
+    items.push({ href: '/stock-in.html', key: 'in', k: 'nav.stock.in' });
+  }
+  items.push(
     { href: '/stock-out.html', key: 'out', k: 'nav.stock.out' },
     { href: '/goods-receipt.html', key: 'receipt', k: 'nav.stock.receipt' },
-    { href: '/stock-movements.html', key: 'mov', k: 'nav.stock.mov' },
-  ];
+    { href: '/stock-movements.html', key: 'mov', k: 'nav.stock.mov' }
+  );
   return `<nav class="stock-nav" aria-label="Stock module">
     ${items
       .map(
@@ -142,9 +151,24 @@ async function initStockPageNav(active) {
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }
+  let showStockIn = false;
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (r.ok) {
+      const d = await r.json();
+      const u = d && d.user;
+      showStockIn = !!(u && (u.isSuperAdmin === true || (u.role && u.role.slug === 'super_admin')));
+    }
+  } catch {
+    /* ignore */
+  }
   const slot = document.getElementById('navSlot');
   if (slot) {
-    slot.innerHTML = stockNavHTML(active);
+    slot.innerHTML = stockNavHTML(active, { showStockIn });
+  }
+  const panelIn = document.getElementById('stockPanelLinkIn');
+  if (panelIn) {
+    panelIn.style.display = showStockIn ? '' : 'none';
   }
   if (window.i18n && window.i18n.apply) {
     window.i18n.apply(document);

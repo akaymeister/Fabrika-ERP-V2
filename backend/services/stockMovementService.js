@@ -21,6 +21,8 @@ const { addLayer, consumeFifoM2, consumeFifoM2ForOut } = require('./stockCostLay
 const { getValue, KEYS, usdToSystemAmount } = require('./systemSettingsService');
 const { m3FromStockM2AndDepth } = require('./stockProductService');
 
+/** stock_m2 / stock_m3 / m2_per_piece: fiyatlandırma için isteğe bağlı metadata; eksik veya tutarsız olsa da stok akışı bloklanmaz. */
+
 async function listMovements({ productId, movementType, projectId, limit = 100, offset = 0 } = {}) {
   const lim = Math.min(Math.max(parseInt(String(limit), 10) || 100, 1), 500);
   const off = Math.max(parseInt(String(offset), 10) || 0, 0);
@@ -475,20 +477,11 @@ async function recordMovementIn(params) {
       return err('Ürün yok', 'api.stock.product_not_found');
     }
     const m2p = Number(P.m2_per_piece) || 0;
-    if (m2p <= 0) {
-      if (ownConn) {
-        await conn.rollback();
-      }
-      return err(
-        'Ürün m2/parça oranı hatalı (önce ürün boyutları / patch-004)',
-        'api.stock.m2_per_piece_invalid'
-      );
-    }
     let m2In;
     if (Number.isFinite(directM2) && directM2 > 0) {
       m2In = directM2;
     } else if (Number.isFinite(qPieces) && qPieces > 0) {
-      m2In = qPieces * m2p;
+      m2In = m2p > 0 ? qPieces * m2p : qPieces;
     } else {
       if (ownConn) {
         await conn.rollback();
@@ -543,30 +536,55 @@ async function recordMovementIn(params) {
     const defCur = (await getValue(KEYS.CURRENCY)) || 'UZS';
     const useUsd = String(inputCurrency).toUpperCase() === 'USD';
     const fx = Number(fxUzsPerUsd) || 0;
-    let totalUzs = Number(lineTotalUzs) || 0;
+    const isPurchaseReceipt = srcNorm === IN_SOURCE.PURCHASE;
+    let totalUzs = Number(lineTotalUzs);
+    if (!Number.isFinite(totalUzs)) {
+      totalUzs = 0;
+    }
     let totalUsd = Number(lineTotalUsd) || 0;
     if (useUsd) {
-      if (totalUsd <= 0 || fx <= 0) {
-        if (ownConn) {
-          await conn.rollback();
+      if (isPurchaseReceipt) {
+        if (totalUsd > 0 && fx <= 0) {
+          if (ownConn) {
+            await conn.rollback();
+          }
+          return err('USD tutarı ve kur (1 USD = ? UZS) gerekli', 'api.stock.usd_fx_required');
         }
-        return err('USD tutarı ve kur (1 USD = ? UZS) gerekli', 'api.stock.usd_fx_required');
+        totalUzs = totalUsd > 0 && fx > 0 ? usdToSystemAmount(totalUsd, fx) : 0;
+      } else {
+        if (totalUsd <= 0 || fx <= 0) {
+          if (ownConn) {
+            await conn.rollback();
+          }
+          return err('USD tutarı ve kur (1 USD = ? UZS) gerekli', 'api.stock.usd_fx_required');
+        }
+        totalUzs = usdToSystemAmount(totalUsd, fx);
       }
-      totalUzs = usdToSystemAmount(totalUsd, fx);
     } else {
-      if (totalUzs <= 0) {
+      if (!isPurchaseReceipt && totalUzs <= 0) {
         if (ownConn) {
           await conn.rollback();
         }
         return err('Toplam tutar (sistem parası) gerekli', 'api.stock.line_total_system_required');
       }
+      if (totalUzs < 0) {
+        if (ownConn) {
+          await conn.rollback();
+        }
+        return err('Toplam tutar (sistem parası) geçersiz', 'api.stock.line_total_invalid');
+      }
     }
-    const costUzsPerM2 = totalUzs / m2In;
+    const costUzsPerM2 = m2In > 0.0001 ? totalUzs / m2In : 0;
     const costUsdPerM2 = useUsd && totalUsd > 0 ? totalUsd / m2In : null;
 
     const sp = Number(P.stock_pieces) || 0;
     const sm2 = Number(P.stock_m2 != null && P.stock_m2 !== undefined ? P.stock_m2 : P.stock_qty) || 0;
-    const addPieces = m2p > 0 ? m2In / m2p : 0;
+    const addPieces =
+      m2p > 0
+        ? m2In / m2p
+        : Number.isFinite(qPieces) && qPieces > 0
+          ? qPieces
+          : 0;
     const newM2 = sm2 + m2In;
     const newPieces = sp + addPieces;
     const stockQty = Number(P.stock_qty) || 0;
@@ -704,8 +722,8 @@ async function recordMovementOut(params) {
     let m2Out;
     if (Number(qtyM2) > 0) {
       m2Out = Number(qtyM2);
-    } else if (Number(qtyPieces) > 0 && m2p > 0) {
-      m2Out = Number(qtyPieces) * m2p;
+    } else if (Number(qtyPieces) > 0) {
+      m2Out = m2p > 0 ? Number(qtyPieces) * m2p : Number(qtyPieces);
     } else {
       if (ownConn) {
         await conn.rollback();
@@ -758,7 +776,7 @@ async function recordMovementOut(params) {
     }
     const newM2 = sm2 - m2Out;
     const sp = Number(P.stock_pieces) || 0;
-    const outPieces = m2p > 0 ? m2Out / m2p : 0;
+    const outPieces = m2p > 0 ? m2Out / m2p : m2Out;
     const newP = Math.max(0, sp - outPieces);
     const nq = Math.max(0, (Number(P.stock_qty) || 0) - m2Out);
     const depth = Number(P.depth_mm) || 0;

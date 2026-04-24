@@ -71,6 +71,11 @@ function renderUser(user) {
     const show = user.isSuperAdmin === true || user.role?.slug === 'super_admin';
     admin.style.display = show ? 'inline-flex' : 'none';
   }
+  const quickStockIn = document.getElementById('quickLinkStockIn');
+  if (quickStockIn) {
+    const showIn = user.isSuperAdmin === true || user.role?.slug === 'super_admin';
+    quickStockIn.style.display = showIn ? '' : 'none';
+  }
 }
 
 async function loadSummary() {

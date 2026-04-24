@@ -29,6 +29,11 @@ const { toUpperTr } = require('../utils/textNormalize');
 
 const API_MOVEMENT_IN_SOURCES = new Set(['MANUAL_STOCK_IN', 'STOCK_ADJUSTMENT', 'RETURN_IN', 'OPENING_BALANCE']);
 
+function isSessionSuperUser(req) {
+  const u = req.session?.user;
+  return !!(u && (u.isSuperAdmin === true || u.role?.slug === 'super_admin'));
+}
+
 function movementSourceForStockIn(b) {
   const s = String(b?.movementSource || 'MANUAL_STOCK_IN')
     .trim()
@@ -316,9 +321,14 @@ async function postVoidMovement(req, res) {
     if (!row) {
       return res.status(404).json(jsonError('NOT_FOUND', 'Hareket bulunamadı', null, 'api.stock.movement_not_found'));
     }
-    if ((await columnExists('stock_movements', 'movement_source')) && String(row.t).toLowerCase() === 'in') {
-      const [[rsrc]] = await pool.query('SELECT movement_source AS ms FROM stock_movements WHERE id = ?', [id]);
-      if (String(rsrc && rsrc.ms) === 'PURCHASE_RECEIPT') {
+    const t = String(row.t || '').toLowerCase();
+    if (t === 'in') {
+      let src = null;
+      if (await columnExists('stock_movements', 'movement_source')) {
+        const [[rsrc]] = await pool.query('SELECT movement_source AS ms FROM stock_movements WHERE id = ?', [id]);
+        src = rsrc && rsrc.ms;
+      }
+      if (String(src) === 'PURCHASE_RECEIPT') {
         return res
           .status(400)
           .json(
@@ -330,9 +340,15 @@ async function postVoidMovement(req, res) {
             )
           );
       }
+      if (!isSessionSuperUser(req)) {
+        return res
+          .status(403)
+          .json(
+            jsonError('FORBIDDEN', 'Manuel stok girişi iptali yalnızca süper yönetici.', null, 'api.stock.manual_in_super_only')
+          );
+      }
     }
     const uid = req.session.user.id;
-    const t = String(row.t || '').toLowerCase();
     let out;
     if (t === 'in') {
       out = await voidStockInMovement({ movementId: id, userId: uid, reason: req.body.reason, kind: 'delete' });
@@ -364,6 +380,13 @@ async function postVoidMovement(req, res) {
 
 async function postReplaceStockIn(req, res) {
   try {
+    if (!isSessionSuperUser(req)) {
+      return res
+        .status(403)
+        .json(
+          jsonError('FORBIDDEN', 'Manuel stok girişi düzenleme yalnızca süper yönetici.', null, 'api.stock.manual_in_super_only')
+        );
+    }
     const uid = req.session.user.id;
     const b = req.body || {};
     if (!b.reason || !String(b.reason).trim()) {
@@ -471,6 +494,13 @@ async function postMovement(req, res) {
   const type = String(b?.movementType || '').toLowerCase();
 
   if (type === 'in') {
+    if (!isSessionSuperUser(req)) {
+      return res
+        .status(403)
+        .json(
+          jsonError('FORBIDDEN', 'Manuel stok girişi yalnızca süper yönetici (başlangıç / düzeltme muhasebesi).', null, 'api.stock.manual_in_super_only')
+        );
+    }
     const msrc = movementSourceForStockIn(b);
     if (msrc.error === 'PURCHASE') {
       return res
