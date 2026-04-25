@@ -1223,9 +1223,32 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
     }
   } else if (completedByBuyer && hasBuyerState) {
     where += " AND po.buyer_state = 'completed'";
+  } else if (completedByBuyer && !hasBuyerState) {
+    // buyer_state kolonu yoksa "tamamlanan siparişler" güvenli şekilde boş dönsün;
+    // aksi halde fiyat kaydedilen siparişler yanlışlıkla bu listeye düşebilir.
+    where += ' AND 1=0';
   } else if (buyerStatus && hasBuyerState) {
-    where += ' AND po.buyer_state = ?';
-    p.push(String(buyerStatus).trim());
+    const buyerStates = String(buyerStatus)
+      .split(',')
+      .map((s) => String(s || '').trim().toLowerCase())
+      .filter(Boolean);
+    const allowedBuyerStates = new Set(['draft', 'in_progress', 'prices_saved', 'completed', 'revision_requested']);
+    const safeStates = buyerStates.filter((s) => allowedBuyerStates.has(s));
+    if (safeStates.length) {
+      const includesDraft = safeStates.includes('draft');
+      const statesWithoutDraft = safeStates.filter((s) => s !== 'draft');
+      const clauses = [];
+      if (statesWithoutDraft.length) {
+        clauses.push(`po.buyer_state IN (${statesWithoutDraft.map(() => '?').join(',')})`);
+        p.push(...statesWithoutDraft);
+      }
+      if (includesDraft) {
+        clauses.push("po.buyer_state IS NULL OR po.buyer_state = '' OR po.buyer_state = 'draft'");
+      }
+      where += ` AND (${clauses.join(' OR ')})`;
+    } else {
+      where += ' AND 1=0';
+    }
   } else if (statuses && Array.isArray(statuses) && statuses.length) {
     const safe = statuses.map((s) => String(s).trim()).filter(Boolean);
     if (safe.length) {
@@ -1470,28 +1493,37 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
       }
       const up = Number(oi.unit_price);
       const lineCur = normalizePricingCurrency(oi.currency || 'UZS');
-      if (!isSupportedPricingCurrency(lineCur)) {
-        await conn.rollback();
-        return err('Bu para birimi için maliyet dönüşümü henüz desteklenmiyor', 'api.pur.currency_not_supported');
-      }
       const fxRate = oi.fx_rate != null && oi.fx_rate !== '' ? Number(oi.fx_rate) : null;
-      if (!Number.isFinite(fxRate) || fxRate <= 0) {
-        await conn.rollback();
-        return err('Geçerli kur gerekli (1 USD = ? UZS)', 'api.pur.fx_required');
-      }
       const movementQty = movementQtyFromOrderUnit(
         qa,
         oi.request_unit_code || P.unit_code || P.unit || P.unit_legacy || '',
         P.m2_per_piece
       );
-      const totals = calcUzsUsdTotals({
-        unitPrice: up,
-        qty: movementQty.actualQty,
-        currency: lineCur,
-        fxRate,
-      });
-      const totalUsd = totals.totalUsd;
-      const totalUzs = totals.totalUzs;
+      let totalUsd = 0;
+      let totalUzs = 0;
+      let movementInputCurrency = 'UZS';
+      let movementFx = null;
+      if (Number.isFinite(up) && up > 0 && isSupportedPricingCurrency(lineCur)) {
+        if (lineCur === 'USD') {
+          if (Number.isFinite(fxRate) && fxRate > 0) {
+            const totals = calcUzsUsdTotals({
+              unitPrice: up,
+              qty: movementQty.actualQty,
+              currency: lineCur,
+              fxRate,
+            });
+            totalUsd = totals.totalUsd;
+            totalUzs = totals.totalUzs;
+            movementInputCurrency = lineCur;
+            movementFx = fxRate;
+          }
+        } else {
+          totalUzs = up * movementQty.actualQty;
+          totalUsd = Number.isFinite(fxRate) && fxRate > 0 ? totalUzs / fxRate : 0;
+          movementInputCurrency = lineCur;
+          movementFx = Number.isFinite(fxRate) && fxRate > 0 ? fxRate : null;
+        }
+      }
       const mIn = await recordMovementIn({
         productId,
         userId,
@@ -1499,10 +1531,10 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         qtyPieces: movementQty.qtyPieces,
         qtyM2: movementQty.qtyM2,
         projectId: por.project_id,
-        inputCurrency: lineCur,
+        inputCurrency: movementInputCurrency,
         lineTotalUzs: totalUzs,
-        lineTotalUsd: totalUsd,
-        fxUzsPerUsd: fxRate,
+        lineTotalUsd: totalUsd || null,
+        fxUzsPerUsd: movementFx,
         _useConn: conn,
         movementSource: 'PURCHASE_RECEIPT',
         purchaseOrderId: oid,
@@ -1996,6 +2028,18 @@ async function setProcurementStateForOrderStart(orderId) {
   if (String(r.status) === 'cancelled') {
     return err('İptal siparişte işlem yapılamaz', 'api.pur.order_readonly');
   }
+  if (await hasCol('purchase_orders', 'buyer_state')) {
+    await pool.query(
+      `UPDATE purchase_orders
+       SET buyer_state = CASE
+         WHEN buyer_state IS NULL OR buyer_state = '' OR buyer_state = 'draft' OR buyer_state = 'revision_requested'
+           THEN 'in_progress'
+         ELSE buyer_state
+       END
+       WHERE id = ?`,
+      [oid]
+    );
+  }
   await pool.query(
     `UPDATE purchase_requests pr
      INNER JOIN (
@@ -2114,6 +2158,45 @@ async function runOrderBuyerAction({ id, action }) {
     return { ok: true };
   }
   if (a === 'complete') {
+    const hasLineStatus = await hasCol('purchase_order_items', 'line_status');
+    const hasSupplierCol = await hasCol('purchase_order_items', 'supplier_id');
+    const lineSql = hasLineStatus
+      ? `SELECT poi.id, poi.unit_price, poi.currency, poi.fx_rate, poi.line_status, ${hasSupplierCol ? 'poi.supplier_id' : 'po.supplier_id AS supplier_id'}
+         FROM purchase_order_items poi
+         INNER JOIN purchase_orders po ON po.id = poi.order_id
+         WHERE poi.order_id = ?`
+      : `SELECT poi.id, poi.unit_price, poi.currency, poi.fx_rate, NULL AS line_status, ${hasSupplierCol ? 'poi.supplier_id' : 'po.supplier_id AS supplier_id'}
+         FROM purchase_order_items poi
+         INNER JOIN purchase_orders po ON po.id = poi.order_id
+         WHERE poi.order_id = ?`;
+    const [rows] = await pool.query(lineSql, [oid]);
+    const activeRows = hasLineStatus ? rows.filter((row) => !isPurchaseOrderLineCancelled(row)) : rows;
+    if (!activeRows.length) {
+      return err(
+        'Siparişi tamamlamak için tüm satırlarda tedarikçi, birim fiyat, para birimi ve kur bilgisi girilmelidir.',
+        'api.pur.complete_required_fields'
+      );
+    }
+    for (const row of activeRows) {
+      const supplierId = Number(row.supplier_id);
+      const unitPrice = Number(row.unit_price);
+      const lineCur = normalizePricingCurrency(row.currency || '');
+      const fxRate = Number(row.fx_rate);
+      if (
+        !Number.isFinite(supplierId) ||
+        supplierId <= 0 ||
+        !Number.isFinite(unitPrice) ||
+        unitPrice < 0 ||
+        !isSupportedPricingCurrency(lineCur) ||
+        !Number.isFinite(fxRate) ||
+        fxRate <= 0
+      ) {
+        return err(
+          'Siparişi tamamlamak için tüm satırlarda tedarikçi, birim fiyat, para birimi ve kur bilgisi girilmelidir.',
+          'api.pur.complete_required_fields'
+        );
+      }
+    }
     if (hasBuyerState) {
       await pool.query("UPDATE purchase_orders SET buyer_state = 'completed' WHERE id = ?", [oid]);
     }
