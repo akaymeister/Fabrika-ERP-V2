@@ -24,18 +24,17 @@ function tAdminNav(k) {
 
 function adminModuleNavHTML(active) {
   const items = [
-    { href: '/admin.html', key: 'home', i18n: 'nav.admin.home' },
-    { href: '/admin-user-new.html', key: 'new-user', i18n: 'nav.admin.newUser' },
-    { href: '/admin-users.html', key: 'users', i18n: 'nav.admin.users' },
-    { href: '/admin-permissions.html', key: 'perms', i18n: 'nav.admin.perms' },
-    { href: '/admin-settings.html', key: 'settings', i18n: 'nav.admin.settings' },
+    { href: '/admin.html', key: 'home', label: 'Süper Yönetim' },
+    { href: '/admin-user-new.html', key: 'new-user', label: 'Yeni Kullanıcı Ekle' },
+    { href: '/admin-users.html', key: 'users', label: 'Kullanıcılar' },
+    { href: '/admin-permissions.html', key: 'perms', label: 'Rol Yetkileri / Ek Yetkiler' },
+    { href: '/admin-settings.html', key: 'settings', label: 'Sistem Ayarları' },
   ];
   return `<nav class="stock-nav" aria-label="Admin">
     <a href="/" class="${active === 'dashboard' ? 'active' : ''}" data-i18n="nav.dashboard">${tAdminNav('nav.dashboard')}</a>
     ${items
       .map(
-        (i) =>
-          `<a href="${i.href}" class="${active === i.key ? 'active' : ''}" data-i18n="${i.i18n}">${tAdminNav(i.i18n)}</a>`
+        (i) => `<a href="${i.href}" class="${active === i.key ? 'active' : ''}">${i.label}</a>`
       )
       .join('')}
   </nav>`;
