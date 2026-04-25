@@ -74,6 +74,43 @@
         n.setAttribute('placeholder', t(k));
       }
     });
+    normalizeUiTitles(el);
+  }
+
+  function localTitleCase(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return '';
+    const lang = getLang();
+    const locale = lang === 'uz' ? 'uz-UZ' : lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'tr-TR';
+    const lower = raw.toLocaleLowerCase(locale);
+    const first = lower.charAt(0).toLocaleUpperCase(locale);
+    return first + lower.slice(1);
+  }
+
+  function normalizeUiTitles(root) {
+    const el = root || document;
+    const selector = [
+      'title[data-i18n]',
+      'h1[data-i18n]',
+      'h2[data-i18n]',
+      'h3[data-i18n]',
+      'h4[data-i18n]',
+      'th[data-i18n]',
+      'button[data-i18n]',
+      'a[data-i18n]',
+      'label[data-i18n]',
+      '.version-btn[data-i18n]',
+      '.module-button[data-i18n]',
+      '.logout-btn[data-i18n]',
+    ].join(', ');
+    el.querySelectorAll(selector).forEach((n) => {
+      if (!n || !n.textContent) return;
+      if (window.uiFormat && typeof window.uiFormat.fmtTitleLabel === 'function') {
+        n.textContent = window.uiFormat.fmtTitleLabel(n.textContent);
+        return;
+      }
+      n.textContent = localTitleCase(n.textContent);
+    });
   }
 
   function setDocumentLang(lang) {

@@ -57,9 +57,79 @@
       .replace(/"/g, '&quot;');
   }
 
-  function fmtQty(value) {
+  function fmtQtyDisplay(value) {
+    if (window.uiFormat && typeof window.uiFormat.fmtQty === 'function') {
+      return window.uiFormat.fmtQty(value);
+    }
     const n = Number(value);
-    return Number.isFinite(n) ? String(Number(n.toFixed(4))) : '0';
+    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  }
+
+  function fmtMoneyDisplay(value) {
+    if (window.uiFormat && typeof window.uiFormat.fmtMoney === 'function') {
+      return window.uiFormat.fmtMoney(value);
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  }
+
+  /**
+   * type="number" birim fiyat alanı: görünüm en fazla 2 ondalık (ayırıcı her zaman nokta).
+   * Kayıtta input.value parseFloat ile okunur; step=0.0001 ile ince giriş mümkün.
+   */
+  function fmtUnitPriceInputValue(raw) {
+    if (raw == null || raw === '') {
+      return '';
+    }
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+      return '';
+    }
+    return n.toFixed(2);
+  }
+
+  /**
+   * type="number" kur alanı: görünüm en fazla 2 ondalık (ayırıcı nokta).
+   * Kaydetmede input.value parseFloat ile okunur; step=0.0001 korunur.
+   */
+  function fmtFxInputValue(raw) {
+    if (raw == null || raw === '') {
+      return '';
+    }
+    const n = Number(raw);
+    if (!Number.isFinite(n)) {
+      return '';
+    }
+    return n.toFixed(2);
+  }
+
+  function fmtDisplayUpper(value) {
+    if (window.uiFormat && typeof window.uiFormat.fmtDisplayUpper === 'function') {
+      return window.uiFormat.fmtDisplayUpper(value);
+    }
+    return String(value == null ? '' : value).toLocaleUpperCase('tr-TR');
+  }
+
+  function fmtTitleLabel(value) {
+    if (window.uiFormat && typeof window.uiFormat.fmtTitleLabel === 'function') {
+      return window.uiFormat.fmtTitleLabel(value);
+    }
+    const raw = String(value == null ? '' : value).trim();
+    if (!raw) return '';
+    const lower = raw.toLocaleLowerCase('tr-TR');
+    return lower.charAt(0).toLocaleUpperCase('tr-TR') + lower.slice(1);
+  }
+
+  function applyTitleCase(root) {
+    const target = root || document;
+    target.querySelectorAll('title[data-i18n], h1[data-i18n], h2[data-i18n], h3[data-i18n], th[data-i18n], button[data-i18n], a[data-i18n], label[data-i18n]').forEach((el) => {
+      if (!el || !el.textContent) return;
+      el.textContent = fmtTitleLabel(el.textContent);
+    });
+  }
+
+  function fmtQty(value) {
+    return fmtQtyDisplay(value);
   }
 
   function normalizeUnitCode(value) {
@@ -188,7 +258,7 @@
     let html = '<option value="">—</option>';
     suppliers.forEach((row) => {
       const selected = String(row.id) === String(selectedId) ? ' selected' : '';
-      html += `<option value="${esc(row.id)}"${selected}>${esc(row.name)}</option>`;
+      html += `<option value="${esc(row.id)}"${selected}>${esc(fmtDisplayUpper(row.name))}</option>`;
     });
     return html;
   }
@@ -224,8 +294,8 @@
         const id = row.id;
         const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
         return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
-          <td>${esc(row.order_code || row.id)}</td>
-          <td>${esc(row.project_code || row.project_label || '—')}</td>
+          <td>${esc(fmtDisplayUpper(row.order_code || row.id))}</td>
+          <td>${esc(fmtDisplayUpper(row.project_code || row.project_label || '—'))}</td>
           <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
           <td>${esc(statusLabel('pricing', row.pricing_status))}</td>
           <td>${esc(String(row.order_date || row.created_at || '').slice(0, 10))}</td>
@@ -268,8 +338,8 @@
         const id = row.id;
         const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
         return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
-          <td>${esc(row.order_code || row.id)}</td>
-          <td>${esc(row.project_code || row.project_label || '—')}</td>
+          <td>${esc(fmtDisplayUpper(row.order_code || row.id))}</td>
+          <td>${esc(fmtDisplayUpper(row.project_code || row.project_label || '—'))}</td>
           <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
           <td>${esc(statusLabel('pricing', row.pricing_status))}</td>
           <td>${esc(statusLabel('buyer', row.buyer_status || row.buyer_state || 'draft'))}</td>
@@ -292,7 +362,7 @@
       `<span class="proc-badge">${esc(tK('purch.proc.colReceiptStatus'))}: ${esc(statusLabel('receipt', order.receipt_status || order.status))}</span>`,
       `<span class="proc-badge">${esc(tK('purch.proc.colPricingStatus'))}: ${esc(statusLabel('pricing', order.pricing_status))}</span>`,
       `<span class="proc-badge">${esc(tK('purch.proc.colBuyerStatus'))}: ${esc(statusLabel('buyer', order.buyer_status || order.buyer_state || 'draft'))}</span>`,
-      `<span class="proc-badge">${esc(tK('purch.col.supplier'))}: ${esc(order.supplier_name || '—')}</span>`,
+      `<span class="proc-badge">${esc(tK('purch.col.supplier'))}: ${esc(fmtDisplayUpper(order.supplier_name || '—'))}</span>`,
     ].join('');
   }
 
@@ -309,9 +379,9 @@
     if (orderFormBlock) orderFormBlock.hidden = false;
 
     const order = selectedOrder;
-    const projectLabel = order.project_label || order.project_code || '—';
+    const projectLabel = fmtDisplayUpper(order.project_label || order.project_code || '—');
     if (orderMeta) {
-      orderMeta.textContent = `${order.order_code || order.id} · ${projectLabel}`;
+      orderMeta.textContent = `${fmtDisplayUpper(order.order_code || order.id)} · ${projectLabel}`;
     }
     renderBadges(order);
 
@@ -336,7 +406,7 @@
           ? '—'
           : `<button type="button" class="logout-btn po-line-cancel" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'} style="font-size:12px;padding:6px 10px">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
         return `<tr${rowCls}>
-          <td><span style="font-size:11px;color:#64748b">${esc(it.product_code || '')}</span><br/>${esc(it.product_name || '')}${cancelReasonHtml}</td>
+          <td><span style="font-size:11px;color:#64748b">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
@@ -344,9 +414,9 @@
             <input class="pur-inp po-line-supsearch" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" style="width:150px;margin-bottom:4px" ${cancelled ? 'disabled' : ''} />
             <select class="pur-inp po-line-sup" data-i="${i}" ${cancelled ? 'disabled' : ''}>${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
           </td>
-          <td><input type="number" class="pur-inp po-line-price" data-i="${i}" min="0" step="0.0001" value="${esc(it.unit_price != null ? it.unit_price : '')}" style="width:120px" ${cancelled ? 'disabled' : ''} /></td>
+          <td><input type="number" class="pur-inp po-line-price" data-i="${i}" min="0" step="0.0001" value="${esc(fmtUnitPriceInputValue(it.unit_price))}" title="${esc(fmtMoneyDisplay(it.unit_price))}" style="width:120px" ${cancelled ? 'disabled' : ''} /></td>
           <td><select class="pur-inp po-line-cur" data-i="${i}" style="width:88px" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
-          <td><input type="number" class="pur-inp po-line-fx" data-i="${i}" min="0" step="0.0001" value="${esc(fxRate)}" style="width:110px" ${cancelled ? 'disabled' : ''} /></td>
+          <td><input type="number" class="pur-inp po-line-fx" data-i="${i}" min="0" step="0.0001" value="${esc(fmtFxInputValue(fxRate))}" style="width:110px" ${cancelled ? 'disabled' : ''} /></td>
           <td style="white-space:nowrap">${cancelBtn}</td>
         </tr>`;
       })
@@ -399,6 +469,7 @@
       }
     });
     if (window.i18n && window.i18n.apply) window.i18n.apply(orderFormBlock);
+    applyTitleCase(orderFormBlock);
   }
 
   function collectPricingLines() {
@@ -595,6 +666,7 @@
     await loadIncomingOrders(false);
     await loadCompletedOrders(false);
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+    applyTitleCase(document);
 
     const langSel = document.getElementById('languageSelect');
     if (langSel) {
@@ -612,6 +684,7 @@
         if (window.i18n && window.i18n.apply) {
           window.i18n.apply(document);
         }
+        applyTitleCase(document);
       });
     }
   })();
