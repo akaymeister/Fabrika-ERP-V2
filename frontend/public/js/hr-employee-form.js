@@ -17,6 +17,7 @@
 
   let departments = [];
   let positions = [];
+  let users = [];
 
   function showMsg(text, ok = true) {
     if (!msgEl) return;
@@ -57,7 +58,7 @@
       userId.innerHTML = '<option value="">Kullanici listesi yuklenemedi</option>';
       return;
     }
-    const users = res.data.data?.users || res.data.users || [];
+    users = res.data.data?.users || res.data.users || [];
     userId.innerHTML =
       '<option value="">Kullanici baglama (opsiyonel)</option>' +
       users.map((u) => `<option value="${u.id}">${u.username} - ${u.full_name || ''}</option>`).join('');

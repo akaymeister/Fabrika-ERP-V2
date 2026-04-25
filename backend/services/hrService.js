@@ -160,7 +160,8 @@ async function listEmployees(filters = {}) {
   }
   const sql = `SELECT e.id, e.employee_no, e.full_name, e.phone, e.email, e.hire_date, e.employment_status,
                       e.department_id, d.name AS department_name, e.position_id, pz.name AS position_name,
-                      e.user_id, u.username AS user_username, e.note, e.created_at, e.updated_at
+                      e.user_id, u.username AS user_username,
+                      e.note, e.created_at, e.updated_at
                FROM employees e
                LEFT JOIN departments d ON d.id = e.department_id
                LEFT JOIN positions pz ON pz.id = e.position_id

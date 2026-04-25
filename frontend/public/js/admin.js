@@ -55,23 +55,32 @@ async function api(path, options = {}) {
 
 let catalog = [];
 let roles = [];
+let permissionSubjects = [];
 let users = [];
 
 function fillRoleSelects() {
   const nr = document.getElementById('newRole');
   const rs = document.getElementById('roleSelect');
-  const opt = (el) => {
-    if (!el) return;
-    el.innerHTML = '';
+  if (nr) {
+    nr.innerHTML = '';
     for (const r of roles) {
       const o = document.createElement('option');
       o.value = r.id;
       o.textContent = `${r.name} (${r.slug})`;
-      el.appendChild(o);
+      nr.appendChild(o);
     }
-  };
-  opt(nr);
-  opt(rs);
+  }
+  if (rs) {
+    rs.innerHTML = '';
+    for (const s of permissionSubjects) {
+      const o = document.createElement('option');
+      o.value = `${s.type}:${s.id}`;
+      const prefix = s.type === 'system_role' ? 'Sistem Rolu' : 'IK Pozisyonu';
+      const code = s.code ? ` (${s.code})` : '';
+      o.textContent = `${prefix}: ${s.name}${code}`;
+      rs.appendChild(o);
+    }
+  }
 }
 
 function fillUserSelectExtra() {
@@ -236,14 +245,35 @@ async function loadRoles() {
     return;
   }
   roles = r.data.roles || [];
+}
+
+function getSelectedPermissionSubject() {
+  const select = document.getElementById('roleSelect');
+  const raw = String(select?.value || '');
+  const [type, idRaw] = raw.split(':');
+  const id = Number(idRaw);
+  if (!type || !Number.isFinite(id) || id < 1) return null;
+  return { type, id };
+}
+
+async function loadPermissionSubjects() {
+  const r = await api('/api/admin/permission-subjects');
+  if (!r) return;
+  if (!r.res.ok) {
+    showError(apiErr(r.data, 'api.error.load_roles'));
+    return;
+  }
+  permissionSubjects = r.data.subjects || [];
   fillRoleSelects();
 }
 
 async function loadRolePerms() {
-  const select = document.getElementById('roleSelect');
-  const id = +select.value;
-  if (!id) return;
-  const r = await api(`/api/admin/roles/${id}/permissions`);
+  const subject = getSelectedPermissionSubject();
+  if (!subject) {
+    renderCheckboxes('rolePermList', []);
+    return;
+  }
+  const r = await api(`/api/admin/permission-subjects/${subject.type}/${subject.id}/permissions`);
   if (!r) return;
   if (!r.res.ok) {
     showError(apiErr(r.data, 'api.error.load_role_perms'));
@@ -287,6 +317,7 @@ async function init() {
   clearError();
   await loadCatalog();
   await loadRoles();
+  await loadPermissionSubjects();
   await loadUsers();
   const rs = document.getElementById('roleSelect');
   if (rs?.value) {
@@ -312,9 +343,10 @@ async function init() {
   });
   document.getElementById('btnSaveRolePerms')?.addEventListener('click', async () => {
     clearError();
-    const id = +document.getElementById('roleSelect').value;
+    const subject = getSelectedPermissionSubject();
+    if (!subject) return;
     const ids = getCheckedIds('rolePermList');
-    const { res, data } = await api(`/api/admin/roles/${id}/permissions`, {
+    const { res, data } = await api(`/api/admin/permission-subjects/${subject.type}/${subject.id}/permissions`, {
       method: 'PUT',
       body: JSON.stringify({ permissionIds: ids }),
     });

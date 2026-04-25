@@ -6,6 +6,9 @@ const {
   getPermissionCatalog,
   getRolePermissionsById,
   putRolePermissionsById,
+  getPermissionSubjects,
+  getPermissionSubjectPermissions,
+  putPermissionSubjectPermissions,
   getUserExtraPerms,
   putUserExtraPerms,
   getUsersList,
@@ -24,6 +27,9 @@ router.get('/roles', getRolesList);
 router.get('/permissions', getPermissionCatalog);
 router.get('/roles/:id/permissions', getRolePermissionsById);
 router.put('/roles/:id/permissions', putRolePermissionsById);
+router.get('/permission-subjects', getPermissionSubjects);
+router.get('/permission-subjects/:type/:id/permissions', getPermissionSubjectPermissions);
+router.put('/permission-subjects/:type/:id/permissions', putPermissionSubjectPermissions);
 
 router.get('/users', getUsersList);
 router.post('/users', postUser);

@@ -7,11 +7,12 @@ const {
   resetPassword,
 } = require('../services/adminUserService');
 const {
-  getRolePermissionIds,
-  setRolePermissionIds,
+  getPermissionIdsBySubject,
+  setPermissionIdsBySubject,
   getUserExtraPermissionIds,
   setUserExtraPermissionIds,
   listAllPermissions,
+  listPermissionSubjects,
 } = require('../services/permissionService');
 const { jsonOk, jsonError } = require('../utils/apiResponse');
 const { pool } = require('../config/database');
@@ -55,6 +56,79 @@ async function putRolePermissionsById(req, res) {
   } catch (e) {
     if (e.code === 'ER_NO_SUCH_TABLE') {
       return res.status(500).json(jsonError('MIGRATION', 'Yetki tabloları yok: npm run db:migrate', null, 'api.admin.migration_permissions'));
+    }
+    throw e;
+  }
+  return res.json(jsonOk());
+}
+
+function parseSubjectType(typeRaw) {
+  const type = String(typeRaw || '').trim();
+  if (type === 'system_role' || type === 'hr_position') return type;
+  return null;
+}
+
+async function getPermissionSubjects(_req, res) {
+  const subjects = await listPermissionSubjects();
+  return res.json(jsonOk({ subjects }));
+}
+
+async function getPermissionSubjectPermissions(req, res) {
+  const type = parseSubjectType(req.params.type);
+  const id = parseInt(String(req.params.id), 10);
+  if (!type || !Number.isFinite(id) || id < 1) {
+    return res.status(400).json(jsonError('VALIDATION', 'Gecersiz yetki konusu', null, 'api.admin.invalid_permission_subject'));
+  }
+
+  if (type === 'system_role') {
+    const [rows] = await pool.query('SELECT id, name, slug FROM roles WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json(jsonError('NOT_FOUND', 'Rol yok', null, 'api.admin.role_not_found'));
+    }
+  } else {
+    const [rows] = await pool.query('SELECT id, name, code FROM positions WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json(jsonError('NOT_FOUND', 'Pozisyon yok', null, 'api.hr.position_not_found'));
+    }
+  }
+
+  const permissionIds = await getPermissionIdsBySubject(type, id);
+  return res.json(jsonOk({ permissionIds }));
+}
+
+async function putPermissionSubjectPermissions(req, res) {
+  const type = parseSubjectType(req.params.type);
+  const id = parseInt(String(req.params.id), 10);
+  if (!type || !Number.isFinite(id) || id < 1) {
+    return res.status(400).json(jsonError('VALIDATION', 'Gecersiz yetki konusu', null, 'api.admin.invalid_permission_subject'));
+  }
+
+  if (type === 'system_role') {
+    const [rows] = await pool.query('SELECT id, slug FROM roles WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json(jsonError('NOT_FOUND', 'Rol yok', null, 'api.admin.role_not_found'));
+    }
+  } else {
+    const [rows] = await pool.query('SELECT id FROM positions WHERE id = ? LIMIT 1', [id]);
+    if (!rows.length) {
+      return res.status(404).json(jsonError('NOT_FOUND', 'Pozisyon yok', null, 'api.hr.position_not_found'));
+    }
+  }
+
+  const raw = req.body?.permissionIds;
+  const list = Array.isArray(raw) ? raw.map((x) => parseInt(String(x), 10)).filter((n) => n > 0) : [];
+  try {
+    await setPermissionIdsBySubject(type, id, list);
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return res
+        .status(500)
+        .json(jsonError('MIGRATION', 'Yetki tabloları yok: npm run db:migrate', null, 'api.admin.migration_permissions'));
+    }
+    if (e.message === 'INVALID_SUBJECT_TYPE') {
+      return res
+        .status(400)
+        .json(jsonError('VALIDATION', 'Gecersiz yetki konusu', null, 'api.admin.invalid_permission_subject'));
     }
     throw e;
   }
@@ -151,6 +225,9 @@ module.exports = {
   getPermissionCatalog,
   getRolePermissionsById,
   putRolePermissionsById,
+  getPermissionSubjects,
+  getPermissionSubjectPermissions,
+  putPermissionSubjectPermissions,
   getUserExtraPerms,
   putUserExtraPerms,
   getUsersList,

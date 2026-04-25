@@ -20,6 +20,17 @@ async function userHasPermission(userId, roleSlug, permKey) {
   );
   if (fromRole.length) return true;
 
+  const [fromPosition] = await pool.query(
+    `SELECT 1 AS ok
+     FROM users u
+     INNER JOIN employees e ON e.user_id = u.id
+     INNER JOIN position_permissions pp ON pp.position_id = e.position_id
+     WHERE u.id = ? AND pp.permission_id = ?
+     LIMIT 1`,
+    [userId, p.id]
+  );
+  if (fromPosition.length) return true;
+
   const [fromUser] = await pool.query(
     'SELECT 1 AS ok FROM user_permissions WHERE user_id = ? AND permission_id = ? LIMIT 1',
     [userId, p.id]
