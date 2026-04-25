@@ -274,7 +274,8 @@ async function init() {
     await window.initGlobalNavigation('admin');
   }
   if (typeof window.initAdminPageNav === 'function') {
-    await window.initAdminPageNav('admin');
+    const activeKey = (document.body && document.body.dataset && document.body.dataset.adminNav) || 'home';
+    await window.initAdminPageNav(activeKey);
   }
   const me = await api('/api/auth/me');
   if (!me || !me.res.ok) return;

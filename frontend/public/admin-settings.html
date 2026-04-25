@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistem ayarları — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-admin-nav="settings">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1>Sistem ayarları</h1>
+        <p class="subtitle">Varsayılan para birimi, dil ve proje kod ayarları</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/admin.html" class="version-btn">Süper yönetim</a>
+        <a href="#" class="logout-btn" id="logoutBtn">Çıkış</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+
+    <section class="card admin-section" style="margin-top:24px;max-width:520px">
+      <div class="section-header">
+        <h3>Sistem ayarları</h3>
+        <p>Varsayılan para birimi; örn. UZS.</p>
+      </div>
+      <div class="form-field">
+        <label for="defaultCurrency">Varsayılan para (ISO, örn. UZS)</label>
+        <input type="text" id="defaultCurrency" class="input-upper" maxlength="5" />
+      </div>
+      <div class="form-field">
+        <label for="defaultLocale">Varsayılan dil (tr / uz / ru / en)</label>
+        <input type="text" id="defaultLocale" class="input-lower" maxlength="5" />
+      </div>
+      <div class="form-field">
+        <label for="projectCodePrefix">Proje kodu öneki</label>
+        <input type="text" id="projectCodePrefix" class="input-upper" maxlength="16" style="max-width:200px" placeholder="PRJ" />
+        <p class="form-hint muted" style="margin-top:6px;font-size:12px">
+          Otomatik kod: PRJ-26-001 (2–16; A–Z, 0–9, tire)
+        </p>
+      </div>
+      <button type="button" class="module-button" id="btnSaveSettings" style="width:auto;padding:10px 16px">Ayarları kaydet</button>
+      <p id="setMsg" style="display:none;margin-top:8px;color:#166534;font-weight:600"></p>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/admin-common.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

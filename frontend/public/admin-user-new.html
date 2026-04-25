@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yeni kullanıcı ekle — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-admin-nav="new-user">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1>Yeni kullanıcı ekle</h1>
+        <p class="subtitle">Yeni kullanıcı oluştur ve ilk rolünü ata</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/admin.html" class="version-btn">Süper yönetim</a>
+        <a href="#" class="logout-btn" id="logoutBtn">Çıkış</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+
+    <section class="card admin-section" style="max-width:680px">
+      <div class="section-header">
+        <h3>Yeni kullanıcı</h3>
+        <p>İlk aşamada tüm alanlar zorunlu (şifre en az 4 karakter)</p>
+      </div>
+      <form id="formNewUser" class="product-form-grid" style="grid-template-columns: 1fr">
+        <div class="form-field">
+          <label for="newUsername">Kullanıcı adı</label>
+          <input type="text" id="newUsername" name="username" required autocomplete="off" />
+        </div>
+        <div class="form-field">
+          <label for="newFullname">Ad soyad</label>
+          <input type="text" id="newFullname" name="full_name" class="input-upper" required />
+        </div>
+        <div class="form-field">
+          <label for="newEmail">E-posta (opsiyonel)</label>
+          <input type="email" id="newEmail" name="email" />
+        </div>
+        <div class="form-field">
+          <label for="newRole">Rol</label>
+          <select id="newRole" name="role_id" required></select>
+        </div>
+        <div class="form-field">
+          <label for="newPass">Şifre</label>
+          <input type="password" id="newPass" name="password" required minlength="4" autocomplete="new-password" />
+        </div>
+        <div class="form-field form-actions">
+          <button type="submit" class="module-button" style="width:auto;padding:10px 16px">Oluştur</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/admin-common.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

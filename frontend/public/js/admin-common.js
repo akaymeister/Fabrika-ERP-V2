@@ -1,9 +1,15 @@
 /**
- * Süper yönetim modülü hızlı menü: <div id="navSlot"></div> + initAdminPageNav('admin'|'home')
+ * Süper yönetim modülü hızlı menü: <div id="navSlot"></div> + initAdminPageNav(activeKey)
+ * Anahtarlar: home | new-user | users | perms | settings
  */
 const ADMIN_NAV_FALLBACK_TR = {
   'nav.dashboard': 'Ana sayfa',
-  'admin.title': 'Süper yönetim',
+  'admin.title': 'Super yonetim',
+  'nav.admin.home': 'Super yonetim',
+  'nav.admin.newUser': 'Yeni kullanici ekle',
+  'nav.admin.users': 'Kullanicilar',
+  'nav.admin.perms': 'Rol yetkileri / ek yetkiler',
+  'nav.admin.settings': 'Sistem ayarlari',
 };
 
 function tAdminNav(k) {
@@ -17,9 +23,21 @@ function tAdminNav(k) {
 }
 
 function adminModuleNavHTML(active) {
+  const items = [
+    { href: '/admin.html', key: 'home', i18n: 'nav.admin.home' },
+    { href: '/admin-user-new.html', key: 'new-user', i18n: 'nav.admin.newUser' },
+    { href: '/admin-users.html', key: 'users', i18n: 'nav.admin.users' },
+    { href: '/admin-permissions.html', key: 'perms', i18n: 'nav.admin.perms' },
+    { href: '/admin-settings.html', key: 'settings', i18n: 'nav.admin.settings' },
+  ];
   return `<nav class="stock-nav" aria-label="Admin">
-    <a href="/" class="${active === 'home' ? 'active' : ''}" data-i18n="nav.dashboard">${tAdminNav('nav.dashboard')}</a>
-    <a href="/admin.html" class="${active === 'admin' ? 'active' : ''}" data-i18n="admin.title">${tAdminNav('admin.title')}</a>
+    <a href="/" class="${active === 'dashboard' ? 'active' : ''}" data-i18n="nav.dashboard">${tAdminNav('nav.dashboard')}</a>
+    ${items
+      .map(
+        (i) =>
+          `<a href="${i.href}" class="${active === i.key ? 'active' : ''}" data-i18n="${i.i18n}">${tAdminNav(i.i18n)}</a>`
+      )
+      .join('')}
   </nav>`;
 }
 

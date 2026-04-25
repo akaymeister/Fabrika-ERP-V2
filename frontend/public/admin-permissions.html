@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rol yetkileri — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body data-admin-nav="perms">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1>Rol yetkileri / kullanıcı ek yetkileri</h1>
+        <p class="subtitle">Rol bazlı izinler ve kullanıcıya özel ek izinler</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/admin.html" class="version-btn">Süper yönetim</a>
+        <a href="#" class="logout-btn" id="logoutBtn">Çıkış</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+
+    <div class="admin-grid">
+      <section class="card admin-section">
+        <div class="section-header">
+          <h3>Rol yetkileri</h3>
+          <p>Seçilen role modül/eylem izinleri.</p>
+        </div>
+        <div class="form-field" style="max-width:360px">
+          <label for="roleSelect">Rol</label>
+          <select id="roleSelect"></select>
+        </div>
+        <div class="perm-list" id="rolePermList"></div>
+        <div class="form-actions" style="margin-top:16px">
+          <button type="button" class="module-button" id="btnSaveRolePerms" style="width:auto;padding:10px 16px">
+            Rol izinlerini kaydet
+          </button>
+        </div>
+      </section>
+
+      <section class="card admin-section">
+        <div class="section-header">
+          <h3>Kullanıcı ek yetkileri</h3>
+          <p>Rol dışında ek izin; kümülatif.</p>
+        </div>
+        <div class="form-field" style="max-width:360px">
+          <label for="userSelectExtra">Kullanıcı</label>
+          <select id="userSelectExtra"></select>
+        </div>
+        <div class="perm-list" id="userPermList"></div>
+        <div class="form-actions" style="margin-top:16px">
+          <button type="button" class="module-button" id="btnSaveUserPerms" style="width:auto;padding:10px 16px">
+            Ek yetkileri kaydet
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/admin-common.js" defer></script>
+  <script src="/js/admin.js" defer></script>
+</body>
+</html>

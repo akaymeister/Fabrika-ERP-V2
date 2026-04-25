@@ -6,12 +6,12 @@
   <title data-i18n="admin.pageTitle">Süper yönetim — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body data-admin-nav="home">
   <div class="container">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
         <h1 data-i18n="admin.title">Süper yönetim</h1>
-        <p class="subtitle" data-i18n="admin.sub">Kullanıcılar, roller ve yetkiler (tam yönetim paneli)</p>
+        <p class="subtitle">Kullanici, yetki ve sistem ayari yonetim merkezi</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
@@ -26,135 +26,34 @@
     </div>
     <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
+    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
 
-    <p id="adminErr" class="login-error" style="display: none; margin: 0 0 12px; color: #b91c1c"></p>
-
-    <div class="admin-grid two">
-      <section class="card admin-section" id="userSection">
-        <div class="section-header">
-          <h3 data-i18n="admin.users">Kullanıcılar</h3>
-          <p data-i18n="admin.usersSub">Sistem kullanıcıları — rol atama, pasif, şifre sıfırlama</p>
-        </div>
-        <div class="page-actions">
-          <button type="button" id="btnOpenNew" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="admin.newUserBtn">Yeni kullanıcı</button>
-        </div>
-        <div style="overflow-x: auto; margin-top: 12px">
-          <table>
-            <thead>
-              <tr>
-                <th data-i18n="admin.colId">ID</th>
-                <th data-i18n="admin.colUser">Kullanıcı</th>
-                <th data-i18n="admin.colName">Ad</th>
-                <th data-i18n="admin.colRole">Rol</th>
-                <th data-i18n="admin.colActive">Aktif</th>
-                <th data-i18n="admin.colActions">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody id="userTableBody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="card admin-section">
-        <div class="section-header">
-          <h3 data-i18n="admin.newUser">Yeni kullanıcı</h3>
-          <p data-i18n="admin.newUserSub">İlk aşamada tüm alanlar zorunlu (şifre en az 4 karakter)</p>
-        </div>
-        <form id="formNewUser" class="product-form-grid" style="grid-template-columns: 1fr">
-          <div class="form-field">
-            <label for="newUsername" data-i18n="login.user">Kullanıcı adı</label>
-            <input type="text" id="newUsername" name="username" required autocomplete="off" />
-          </div>
-          <div class="form-field">
-            <label for="newFullname" data-i18n="admin.fullName">Ad soyad</label>
-            <input type="text" id="newFullname" name="full_name" class="input-upper" required />
-          </div>
-          <div class="form-field">
-            <label for="newEmail" data-i18n="admin.email">E-posta (opsiyonel)</label>
-            <input type="email" id="newEmail" name="email" />
-          </div>
-          <div class="form-field">
-            <label for="newRole" data-i18n="admin.colRole">Rol</label>
-            <select id="newRole" name="role_id" required></select>
-          </div>
-          <div class="form-field">
-            <label for="newPass" data-i18n="login.pass">Şifre</label>
-            <input type="password" id="newPass" name="password" required minlength="4" autocomplete="new-password" />
-          </div>
-          <div class="form-field form-actions">
-            <button type="submit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="admin.create">Oluştur</button>
-          </div>
-        </form>
-      </section>
-    </div>
-
-    <div class="admin-grid" style="margin-top: 8px">
-      <section class="card admin-section">
-        <div class="section-header">
-          <h3 data-i18n="admin.rolePerms">Rol yetkileri</h3>
-          <p data-i18n="admin.rolePermsSub">Seçilen role modül/eylem izinleri.</p>
-        </div>
-        <div class="form-field" style="max-width: 360px">
-          <label for="roleSelect" data-i18n="admin.colRole">Rol</label>
-          <select id="roleSelect"></select>
-        </div>
-        <div class="perm-list" id="rolePermList"></div>
-        <div class="form-actions" style="margin-top: 16px">
-          <button type="button" class="module-button" id="btnSaveRolePerms" style="width: auto; padding: 10px 16px" data-i18n="admin.saveRolePerms">
-            Rol izinlerini kaydet
-          </button>
-        </div>
-      </section>
-
-      <section class="card admin-section">
-        <div class="section-header">
-          <h3 data-i18n="admin.userExtra">Kullanıcı ek yetkileri</h3>
-          <p data-i18n="admin.userExtraSub">Rol dışında ek izin; kümülatif.</p>
-        </div>
-        <div class="form-field" style="max-width: 360px">
-          <label for="userSelectExtra" data-i18n="admin.colUser">Kullanıcı</label>
-          <select id="userSelectExtra"></select>
-        </div>
-        <div class="perm-list" id="userPermList"></div>
-        <div class="form-actions" style="margin-top: 16px">
-          <button type="button" class="module-button" id="btnSaveUserPerms" style="width: auto; padding: 10px 16px" data-i18n="admin.saveUserPerms">
-            Ek yetkileri kaydet
-          </button>
-        </div>
-      </section>
-    </div>
-
-    <section class="card admin-section" style="margin-top: 24px; max-width: 520px">
-      <div class="section-header">
-        <h3 data-i18n="admin.sysSettings">Sistem ayarları</h3>
-        <p data-i18n="admin.sysSettingsSub">Varsayılan para birimi; örn. UZS.</p>
+    <section class="hero-panel premium-hero" style="margin-bottom:24px">
+      <div class="hero-text">
+        <span class="hero-mini-badge">Yonetim</span>
+        <h2>Super yonetim merkezi</h2>
+        <p>Kullanicilar, yetkiler ve sistem ayarlari ayri ekranlara bolunmustur.</p>
       </div>
-      <div class="form-field">
-        <label for="defaultCurrency" data-i18n="admin.defaultCurrency">Varsayılan para (ISO, örn. UZS)</label>
-        <input type="text" id="defaultCurrency" class="input-upper" maxlength="5" />
-      </div>
-      <div class="form-field">
-        <label for="defaultLocale" data-i18n="admin.defaultLocale">Varsayılan dil (tr / uz / ru / en)</label>
-        <input type="text" id="defaultLocale" class="input-lower" maxlength="5" />
-      </div>
-      <div class="form-field">
-        <label for="projectCodePrefix" data-i18n="admin.projectCodePrefix">Proje kodu öneki</label>
-        <input
-          type="text"
-          id="projectCodePrefix"
-          class="input-upper"
-          maxlength="16"
-          style="max-width: 200px"
-          data-i18n-placeholder="admin.projectCodePrefixPh"
-          placeholder="PRJ"
-        />
-        <p class="form-hint muted" style="margin-top: 6px; font-size: 12px" data-i18n="admin.projectCodePrefixSub">
-          Otomatik kod: PRJ-26-001 (2–16; A–Z, 0–9, tire)
-        </p>
-      </div>
-      <button type="button" class="module-button" id="btnSaveSettings" style="width: auto; padding: 10px 16px" data-i18n="admin.saveSettings">Ayarları kaydet</button>
-      <p id="setMsg" style="display: none; margin-top: 8px; color: #166534; font-weight: 600"></p>
     </section>
+
+    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
+      <a class="dashboard-card" href="/admin-user-new.html" style="text-decoration:none;color:inherit">
+        <h3>Yeni kullanici ekle</h3>
+        <p>Yeni hesap acma ve ilk rol atama</p>
+      </a>
+      <a class="dashboard-card" href="/admin-users.html" style="text-decoration:none;color:inherit">
+        <h3>Kullanicilar</h3>
+        <p>Rol degistirme, aktif/pasif ve sifre sifirlama</p>
+      </a>
+      <a class="dashboard-card" href="/admin-permissions.html" style="text-decoration:none;color:inherit">
+        <h3>Rol yetkileri / ek yetkiler</h3>
+        <p>Rol bazli izinler ve kullaniciya ozel ek izinler</p>
+      </a>
+      <a class="dashboard-card" href="/admin-settings.html" style="text-decoration:none;color:inherit">
+        <h3>Sistem ayarlari</h3>
+        <p>Varsayilan para, dil ve proje kod ayarlari</p>
+      </a>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
