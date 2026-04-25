@@ -88,6 +88,18 @@ function movementCalcM3(row) {
   return m3FromStockM2AndDepth(calcM2, depth);
 }
 
+async function resolveProductPrimaryUnitCode(conn, productId, fallbackLegacyUnit) {
+  const [[urow]] = await conn.query(
+    `SELECT u.code AS unit_code
+     FROM products p
+     LEFT JOIN units u ON u.id = p.unit_id
+     WHERE p.id = ?
+     LIMIT 1`,
+    [productId]
+  );
+  return normalizeUnitCode((urow && urow.unit_code) || fallbackLegacyUnit || 'ADET');
+}
+
 async function listMovements({ productId, movementType, projectId, limit = 100, offset = 0 } = {}) {
   const lim = Math.min(Math.max(parseInt(String(limit), 10) || 100, 1), 500);
   const off = Math.max(parseInt(String(offset), 10) || 0, 0);
@@ -570,6 +582,7 @@ async function recordMovementIn(params) {
       return err('Ürün yok', 'api.stock.product_not_found');
     }
     const m2p = Number(P.m2_per_piece) || 0;
+    const primaryUnitCode = await resolveProductPrimaryUnitCode(conn, pid, P.unit);
     let m2In;
     if (Number.isFinite(directM2) && directM2 > 0) {
       m2In = directM2;
@@ -586,6 +599,16 @@ async function recordMovementIn(params) {
         await conn.rollback();
       }
       return err('Girilecek m2 0’dan büyük olmalı', 'api.stock.m2_positive');
+    }
+    let primaryQty;
+    if (isM2Unit(primaryUnitCode)) {
+      primaryQty = Number.isFinite(directM2) && directM2 > 0 ? directM2 : m2In;
+    } else if (Number.isFinite(qPieces) && qPieces > 0) {
+      primaryQty = qPieces;
+    } else if (m2p > 0) {
+      primaryQty = m2In / m2p;
+    } else {
+      primaryQty = m2In;
     }
 
     const pj = projectId != null && projectId !== '' ? parseInt(String(projectId), 10) : NaN;
@@ -717,53 +740,102 @@ async function recordMovementIn(params) {
     }
     const directM2Entry = Number.isFinite(directM2) && directM2 > 0 ? 1 : 0;
     let mid;
+    const hasPrimaryQtyCol = await columnExists('stock_movements', 'primary_qty');
+    const hasPrimaryUnitCol = await columnExists('stock_movements', 'primary_unit');
+    const hasPrimaryCols = hasPrimaryQtyCol && hasPrimaryUnitCol;
     if (await columnExists('stock_movements', 'line_total_uzs')) {
       const hasDirectCol = await columnExists('stock_movements', 'direct_m2_entry');
       if (hasDirectCol) {
-        const [r] = await conn.query(
-          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, direct_m2_entry, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
-           VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            pid,
-            userId,
-            m2In,
-            addPieces,
-            directM2Entry,
-            refTypeRow,
-            refIdRow,
-            totalUzs,
-            totalUsd > 0 ? totalUsd : null,
-            fx > 0 ? fx : null,
-            curNorm,
-            noteRow,
-          ]
-        );
+        const [r] = hasPrimaryCols
+          ? await conn.query(
+              `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, primary_qty, primary_unit, direct_m2_entry, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
+               VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                pid,
+                userId,
+                m2In,
+                addPieces,
+                primaryQty,
+                primaryUnitCode,
+                directM2Entry,
+                refTypeRow,
+                refIdRow,
+                totalUzs,
+                totalUsd > 0 ? totalUsd : null,
+                fx > 0 ? fx : null,
+                curNorm,
+                noteRow,
+              ]
+            )
+          : await conn.query(
+              `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, direct_m2_entry, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
+               VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                pid,
+                userId,
+                m2In,
+                addPieces,
+                directM2Entry,
+                refTypeRow,
+                refIdRow,
+                totalUzs,
+                totalUsd > 0 ? totalUsd : null,
+                fx > 0 ? fx : null,
+                curNorm,
+                noteRow,
+              ]
+            );
         mid = r.insertId;
       } else {
-        const [r] = await conn.query(
-          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
-         VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            pid,
-            userId,
-            m2In,
-            addPieces,
-            refTypeRow,
-            refIdRow,
-            totalUzs,
-            totalUsd > 0 ? totalUsd : null,
-            fx > 0 ? fx : null,
-            curNorm,
-            noteRow,
-          ]
-        );
+        const [r] = hasPrimaryCols
+          ? await conn.query(
+              `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, primary_qty, primary_unit, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
+               VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                pid,
+                userId,
+                m2In,
+                addPieces,
+                primaryQty,
+                primaryUnitCode,
+                refTypeRow,
+                refIdRow,
+                totalUzs,
+                totalUsd > 0 ? totalUsd : null,
+                fx > 0 ? fx : null,
+                curNorm,
+                noteRow,
+              ]
+            )
+          : await conn.query(
+              `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, ref_type, ref_id, line_total_uzs, line_total_usd, fx_uzs_per_usd, input_currency, note)
+               VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                pid,
+                userId,
+                m2In,
+                addPieces,
+                refTypeRow,
+                refIdRow,
+                totalUzs,
+                totalUsd > 0 ? totalUsd : null,
+                fx > 0 ? fx : null,
+                curNorm,
+                noteRow,
+              ]
+            );
         mid = r.insertId;
       }
     } else {
-      const [r] = await conn.query(
-        `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, ref_type, ref_id, note) VALUES (?,?, 'in', ?, ?, ?, ?)`,
-        [pid, userId, m2In, refTypeRow, refIdRow, noteRow]
-      );
+      const [r] = hasPrimaryCols
+        ? await conn.query(
+            `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, primary_qty, primary_unit, ref_type, ref_id, note) VALUES (?,?, 'in', ?, ?, ?, ?, ?, ?)`,
+            [pid, userId, m2In, primaryQty, primaryUnitCode, refTypeRow, refIdRow, noteRow]
+          )
+        : await conn.query(
+            `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, ref_type, ref_id, note) VALUES (?,?, 'in', ?, ?, ?, ?)`,
+            [pid, userId, m2In, refTypeRow, refIdRow, noteRow]
+          );
       mid = r.insertId;
     }
     await applyStockMovementInMeta(conn, mid, {
@@ -820,6 +892,7 @@ async function recordMovementOut(params) {
       return err('Ürün yok', 'api.stock.product_not_found');
     }
     const m2p = Number(P.m2_per_piece) || 0;
+    const primaryUnitCode = await resolveProductPrimaryUnitCode(conn, pid, P.unit);
     let m2Out;
     if (Number(qtyM2) > 0) {
       m2Out = Number(qtyM2);
@@ -836,6 +909,16 @@ async function recordMovementOut(params) {
         await conn.rollback();
       }
       return err('Miktar geçersiz', 'api.stock.qty_invalid');
+    }
+    let primaryQty;
+    if (isM2Unit(primaryUnitCode)) {
+      primaryQty = Number(qtyM2) > 0 ? Number(qtyM2) : m2Out;
+    } else if (Number(qtyPieces) > 0) {
+      primaryQty = Number(qtyPieces);
+    } else if (m2p > 0) {
+      primaryQty = m2Out / m2p;
+    } else {
+      primaryQty = m2Out;
     }
     const pj = projectId != null && projectId !== '' ? parseInt(String(projectId), 10) : NaN;
     if (!Number.isFinite(pj) || pj < 1) {
@@ -903,11 +986,20 @@ async function recordMovementOut(params) {
       .toUpperCase()
       .replace(/[^A-Z]/g, '')
       .slice(0, 3) || 'UZS';
-    const [ins] = await conn.query(
-      `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, ref_type, ref_id, cogs_uzs_total, input_currency, note)
-       VALUES (?,?, 'out', ?, ?, 'project', ?, ?, ?, ?)`,
-      [pid, userId, m2Out, outPieces, pj, cogs, inCur, noteRow]
-    );
+    const hasPrimaryQtyCol = await columnExists('stock_movements', 'primary_qty');
+    const hasPrimaryUnitCol = await columnExists('stock_movements', 'primary_unit');
+    const hasPrimaryCols = hasPrimaryQtyCol && hasPrimaryUnitCol;
+    const [ins] = hasPrimaryCols
+      ? await conn.query(
+          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, primary_qty, primary_unit, ref_type, ref_id, cogs_uzs_total, input_currency, note)
+           VALUES (?,?, 'out', ?, ?, ?, ?, 'project', ?, ?, ?, ?)`,
+          [pid, userId, m2Out, outPieces, primaryQty, primaryUnitCode, pj, cogs, inCur, noteRow]
+        )
+      : await conn.query(
+          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, qty_pieces, ref_type, ref_id, cogs_uzs_total, input_currency, note)
+           VALUES (?,?, 'out', ?, ?, 'project', ?, ?, ?, ?)`,
+          [pid, userId, m2Out, outPieces, pj, cogs, inCur, noteRow]
+        );
     const newMid = ins.insertId;
     if (fifoTaken && (await columnExists('stock_movements', 'out_fifo_taken'))) {
       await conn.query('UPDATE stock_movements SET out_fifo_taken = ? WHERE id = ?', [JSON.stringify(fifoTaken), newMid]);
@@ -964,7 +1056,7 @@ async function recordMovement({ productId, movementType, qty, userId, note, refT
   const poolConn = await pool.getConnection();
   try {
     await poolConn.beginTransaction();
-    const [[row]] = await poolConn.query('SELECT id, stock_qty, stock_m2 FROM products WHERE id = ? FOR UPDATE', [pid]);
+    const [[row]] = await poolConn.query('SELECT id, stock_qty, stock_m2, unit FROM products WHERE id = ? FOR UPDATE', [pid]);
     if (!row) {
       await poolConn.rollback();
       return err('Ürün yok', 'api.stock.product_not_found');
@@ -991,10 +1083,19 @@ async function recordMovement({ productId, movementType, qty, userId, note, refT
     }
     const qcol = (await columnExists('products', 'stock_m2')) ? 'stock_m2' : 'stock_qty';
     await poolConn.query(`UPDATE products SET ${qcol} = ?, stock_qty = ? WHERE id = ?`, [newStock, newStock, pid]);
-    const [ins] = await poolConn.query(
-      `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, ref_type, ref_id, note) VALUES (?,?,?,?,?,?,?)`,
-      [pid, userId, type, q, refType || 'manual', refId, noteRow]
-    );
+    const primaryUnitCode = await resolveProductPrimaryUnitCode(poolConn, pid, row.unit);
+    const hasPrimaryQtyCol = await columnExists('stock_movements', 'primary_qty');
+    const hasPrimaryUnitCol = await columnExists('stock_movements', 'primary_unit');
+    const hasPrimaryCols = hasPrimaryQtyCol && hasPrimaryUnitCol;
+    const [ins] = hasPrimaryCols
+      ? await poolConn.query(
+          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, primary_qty, primary_unit, ref_type, ref_id, note) VALUES (?,?,?,?,?,?,?,?,?)`,
+          [pid, userId, type, q, q, primaryUnitCode, refType || 'manual', refId, noteRow]
+        )
+      : await poolConn.query(
+          `INSERT INTO stock_movements (product_id, user_id, movement_type, qty, ref_type, ref_id, note) VALUES (?,?,?,?,?,?,?)`,
+          [pid, userId, type, q, refType || 'manual', refId, noteRow]
+        );
     if (type === 'in') {
       await applyStockMovementInMeta(poolConn, ins.insertId, { movementSource: inSrc, purchaseOrderId: null, goodsReceiptId: null });
     }
