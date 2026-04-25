@@ -44,10 +44,18 @@ function isM3Unit(code) {
 }
 
 function movementPrimaryUnit(row) {
+  const fromPrimary = normalizeUnitCode(row && row.primary_unit);
+  if (fromPrimary) {
+    return fromPrimary;
+  }
   return normalizeUnitCode(row && (row.receipt_unit_code || row.unit_code || row.p_unit || 'ADET'));
 }
 
 function movementPrimaryQty(row) {
+  const primaryQty = Number(row && row.primary_qty);
+  if (Number.isFinite(primaryQty) && primaryQty > 0) {
+    return primaryQty;
+  }
   const qty = Number(row && row.qty);
   const qtyPieces = Number(row && row.qty_pieces);
   const unit = movementPrimaryUnit(row);
@@ -123,6 +131,9 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   }
   params.push(lim, off);
   const hasExtra = await columnExists('stock_movements', 'line_total_uzs');
+  const hasPrimaryQty = await columnExists('stock_movements', 'primary_qty');
+  const hasPrimaryUnit = await columnExists('stock_movements', 'primary_unit');
+  const primarySel = hasPrimaryQty && hasPrimaryUnit ? ', sm.primary_qty, sm.primary_unit' : ', NULL AS primary_qty, NULL AS primary_unit';
   const extra = hasExtra
     ? `, sm.input_currency, sm.line_total_uzs, sm.line_total_usd, sm.fx_uzs_per_usd, sm.cogs_uzs_total, sm.qty_pieces`
     : '';
@@ -155,7 +166,8 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
   const hasWh = await columnExists('products', 'warehouse_id');
   const whSel = hasWh ? 'p.warehouse_id, p.warehouse_subcategory_id' : 'NULL AS warehouse_id, NULL AS warehouse_subcategory_id';
   const [rows] = await pool.query(
-    `SELECT sm.id, sm.product_id, sm.movement_type, sm.qty, sm.note, sm.ref_type, sm.ref_id, sm.created_at,
+    `SELECT sm.id, sm.product_id, sm.movement_type, sm.qty, sm.note, sm.ref_type, sm.ref_id, sm.created_at
+            ${primarySel},
             ${msSel},
             p.product_code, p.name AS product_name, p.m2_per_piece, p.depth_mm, p.unit AS p_unit, ${unitCol}${receiptUnitSel},
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS user_username, ${directM2Sel}, ${whSel}, ${projSel}${extra}
@@ -171,8 +183,17 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
     params
   );
   for (const row of rows) {
-    row.primary_unit = movementPrimaryUnit(row);
-    row.primary_qty = movementPrimaryQty(row);
+    const fallbackPrimaryUnit = movementPrimaryUnit({
+      ...row,
+      primary_unit: null,
+    });
+    const fallbackPrimaryQty = movementPrimaryQty({
+      ...row,
+      primary_qty: null,
+      primary_unit: null,
+    });
+    row.primary_unit = movementPrimaryUnit(row) || fallbackPrimaryUnit;
+    row.primary_qty = movementPrimaryQty(row) || fallbackPrimaryQty;
     row.calc_m2 = movementCalcM2(row);
     row.calc_m3 = movementCalcM3(row);
   }

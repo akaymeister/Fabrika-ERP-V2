@@ -797,6 +797,9 @@
       }
     }
     function movQtyDisplay(m) {
+      if (m && m.primary_qty != null && m.primary_qty !== '' && Number.isFinite(+m.primary_qty)) {
+        return typeof window.fmtQty === 'function' ? window.fmtQty(m.primary_qty) : String(m.primary_qty);
+      }
       const dm = Number(m.direct_m2_entry);
       if (dm === 1) {
         return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
@@ -807,6 +810,9 @@
       return typeof window.fmtQty === 'function' ? window.fmtQty(m.qty) : String(m.qty ?? '—');
     }
     function movBirimDisplay(m) {
+      if (m && m.primary_unit && String(m.primary_unit).trim()) {
+        return String(m.primary_unit).trim().toLocaleUpperCase('tr-TR');
+      }
       const dm = Number(m.direct_m2_entry);
       if (dm === 1) {
         return tLoc('stock.mov.birimM2', 'M²');

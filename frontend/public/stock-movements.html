@@ -81,6 +81,18 @@
       if (x == null || x === '') return '—';
       return fmtNum(x);
     }
+    function rowPrimaryQty(m) {
+      if (m && m.primary_qty != null && m.primary_qty !== '' && Number.isFinite(Number(m.primary_qty))) {
+        return m.primary_qty;
+      }
+      if (m && m.qty_pieces != null && m.qty_pieces !== '' && Number.isFinite(Number(m.qty_pieces))) {
+        return m.qty_pieces;
+      }
+      return m ? m.qty : null;
+    }
+    function rowPrimaryUnit(m) {
+      return (m && (m.primary_unit || m.receipt_unit_code || m.unit_code || m.p_unit)) || '—';
+    }
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
@@ -103,8 +115,8 @@
             <td><code class="display-upper">${esc(m.product_code)}</code></td>
             <td class="display-upper">${esc(m.product_name)}</td>
             <td class="display-upper">${esc(tip(m.movement_type))}</td>
-            <td>${esc(fmtNum(m.primary_qty))}</td>
-            <td class="display-upper">${esc(m.primary_unit || m.receipt_unit_code || m.unit_code || m.p_unit || '—')}</td>
+            <td>${esc(fmtNum(rowPrimaryQty(m)))}</td>
+            <td class="display-upper">${esc(rowPrimaryUnit(m))}</td>
             <td>${esc(fmtOptionalNum(m.calc_m2))}</td>
             <td>${esc(fmtOptionalNum(m.calc_m3))}</td>
             <td>${esc(fmtOptionalNum(m.fx_uzs_per_usd))}</td>
