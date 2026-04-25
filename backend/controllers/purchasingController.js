@@ -29,6 +29,7 @@ const {
   createGoodsReceipt,
   updatePurchaseOrder,
   updatePurchaseOrderPricing,
+  cancelPurchaseOrderLine,
   setProcurementStateForOrderStart,
   runOrderBuyerAction,
   runRequestBuyerAction,
@@ -535,8 +536,14 @@ async function putOrderPricing(req, res) {
       module_name: 'purchasing',
       table_name: 'purchase_orders',
       record_id: id,
-      new_data: { pricingStatus: out.pricingStatus, changes: out.lineChanges || [] },
-      description: 'Sipariş fiyatları güncellendi (satınalma işleme)',
+      new_data: {
+        pricingStatus: out.pricingStatus,
+        changes: out.lineChanges || [],
+        savedUnitPricesAndFx: true,
+        noStockMovement: true,
+        noGoodsReceipt: true,
+      },
+      description: 'Fiyatları kaydet: birim fiyat ve kur güncellendi (stok/mal kabul yok)',
     });
     return res.json(jsonOk(out));
   } catch (error) {
@@ -637,6 +644,40 @@ async function postOrderBuyerAction(req, res) {
   return res.json(jsonOk(out));
 }
 
+async function postCancelOrderLine(req, res) {
+  const orderId = parseId(req.params.id);
+  const itemId = parseId(req.params.itemId);
+  if (orderId == null || itemId == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const b = req.body || {};
+  const out = await cancelPurchaseOrderLine({
+    orderId,
+    orderItemId: itemId,
+    reason: b.reason,
+    userId: req.session.user.id,
+  });
+  if (out.error) {
+    const key = out.messageKey;
+    let code = 400;
+    if (key === 'api.pur.oi_not_found') {
+      code = 404;
+    } else if (key === 'api.pur.order_readonly') {
+      code = 409;
+    }
+    return res.status(code).json(validationOut(out));
+  }
+  await logActivity(req, {
+    action_type: 'CANCEL_LINE',
+    module_name: 'purchasing',
+    table_name: 'purchase_order_items',
+    record_id: String(itemId),
+    new_data: { orderId, orderItemId: itemId, cancelReason: out.cancelReason },
+    description: out.cancelReason,
+  });
+  return res.json(jsonOk(out));
+}
+
 async function postGoodsReceipt(req, res) {
   const u = req.session.user;
   const b = req.body || {};
@@ -687,6 +728,7 @@ module.exports = {
   getOrder,
   putOrder,
   putOrderPricing,
+  postCancelOrderLine,
   postOrderStartProcessing,
   postOrderBuyerAction,
   postRequestBuyerAction,

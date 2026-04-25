@@ -28,6 +28,7 @@ const {
   getOrder,
   putOrder,
   putOrderPricing,
+  postCancelOrderLine,
   postOrderStartProcessing,
   postOrderBuyerAction,
   postRequestBuyerAction,
@@ -52,6 +53,7 @@ router.get('/orders', requireAnyPermission(ANY), getOrders);
 router.get('/orders/:id', requireAnyPermission(ANY), getOrder);
 router.put('/orders/:id', requirePermission(PUR), putOrder);
 router.put('/orders/:id/pricing', requirePermission(PUR), putOrderPricing);
+router.post('/orders/:id/items/:itemId/cancel', requirePermission(PUR), postCancelOrderLine);
 router.post('/orders/:id/start-processing', requirePermission(PUR), postOrderStartProcessing);
 router.post('/orders/:id/buyer-action', requirePermission(PUR), postOrderBuyerAction);
 router.post('/goods-receipts', requireAnyPermission(ANY), postGoodsReceipt);

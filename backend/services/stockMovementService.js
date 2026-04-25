@@ -189,12 +189,15 @@ function normalizeInSource(raw) {
 
 /** Bekleyen satınalma siparişi satırı varken manuel stok artışı yapılmasın */
 async function isProductTiedToOpenPurchaseOnConn(conn, productId) {
+  const hasLineSt = await columnExists('purchase_order_items', 'line_status');
+  const lineOk = hasLineSt ? ' AND (poi.line_status IS NULL OR poi.line_status <> \'cancelled\')' : '';
   const [rows] = await conn.query(
     `SELECT 1 AS x
      FROM purchase_order_items poi
      INNER JOIN purchase_orders po ON po.id = poi.order_id
      WHERE poi.product_id = ?
        AND (poi.qty_received < poi.qty_ordered - 0.0001)
+       ${lineOk}
        AND po.status NOT IN ('cancelled', 'completed')
      LIMIT 1`,
     [productId]
@@ -624,7 +627,15 @@ async function recordMovementIn(params) {
     const refIdRow = pj;
 
     const defCur = (await getValue(KEYS.CURRENCY)) || 'UZS';
-    const useUsd = String(inputCurrency).toUpperCase() === 'USD';
+    const curRaw = String(inputCurrency || defCur).trim().toUpperCase();
+    const curNorm = curRaw === 'SYSTEM' ? 'UZS' : curRaw;
+    if (!['UZS', 'USD'].includes(curNorm)) {
+      if (ownConn) {
+        await conn.rollback();
+      }
+      return err('Bu para birimi için maliyet dönüşümü henüz desteklenmiyor', 'api.stock.currency_not_supported');
+    }
+    const useUsd = curNorm === 'USD';
     const fx = Number(fxUzsPerUsd) || 0;
     const isPurchaseReceipt = srcNorm === IN_SOURCE.PURCHASE;
     let totalUzs = Number(lineTotalUzs);
@@ -665,7 +676,7 @@ async function recordMovementIn(params) {
       }
     }
     const costUzsPerM2 = m2In > 0.0001 ? totalUzs / m2In : 0;
-    const costUsdPerM2 = useUsd && totalUsd > 0 ? totalUsd / m2In : null;
+    const costUsdPerM2 = totalUsd > 0 ? totalUsd / m2In : null;
 
     const sp = Number(P.stock_pieces) || 0;
     const sm2 = Number(P.stock_m2 != null && P.stock_m2 !== undefined ? P.stock_m2 : P.stock_qty) || 0;
@@ -721,9 +732,9 @@ async function recordMovementIn(params) {
             refTypeRow,
             refIdRow,
             totalUzs,
-            useUsd ? totalUsd : null,
-            useUsd ? fx : null,
-            useUsd ? 'USD' : 'UZS',
+            totalUsd > 0 ? totalUsd : null,
+            fx > 0 ? fx : null,
+            curNorm,
             noteRow,
           ]
         );
@@ -740,9 +751,9 @@ async function recordMovementIn(params) {
             refTypeRow,
             refIdRow,
             totalUzs,
-            useUsd ? totalUsd : null,
-            useUsd ? fx : null,
-            useUsd ? 'USD' : 'UZS',
+            totalUsd > 0 ? totalUsd : null,
+            fx > 0 ? fx : null,
+            curNorm,
             noteRow,
           ]
         );
@@ -767,8 +778,8 @@ async function recordMovementIn(params) {
         qtyM2: m2In,
         costUzsPerM2,
         costUsdPerM2: costUsdPerM2,
-        inputCurrency: useUsd ? 'USD' : 'UZS',
-        fxUzsPerUsd: useUsd ? fx : null,
+        inputCurrency: curNorm,
+        fxUzsPerUsd: fx > 0 ? fx : null,
       });
     }
     if (ownConn) {

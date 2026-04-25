@@ -19,6 +19,15 @@
     .pur-req-btns .version-btn, .pur-req-btns .logout-btn, .pur-req-btns a.version-btn { width: auto; min-width: 0; flex: 0 0 auto; }
     .proc-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
     .proc-badge { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: #f1f5f9; color: #0f172a; font-size: 12px; font-weight: 600; }
+    .po-line-cancelled { background: #fef2f2 !important; opacity: 0.92; }
+    .po-line-cancelled .pur-inp { background: #f8fafc; pointer-events: none; }
+    .proc-cancel-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; background: #fecaca; color: #7f1d1d; font-size: 11px; font-weight: 700; }
+    .proc-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+    .proc-modal-backdrop.proc-modal-open { display: flex; }
+    .proc-modal { background: #fff; border-radius: 12px; max-width: 420px; width: 100%; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; }
+    .proc-modal h3 { margin: 0 0 12px; font-size: 1.05rem; }
+    .proc-modal textarea { width: 100%; min-height: 88px; box-sizing: border-box; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px; font: inherit; resize: vertical; }
+    .proc-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -100,6 +109,7 @@
                 <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
                 <th data-i18n="purch.cur">Para birimi</th>
                 <th data-i18n="purch.proc.colFxRate">Kur</th>
+                <th data-i18n="purch.proc.colActions">İşlem</th>
               </tr>
             </thead>
             <tbody id="linesDetailBody"></tbody>
@@ -118,8 +128,19 @@
       </div>
     </section>
   </div>
+  <div id="cancelLineModal" class="proc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelLineTitle">
+    <div class="proc-modal">
+      <h3 id="cancelLineTitle" data-i18n="purch.proc.cancelLineTitle">Sipariş kalemini iptal et</h3>
+      <label for="cancelLineReason" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px" data-i18n="purch.proc.cancelReasonLabel">İptal açıklaması (zorunlu)</label>
+      <textarea id="cancelLineReason" maxlength="1900" data-i18n-placeholder="purch.proc.cancelReasonPh" placeholder=""></textarea>
+      <div class="proc-modal-actions">
+        <button type="button" class="logout-btn" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
+        <button type="button" class="version-btn" id="cancelLineConfirm" style="background:#b91c1c;border:none;color:#fff" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
+      </div>
+    </div>
+  </div>
   <script src="/js/i18n.js?v=14" defer></script>
   <script src="/js/purchasing-common.js?v=14" defer></script>
-  <script src="/js/purchase-processing.js?v=16" defer></script>
+  <script src="/js/purchase-processing.js?v=17" defer></script>
 </body>
 </html>

@@ -18,6 +18,7 @@
     .pl-table th { background: #f1f5f9; }
     .pl-attach { margin-top: 8px; page-break-inside: avoid; }
     .pl-attach img { max-height: 120px; max-width: 200px; }
+    .pl-row-cancelled { text-decoration: line-through; opacity: 0.85; background: #fef2f2; }
   </style>
 </head>
 <body>
@@ -50,8 +51,13 @@
       const rows = (o.items || [])
         .map(
           (it) => {
+            const cancelled = it.is_line_cancelled || String(it.line_status || '').toLowerCase() === 'cancelled';
             const lineSup = (it.supplier_label || it.line_supplier_name || o.supplier_name || '—').toString().replace(/</g, '');
-            return `<tr>
+            const noteCell =
+              cancelled && it.cancel_reason
+                ? `${tK('purch.proc.cancelReasonPrefix')} ${String(it.cancel_reason).replace(/</g, '')}`
+                : '—';
+            return `<tr${cancelled ? ' class="pl-row-cancelled"' : ''}>
           <td>${(it.product_code || '').replace(/</g, '')}</td>
           <td>${(it.product_name || '').replace(/</g, '')}</td>
           <td style="font-size:11px">${lineSup}</td>
@@ -59,6 +65,7 @@
           <td>${money(it.unit_price)}</td>
           <td style="text-align:right">${money(it.line_total)}</td>
           <td style="font-size:11px">${it.request_line_image_path || it.request_line_pdf_path ? '●' : '—'}</td>
+          <td style="font-size:11px">${noteCell.replace(/</g, '')}</td>
         </tr>`;
           }
         )
@@ -89,20 +96,21 @@
         <table class="pl-table">
           <thead>
             <tr>
-              <th>Kod</th>
-              <th>Ürün</th>
+              <th>${tK('dashboard.colCode')}</th>
+              <th>${tK('purch.proc.colProductName')}</th>
               <th>${tK('purch.col.supplier')}</th>
-              <th>Miktar</th>
+              <th>${tK('purch.gr.colOrderQty')}</th>
               <th>${tK('purch.col.unitPrice')}</th>
-              <th>Toplam</th>
-              <th>Ek</th>
+              <th>${tK('purch.proc.colLineTotal')}</th>
+              <th>${tK('purch.proc.colAttachShort')}</th>
+              <th>${tK('common.note')}</th>
             </tr>
           </thead>
-          <tbody>${rows || '<tr><td colspan="7">—</td></tr>'}</tbody>
+          <tbody>${rows || '<tr><td colspan="8">—</td></tr>'}</tbody>
         </table>
         <p style="text-align:right;font-weight:700">Genel: ${grand}</p>
         <div class="pl-atch-wrap">${atts}</div>
-        <p style="font-size:11px;margin-top:16px">PDF referansı tıklanabilir; ekte görsel baskıda listelenir.</p>
+        <p style="font-size:11px;margin-top:16px" data-i18n="purch.print.footerHint">Ek ve PDF bu sayfada listelenir.</p>
       `;
       if (window.i18n && window.i18n.apply) {
         window.i18n.apply(document.getElementById('root'));

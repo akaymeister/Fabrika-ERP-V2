@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
   qty_ordered DECIMAL(18,4) NOT NULL,
   unit_price DECIMAL(18,4) NOT NULL,
   currency CHAR(3) NOT NULL DEFAULT 'UZS',
+  fx_rate DECIMAL(18,6) NULL COMMENT 'Yabancı para kuru; UZS/SYSTEM için uygulama 1 yazar',
   qty_received DECIMAL(18,4) NOT NULL DEFAULT 0.0000,
   line_note VARCHAR(1000) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -53,6 +53,7 @@ function normalizeReceiptStatusValue(value) {
   if (!s || s === 'awaiting_receipt') return 'pending';
   if (s === 'partially_received' || s === 'partial_received' || s === 'partial') return 'partial';
   if (s === 'received_completed' || s === 'completed') return 'completed';
+  if (s === 'cancelled') return 'cancelled';
   return s;
 }
 
@@ -69,6 +70,39 @@ function normalizeBuyerStatusValue(value) {
   if (!s) return 'draft';
   if (s === 'ready_for_warehouse') return 'completed';
   return s;
+}
+
+/** Satır iptali (line_status); kolon yoksa tüm satırlar aktif sayılır */
+function isPurchaseOrderLineCancelled(row) {
+  const s = String(row && row.line_status).trim().toLowerCase();
+  return s === 'cancelled';
+}
+
+function normalizePricingCurrency(raw) {
+  const cur = String(raw || '').trim().toUpperCase();
+  if (cur === 'SYSTEM') return 'UZS';
+  return cur;
+}
+
+function isSupportedPricingCurrency(raw) {
+  const cur = normalizePricingCurrency(raw);
+  return cur === 'UZS' || cur === 'USD';
+}
+
+function calcUzsUsdTotals({ unitPrice, qty, currency, fxRate }) {
+  const up = Number(unitPrice) || 0;
+  const q = Number(qty) || 0;
+  const fx = Number(fxRate);
+  if (up <= 0 || q <= 0 || !Number.isFinite(fx) || fx <= 0) {
+    return { totalUzs: 0, totalUsd: 0 };
+  }
+  const cur = normalizePricingCurrency(currency);
+  if (cur === 'USD') {
+    const totalUsd = up * q;
+    return { totalUsd, totalUzs: usdToSystemAmount(totalUsd, fx) };
+  }
+  const totalUzs = up * q;
+  return { totalUzs, totalUsd: totalUzs / fx };
 }
 
 function movementQtyFromOrderUnit(qty, unitCode, m2p) {
@@ -1090,8 +1124,15 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
   for (const it of items) {
     it.receipt_status = normalizeReceiptStatusValue(it.receipt_status);
     it.pricing_status = normalizePricingStatusValue(it.pricing_status);
-    it.qty_remaining = Math.max(0, Number(it.qty_ordered) - Number(it.qty_received || 0));
-    it.line_total = Number(it.unit_price) * Number(it.qty_ordered);
+    const cancelled = isPurchaseOrderLineCancelled(it);
+    it.is_line_cancelled = cancelled;
+    if (cancelled) {
+      it.qty_remaining = 0;
+      it.line_total = 0;
+    } else {
+      it.qty_remaining = Math.max(0, Number(it.qty_ordered) - Number(it.qty_received || 0));
+      it.line_total = Number(it.unit_price) * Number(it.qty_ordered);
+    }
     it.primary_unit = primaryUnitCode(it.request_unit || it.p_unit_code || it.p_unit_legacy || 'ADET');
     it.calc_m2_per_unit = calcM2FromPrimaryQty(1, it.primary_unit, it.m2_per_piece);
     it.calc_m3_per_unit = calcM3FromPrimaryQty(1, it.primary_unit, it.m2_per_piece, it.depth_mm);
@@ -1159,11 +1200,20 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
   const hasReceiptStatus = await hasCol('purchase_orders', 'receipt_status');
   const hasPricingStatus = await hasCol('purchase_orders', 'pricing_status');
   const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
+  const hasPoiLineStatus = await hasCol('purchase_order_items', 'line_status');
   if (openForReceipt) {
     if (hasReceiptStatus) {
       where += " AND po.receipt_status IN ('pending', 'partial', 'awaiting_receipt', 'partially_received')";
     } else {
       where += " AND po.status IN ('awaiting_goods_receipt', 'partial_received', 'partial')";
+    }
+    if (hasPoiLineStatus) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM purchase_order_items poi_open
+        WHERE poi_open.order_id = po.id
+          AND (poi_open.line_status IS NULL OR poi_open.line_status <> 'cancelled')
+          AND (poi_open.qty_ordered - COALESCE(poi_open.qty_received, 0)) > 0.0001
+      )`;
     }
   } else if (forPricing) {
     if (hasPricingStatus) {
@@ -1226,16 +1276,35 @@ function deriveReceiptStatusForItem(row) {
 async function recalculateReceiptStatusesForOrder(conn, orderId) {
   const hasItemReceiptStatus = await hasCol(conn, 'purchase_order_items', 'receipt_status');
   const hasOrderReceiptStatus = await hasCol(conn, 'purchase_orders', 'receipt_status');
-  const [rows] = await conn.query('SELECT id, qty_ordered, qty_received FROM purchase_order_items WHERE order_id = ?', [orderId]);
-  let anyReceived = false;
-  let allCompleted = rows.length > 0;
+  const hasLineStatus = await hasCol(conn, 'purchase_order_items', 'line_status');
+  const sel = hasLineStatus
+    ? 'SELECT id, qty_ordered, qty_received, line_status FROM purchase_order_items WHERE order_id = ?'
+    : 'SELECT id, qty_ordered, qty_received FROM purchase_order_items WHERE order_id = ?';
+  const [rows] = await conn.query(sel, [orderId]);
+  const activeRows = hasLineStatus ? rows.filter((row) => !isPurchaseOrderLineCancelled(row)) : rows;
   for (const row of rows) {
+    if (hasLineStatus && isPurchaseOrderLineCancelled(row)) {
+      if (hasItemReceiptStatus) {
+        await conn.query('UPDATE purchase_order_items SET receipt_status = ? WHERE id = ?', ['cancelled', row.id]);
+      }
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     const receiptStatus = deriveReceiptStatusForItem(row);
     if (hasItemReceiptStatus) {
       await conn.query('UPDATE purchase_order_items SET receipt_status = ? WHERE id = ?', [receiptStatus, row.id]);
     }
+  }
+  let anyReceived = false;
+  let allCompleted = activeRows.length > 0;
+  for (const row of activeRows) {
+    const receiptStatus = deriveReceiptStatusForItem(row);
     if ((Number(row.qty_received) || 0) > 0) anyReceived = true;
     if (receiptStatus !== 'completed') allCompleted = false;
+  }
+  if (!activeRows.length && rows.length > 0) {
+    allCompleted = true;
+    anyReceived = false;
   }
   let orderReceiptStatus = 'pending';
   if (allCompleted && rows.length) orderReceiptStatus = 'completed';
@@ -1264,12 +1333,22 @@ async function listOpenOrderIdsForRequest(requestId) {
   if (!(await hasCol('purchase_order_items', 'request_item_id'))) {
     return { orderIds: [] };
   }
+  const hasLineStatus = await hasCol('purchase_order_items', 'line_status');
+  const openLineFilter = hasLineStatus
+    ? ` AND EXISTS (
+        SELECT 1 FROM purchase_order_items poi2
+        WHERE poi2.order_id = po.id
+          AND (poi2.line_status IS NULL OR poi2.line_status <> 'cancelled')
+          AND (poi2.qty_ordered - COALESCE(poi2.qty_received, 0)) > 0.0001
+      )`
+    : '';
   const [rows] = await pool.query(
     `SELECT DISTINCT po.id
      FROM purchase_orders po
      INNER JOIN purchase_order_items poi ON poi.order_id = po.id
      INNER JOIN purchase_request_items pri ON pri.id = poi.request_item_id
      WHERE pri.request_id = ? AND po.status NOT IN ('cancelled', 'completed')
+     ${openLineFilter}
      ORDER BY po.id ASC`,
     [rid]
   );
@@ -1332,6 +1411,12 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         await conn.rollback();
         return err('Sipariş satırı yok', 'api.pur.oi_not_found');
       }
+      if (await hasCol(conn, 'purchase_order_items', 'line_status')) {
+        if (isPurchaseOrderLineCancelled(oi)) {
+          await conn.rollback();
+          return err('İptal edilmiş sipariş kalemi için mal kabul yapılamaz', 'api.pur.line_cancelled_no_receipt');
+        }
+      }
       if (qa <= 0) {
         await conn.query(
           'INSERT INTO goods_receipt_items (goods_receipt_id, order_item_id, qty_waybill, qty_accepted, qty_rejected, qty_damaged, line_note) VALUES (?,?,?,?,?,?,?)',
@@ -1384,22 +1469,29 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         return err('Ürün bu alt kategoride değil; alt kategori/ürün eşleşmesi hatalı', 'api.pur.sub_product_mismatch');
       }
       const up = Number(oi.unit_price);
-      const lineCur = String(oi.currency || 'UZS').trim().toUpperCase();
+      const lineCur = normalizePricingCurrency(oi.currency || 'UZS');
+      if (!isSupportedPricingCurrency(lineCur)) {
+        await conn.rollback();
+        return err('Bu para birimi için maliyet dönüşümü henüz desteklenmiyor', 'api.pur.currency_not_supported');
+      }
       const fxRate = oi.fx_rate != null && oi.fx_rate !== '' ? Number(oi.fx_rate) : null;
+      if (!Number.isFinite(fxRate) || fxRate <= 0) {
+        await conn.rollback();
+        return err('Geçerli kur gerekli (1 USD = ? UZS)', 'api.pur.fx_required');
+      }
       const movementQty = movementQtyFromOrderUnit(
         qa,
         oi.request_unit_code || P.unit_code || P.unit || P.unit_legacy || '',
         P.m2_per_piece
       );
-      const totalUsd = Number.isFinite(up) && up > 0 && lineCur === 'USD' ? up * movementQty.actualQty : 0;
-      const totalUzs =
-        Number.isFinite(up) && up > 0
-          ? lineCur === 'USD'
-            ? Number.isFinite(fxRate) && fxRate > 0
-              ? usdToSystemAmount(totalUsd, fxRate)
-              : 0
-            : up * movementQty.actualQty
-          : 0;
+      const totals = calcUzsUsdTotals({
+        unitPrice: up,
+        qty: movementQty.actualQty,
+        currency: lineCur,
+        fxRate,
+      });
+      const totalUsd = totals.totalUsd;
+      const totalUzs = totals.totalUzs;
       const mIn = await recordMovementIn({
         productId,
         userId,
@@ -1407,10 +1499,10 @@ async function createGoodsReceipt({ userId, orderId, warehouseId, waybillNumber,
         qtyPieces: movementQty.qtyPieces,
         qtyM2: movementQty.qtyM2,
         projectId: por.project_id,
-        inputCurrency: lineCur === 'USD' ? 'USD' : 'UZS',
+        inputCurrency: lineCur,
         lineTotalUzs: totalUzs,
-        lineTotalUsd: lineCur === 'USD' ? totalUsd : null,
-        fxUzsPerUsd: lineCur === 'USD' ? fxRate : null,
+        lineTotalUsd: totalUsd,
+        fxUzsPerUsd: fxRate,
         _useConn: conn,
         movementSource: 'PURCHASE_RECEIPT',
         purchaseOrderId: oid,
@@ -1514,19 +1606,33 @@ async function recalculateCostLayersForOrderId(orderId) {
     }
     const qa = Number(r.qty_accepted) || 0;
     const upr = Number(r.unit_price) || 0;
-    const lineCur = String(r.currency || 'UZS').trim().toUpperCase();
+    const lineCur = normalizePricingCurrency(r.currency || 'UZS');
+    if (!isSupportedPricingCurrency(lineCur)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     const fxRate = r.fx_rate != null && r.fx_rate !== '' ? Number(r.fx_rate) : null;
-    const totalUsd = lineCur === 'USD' ? upr * qa : 0;
-    const totalUzs = lineCur === 'USD' ? (Number.isFinite(fxRate) && fxRate > 0 ? usdToSystemAmount(totalUsd, fxRate) : 0) : upr * qa;
+    if (!Number.isFinite(fxRate) || fxRate <= 0) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const totals = calcUzsUsdTotals({
+      unitPrice: upr,
+      qty: qa,
+      currency: lineCur,
+      fxRate,
+    });
+    const totalUsd = totals.totalUsd;
+    const totalUzs = totals.totalUzs;
     const costUzs = totalUzs > 0 ? totalUzs / m2 : 0;
     const costUsd = totalUsd > 0 ? totalUsd / m2 : null;
     await pool.query(
       'UPDATE stock_cost_layers SET cost_uzs_per_m2 = ?, cost_usd_per_m2 = ?, input_currency = ?, fx_uzs_per_usd = ? WHERE id = ?',
-      [costUzs, costUsd, lineCur === 'USD' ? 'USD' : 'UZS', lineCur === 'USD' ? fxRate : null, r.layer_id]
+      [costUzs, costUsd, lineCur, fxRate, r.layer_id]
     );
     await pool.query(
       'UPDATE stock_movements SET line_total_uzs = ?, line_total_usd = ?, fx_uzs_per_usd = ?, input_currency = ? WHERE id = ?',
-      [totalUzs || 0, lineCur === 'USD' ? totalUsd : null, lineCur === 'USD' ? fxRate : null, lineCur === 'USD' ? 'USD' : 'UZS', r.movement_id]
+      [totalUzs || 0, totalUsd || null, fxRate, lineCur, r.movement_id]
     );
   }
 }
@@ -1537,9 +1643,10 @@ function derivePricingStatusForItem(row) {
   const price = Number(up);
   if (!Number.isFinite(price)) return 'unpriced';
   if (price <= 0) return 'unpriced';
-  const cur = String((row && row.currency) || 'UZS').trim().toUpperCase();
+  const cur = normalizePricingCurrency((row && row.currency) || 'UZS');
+  if (!isSupportedPricingCurrency(cur)) return 'unpriced';
   const fx = row && row.fx_rate != null && row.fx_rate !== '' ? Number(row.fx_rate) : null;
-  if (cur !== 'UZS' && cur !== 'SYSTEM' && (!Number.isFinite(fx) || fx <= 0)) {
+  if (!Number.isFinite(fx) || fx <= 0) {
     return 'unpriced';
   }
   return 'priced';
@@ -1548,9 +1655,21 @@ function derivePricingStatusForItem(row) {
 async function recalculatePricingStatusesForOrder(conn, orderId) {
   const hasItemPricingStatus = await hasCol(conn, 'purchase_order_items', 'pricing_status');
   const hasOrderPricingStatus = await hasCol(conn, 'purchase_orders', 'pricing_status');
-  const [rows] = await conn.query('SELECT id, unit_price, currency, fx_rate FROM purchase_order_items WHERE order_id = ?', [orderId]);
+  const hasLineStatus = await hasCol(conn, 'purchase_order_items', 'line_status');
+  const sel = hasLineStatus
+    ? 'SELECT id, unit_price, currency, fx_rate, line_status FROM purchase_order_items WHERE order_id = ?'
+    : 'SELECT id, unit_price, currency, fx_rate FROM purchase_order_items WHERE order_id = ?';
+  const [rows] = await conn.query(sel, [orderId]);
+  const activeRows = hasLineStatus ? rows.filter((row) => !isPurchaseOrderLineCancelled(row)) : rows;
   let pricedCount = 0;
   for (const row of rows) {
+    if (hasLineStatus && isPurchaseOrderLineCancelled(row)) {
+      if (hasItemPricingStatus) {
+        await conn.query('UPDATE purchase_order_items SET pricing_status = ? WHERE id = ?', ['unpriced', row.id]);
+      }
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     const pricingStatus = derivePricingStatusForItem(row);
     if (hasItemPricingStatus) {
       await conn.query('UPDATE purchase_order_items SET pricing_status = ? WHERE id = ?', [pricingStatus, row.id]);
@@ -1558,8 +1677,9 @@ async function recalculatePricingStatusesForOrder(conn, orderId) {
     if (pricingStatus === 'priced') pricedCount += 1;
   }
   let orderPricingStatus = 'unpriced';
-  if (rows.length && pricedCount === rows.length) orderPricingStatus = 'priced';
+  if (activeRows.length && pricedCount === activeRows.length) orderPricingStatus = 'priced';
   else if (pricedCount > 0) orderPricingStatus = 'partially_priced';
+  else if (!activeRows.length && rows.length) orderPricingStatus = 'priced';
   if (hasOrderPricingStatus) {
     await conn.query('UPDATE purchase_orders SET pricing_status = ? WHERE id = ?', [orderPricingStatus, orderId]);
   }
@@ -1584,6 +1704,7 @@ async function updatePurchaseOrder({ id, supplierId, orderDate, deliveryDate, cu
       return err('Bu durumdaki sipariş güncellenemez', 'api.pur.order_readonly');
     }
     const hasPoiSup = await hasCol('purchase_order_items', 'supplier_id');
+    const hasLineSt = await hasCol(conn, 'purchase_order_items', 'line_status');
     const cur = String(currency != null && currency !== '' ? currency : por.currency)
       .toUpperCase()
       .replace(/[^A-Z]/g, '')
@@ -1615,10 +1736,19 @@ async function updatePurchaseOrder({ id, supplierId, orderDate, deliveryDate, cu
           await conn.rollback();
           return err('Geçerli birim fiyat gerekli', 'api.pur.line_price_required');
         }
-        const [[row]] = await conn.query('SELECT id FROM purchase_order_items WHERE id = ? AND order_id = ?', [oiId, oid]);
+        const [[row]] = await conn.query(
+          hasLineSt
+            ? 'SELECT id, line_status FROM purchase_order_items WHERE id = ? AND order_id = ?'
+            : 'SELECT id, NULL AS line_status FROM purchase_order_items WHERE id = ? AND order_id = ?',
+          [oiId, oid]
+        );
         if (!row) {
           // eslint-disable-next-line no-continue
           continue;
+        }
+        if (hasLineSt && isPurchaseOrderLineCancelled(row)) {
+          await conn.rollback();
+          return err('İptal edilmiş sipariş kalemi güncellenemez', 'api.pur.line_cancelled');
         }
         if (hasPoiSup) {
           const supL = ln.supplierId != null && ln.supplierId !== '' ? parseInt(String(ln.supplierId), 10) : null;
@@ -1650,10 +1780,12 @@ async function updatePurchaseOrder({ id, supplierId, orderDate, deliveryDate, cu
         }
       }
     }
-    const [[h]] = await conn.query(
-      'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL ORDER BY id ASC LIMIT 1',
-      [oid]
-    );
+    const supActiveSql = hasLineSt
+      ? 'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL AND (line_status IS NULL OR line_status <> ?) ORDER BY id ASC LIMIT 1'
+      : 'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL ORDER BY id ASC LIMIT 1';
+    const [[h]] = hasLineSt
+      ? await conn.query(supActiveSql, [oid, 'cancelled'])
+      : await conn.query(supActiveSql, [oid]);
     let newSid = h && h.sid != null ? parseInt(String(h.sid), 10) : null;
     if (newSid == null || !Number.isFinite(newSid)) {
       if (supplierId != null && supplierId !== '') {
@@ -1707,6 +1839,7 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
     const hasFxRate = await hasCol(conn, 'purchase_order_items', 'fx_rate');
     const hasPricedAt = await hasCol(conn, 'purchase_order_items', 'priced_at');
     const hasPricedBy = await hasCol(conn, 'purchase_order_items', 'priced_by');
+    const hasLineSt = await hasCol(conn, 'purchase_order_items', 'line_status');
     const cur = String(currency != null && currency !== '' ? currency : por.currency)
       .toUpperCase()
       .replace(/[^A-Z]/g, '')
@@ -1727,25 +1860,35 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
         const oiId = parseInt(String(ln.orderItemId), 10);
         if (!Number.isFinite(oiId) || oiId < 1) continue;
         const up = Number(ln.unitPrice);
-        const lineCur =
+        const lineCurRaw =
           ln.currency != null && String(ln.currency).trim() !== ''
             ? String(ln.currency).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3) || cur
             : cur;
-        const fxRate =
-          ln.fxRate != null && ln.fxRate !== '' ? Number(ln.fxRate) : lineCur === 'UZS' || lineCur === 'SYSTEM' ? 1 : null;
+        const lineCur = normalizePricingCurrency(lineCurRaw);
+        const fxRate = ln.fxRate != null && ln.fxRate !== '' ? Number(ln.fxRate) : null;
         if (!Number.isFinite(up) || up < 0) {
           await conn.rollback();
           return err('Geçerli birim fiyat gerekli', 'api.pur.line_price_required');
         }
-        if (!['UZS', 'SYSTEM'].includes(lineCur) && (!Number.isFinite(fxRate) || fxRate <= 0)) {
+        if (!isSupportedPricingCurrency(lineCur)) {
           await conn.rollback();
-          return err('Yabancı para için geçerli kur gerekli', 'api.pur.fx_required');
+          return err('Bu para birimi için maliyet dönüşümü henüz desteklenmiyor', 'api.pur.currency_not_supported');
+        }
+        if (!Number.isFinite(fxRate) || fxRate <= 0) {
+          await conn.rollback();
+          return err('Geçerli kur gerekli (1 USD = ? UZS)', 'api.pur.fx_required');
         }
         const [[row]] = await conn.query(
-          'SELECT id, unit_price, currency, fx_rate, supplier_id FROM purchase_order_items WHERE id = ? AND order_id = ?',
+          hasLineSt
+            ? 'SELECT id, unit_price, currency, fx_rate, supplier_id, line_status FROM purchase_order_items WHERE id = ? AND order_id = ?'
+            : 'SELECT id, unit_price, currency, fx_rate, supplier_id, NULL AS line_status FROM purchase_order_items WHERE id = ? AND order_id = ?',
           [oiId, oid]
         );
         if (!row) continue;
+        if (hasLineSt && isPurchaseOrderLineCancelled(row)) {
+          await conn.rollback();
+          return err('İptal edilmiş sipariş kalemi güncellenemez', 'api.pur.line_cancelled');
+        }
         const updates = ['unit_price = ?', 'currency = ?'];
         const values = [up, lineCur];
         if (hasFxRate) {
@@ -1788,10 +1931,12 @@ async function updatePurchaseOrderPricing({ id, supplierId, orderDate, deliveryD
       }
     }
     if (await hasCol(conn, 'purchase_order_items', 'supplier_id')) {
-      const [[h]] = await conn.query(
-        'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL ORDER BY id ASC LIMIT 1',
-        [oid]
-      );
+      const supActiveSql = hasLineSt
+        ? 'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL AND (line_status IS NULL OR line_status <> ?) ORDER BY id ASC LIMIT 1'
+        : 'SELECT supplier_id AS sid FROM purchase_order_items WHERE order_id = ? AND supplier_id IS NOT NULL ORDER BY id ASC LIMIT 1';
+      const [[h]] = hasLineSt
+        ? await conn.query(supActiveSql, [oid, 'cancelled'])
+        : await conn.query(supActiveSql, [oid]);
       let newSid = h && h.sid != null ? parseInt(String(h.sid), 10) : null;
       if (newSid == null || !Number.isFinite(newSid)) {
         if (supplierId != null && supplierId !== '') {
@@ -1991,6 +2136,75 @@ async function countPendingRequests() {
   return r[0].c;
 }
 
+/**
+ * Sipariş kalemi iptali (talep tarafına otomatik dönüş yok). qty_received > 0 ise yasak.
+ */
+async function cancelPurchaseOrderLine({ orderId, orderItemId, reason, userId }) {
+  const oid = parseInt(String(orderId), 10);
+  const oiid = parseInt(String(orderItemId), 10);
+  if (!Number.isFinite(oid) || oid < 1 || !Number.isFinite(oiid) || oiid < 1) {
+    return err('Geçersiz kayıt', 'api.pur.id_invalid');
+  }
+  const raw = String(reason || '').trim();
+  if (!raw) {
+    return err('İptal açıklaması zorunludur', 'api.pur.cancel_reason_required');
+  }
+  const reasonNorm = toUpperTr(raw);
+  if (!reasonNorm) {
+    return err('İptal açıklaması zorunludur', 'api.pur.cancel_reason_required');
+  }
+  if (!(await hasCol('purchase_order_items', 'line_status'))) {
+    return err('Veritabanı güncellemesi gerekli (sipariş satırı iptali)', 'api.pur.migration_line_cancel');
+  }
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[por]] = await conn.query('SELECT * FROM purchase_orders WHERE id = ? FOR UPDATE', [oid]);
+    if (!por) {
+      await conn.rollback();
+      return err('Sipariş yok', 'api.pur.order_not_found');
+    }
+    if (String(por.status) === 'cancelled') {
+      await conn.rollback();
+      return err('İptal siparişte işlem yapılamaz', 'api.pur.order_readonly');
+    }
+    const [[oi]] = await conn.query(
+      'SELECT id, order_id, qty_received, line_status FROM purchase_order_items WHERE id = ? AND order_id = ? FOR UPDATE',
+      [oiid, oid]
+    );
+    if (!oi) {
+      await conn.rollback();
+      return err('Sipariş satırı yok', 'api.pur.oi_not_found');
+    }
+    if (isPurchaseOrderLineCancelled(oi)) {
+      await conn.rollback();
+      return err('Satır zaten iptal edilmiş', 'api.pur.line_already_cancelled');
+    }
+    if (Number(oi.qty_received) > 0.0001) {
+      await conn.rollback();
+      return err(
+        'Mal kabulü yapılmış sipariş kalemi iptal edilemez. Bu işlem iade veya stok düzeltme sürecidir.',
+        'api.pur.line_cancel_forbidden_received'
+      );
+    }
+    await conn.query(
+      `UPDATE purchase_order_items
+       SET line_status = 'cancelled', cancel_reason = ?, cancelled_at = NOW(), cancelled_by = ?
+       WHERE id = ?`,
+      [reasonNorm, userId || null, oiid]
+    );
+    await recalculateReceiptStatusesForOrder(conn, oid);
+    await recalculatePricingStatusesForOrder(conn, oid);
+    await conn.commit();
+    return { ok: true, orderItemId: oiid, cancelReason: reasonNorm };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 module.exports = {
   listProductOptions,
   listSuppliers,
@@ -2013,6 +2227,7 @@ module.exports = {
   createGoodsReceipt,
   updatePurchaseOrder,
   updatePurchaseOrderPricing,
+  cancelPurchaseOrderLine,
   setProcurementStateForOrderStart,
   runOrderBuyerAction,
   runRequestBuyerAction,

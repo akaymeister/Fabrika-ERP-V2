@@ -17,10 +17,15 @@
   const btnSavePricing = document.getElementById('btnSavePricing');
   const btnCompleteOrder = document.getElementById('btnCompleteOrder');
   const btnReviseOrder = document.getElementById('btnReviseOrder');
+  const cancelLineModal = document.getElementById('cancelLineModal');
+  const cancelLineReason = document.getElementById('cancelLineReason');
+  const cancelLineConfirm = document.getElementById('cancelLineConfirm');
+  const cancelLineDismiss = document.getElementById('cancelLineDismiss');
 
   let suppliers = [];
   let selectedOrder = null;
   let lineInputs = [];
+  let cancelLineItemId = null;
 
   function tK(k) {
     return window.i18n && window.i18n.t ? window.i18n.t(k) : k;
@@ -126,6 +131,7 @@
       if (normalized === 'awaiting_receipt') normalized = 'pending';
       else if (normalized === 'partially_received' || normalized === 'partial_received') normalized = 'partial';
       else if (normalized === 'received_completed') normalized = 'completed';
+      else if (normalized === 'cancelled') normalized = 'cancelled';
     }
     if (group === 'pricing') {
       if (normalized === 'fully_priced') normalized = 'priced';
@@ -137,6 +143,39 @@
       if (text && text !== key) return text;
     }
     return String(value);
+  }
+
+  function isLineCancelled(it) {
+    return !!(it && (it.is_line_cancelled || String(it.line_status || '').toLowerCase() === 'cancelled'));
+  }
+
+  function allowedPricingCurrency(raw) {
+    const cur = String(raw || '').trim().toUpperCase();
+    if (cur === 'USD') return 'USD';
+    return 'UZS';
+  }
+
+  function currencyOptionsHtml(selected) {
+    const cur = allowedPricingCurrency(selected);
+    return `
+      <option value="UZS"${cur === 'UZS' ? ' selected' : ''}>UZS</option>
+      <option value="USD"${cur === 'USD' ? ' selected' : ''}>USD</option>
+    `;
+  }
+
+  function openCancelModal(itemId) {
+    cancelLineItemId = itemId != null ? String(itemId) : null;
+    if (cancelLineReason) cancelLineReason.value = '';
+    if (cancelLineModal) {
+      cancelLineModal.classList.add('proc-modal-open');
+      if (cancelLineReason) cancelLineReason.focus();
+    }
+  }
+
+  function closeCancelModal() {
+    cancelLineItemId = null;
+    if (cancelLineModal) cancelLineModal.classList.remove('proc-modal-open');
+    if (cancelLineReason) cancelLineReason.value = '';
   }
 
   async function loadSuppliers() {
@@ -280,25 +319,35 @@
     lineInputs = items.map(() => ({}));
     linesDetailBody.innerHTML = items
       .map((it, i) => {
-        const lineCurrency = String(it.currency || order.currency || 'UZS').toUpperCase();
+        const cancelled = isLineCancelled(it);
+        const lineCurrency = allowedPricingCurrency(it.currency || order.currency || 'UZS');
         const fxRate =
           it.fx_rate != null && it.fx_rate !== ''
             ? String(it.fx_rate)
-            : lineCurrency === 'UZS' || lineCurrency === 'SYSTEM'
-              ? '1'
-              : '';
-        return `<tr>
-          <td><span style="font-size:11px;color:#64748b">${esc(it.product_code || '')}</span><br/>${esc(it.product_name || '')}</td>
+            : '';
+        const rowCls = cancelled ? ' class="po-line-cancelled"' : '';
+        const cancelReasonHtml =
+          cancelled && it.cancel_reason
+            ? `<div class="proc-cancel-badge">${esc(tK('purch.proc.lineCancelledBadge'))}</div><div style="font-size:11px;color:#991b1b;margin-top:6px;max-width:220px"><strong>${esc(tK('purch.proc.cancelReasonPrefix'))}</strong> ${esc(it.cancel_reason)}</div>`
+            : '';
+        const recv = Number(it.qty_received) || 0;
+        const canCancel = !cancelled && recv <= 0.0001;
+        const cancelBtn = cancelled
+          ? '—'
+          : `<button type="button" class="logout-btn po-line-cancel" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'} style="font-size:12px;padding:6px 10px">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+        return `<tr${rowCls}>
+          <td><span style="font-size:11px;color:#64748b">${esc(it.product_code || '')}</span><br/>${esc(it.product_name || '')}${cancelReasonHtml}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
           <td>
-            <input class="pur-inp po-line-supsearch" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" style="width:150px;margin-bottom:4px" />
-            <select class="pur-inp po-line-sup" data-i="${i}">${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
+            <input class="pur-inp po-line-supsearch" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" style="width:150px;margin-bottom:4px" ${cancelled ? 'disabled' : ''} />
+            <select class="pur-inp po-line-sup" data-i="${i}" ${cancelled ? 'disabled' : ''}>${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
           </td>
-          <td><input type="number" class="pur-inp po-line-price" data-i="${i}" min="0" step="0.0001" value="${esc(it.unit_price != null ? it.unit_price : '')}" style="width:120px" /></td>
-          <td><input type="text" class="pur-inp po-line-cur" data-i="${i}" maxlength="3" value="${esc(lineCurrency)}" style="width:72px;text-transform:uppercase" /></td>
-          <td><input type="number" class="pur-inp po-line-fx" data-i="${i}" min="0" step="0.0001" value="${esc(fxRate)}" style="width:110px" /></td>
+          <td><input type="number" class="pur-inp po-line-price" data-i="${i}" min="0" step="0.0001" value="${esc(it.unit_price != null ? it.unit_price : '')}" style="width:120px" ${cancelled ? 'disabled' : ''} /></td>
+          <td><select class="pur-inp po-line-cur" data-i="${i}" style="width:88px" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
+          <td><input type="number" class="pur-inp po-line-fx" data-i="${i}" min="0" step="0.0001" value="${esc(fxRate)}" style="width:110px" ${cancelled ? 'disabled' : ''} /></td>
+          <td style="white-space:nowrap">${cancelBtn}</td>
         </tr>`;
       })
       .join('');
@@ -336,6 +385,12 @@
       const i = parseInt(el.getAttribute('data-i'), 10);
       lineInputs[i].fxEl = el;
     });
+    linesDetailBody.querySelectorAll('.po-line-cancel').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const oi = btn.getAttribute('data-oi');
+        if (oi) openCancelModal(oi);
+      });
+    });
 
     [btnStart, btnPrint, btnSavePricing, btnCompleteOrder, btnReviseOrder].forEach((btn) => {
       if (btn) {
@@ -352,11 +407,15 @@
     const lines = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      if (isLineCancelled(item)) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
       const input = lineInputs[i] || {};
       const supplierId = input.supEl && input.supEl.value ? parseInt(String(input.supEl.value), 10) : null;
       const priceRaw = input.priceEl ? String(input.priceEl.value).trim() : '';
       const unitPrice = priceRaw === '' ? null : parseFloat(priceRaw.replace(',', '.'));
-      const currency = input.curEl ? String(input.curEl.value || '').trim().toUpperCase().slice(0, 3) : 'UZS';
+      const currency = allowedPricingCurrency(input.curEl ? input.curEl.value : 'UZS');
       const fxRaw = input.fxEl ? String(input.fxEl.value).trim() : '';
       const fxRate = fxRaw === '' ? null : parseFloat(fxRaw.replace(',', '.'));
       const hasAny =
@@ -371,15 +430,15 @@
       if (!Number.isFinite(unitPrice) || unitPrice < 0) {
         return { error: tK('purch.proc.errPriceLine') };
       }
-      if (!['UZS', 'SYSTEM'].includes(currency) && (!Number.isFinite(fxRate) || fxRate <= 0)) {
+      if (!Number.isFinite(fxRate) || fxRate <= 0) {
         return { error: tK('api.pur.fx_required') };
       }
       lines.push({
         orderItemId: item.id,
         supplierId,
         unitPrice,
-        currency: currency || 'UZS',
-        fxRate: ['UZS', 'SYSTEM'].includes(currency || 'UZS') ? 1 : fxRate,
+        currency,
+        fxRate,
       });
     }
     return { lines };
@@ -486,6 +545,44 @@
   if (btnSavePricing) btnSavePricing.addEventListener('click', savePricing);
   if (btnCompleteOrder) btnCompleteOrder.addEventListener('click', () => postBuyerAction('complete'));
   if (btnReviseOrder) btnReviseOrder.addEventListener('click', () => postBuyerAction('revise'));
+
+  if (cancelLineDismiss) {
+    cancelLineDismiss.addEventListener('click', () => closeCancelModal());
+  }
+  if (cancelLineModal) {
+    cancelLineModal.addEventListener('click', (e) => {
+      if (e.target === cancelLineModal) closeCancelModal();
+    });
+  }
+  if (cancelLineConfirm) {
+    cancelLineConfirm.addEventListener('click', async () => {
+      const oid = currentOrderId();
+      const iid = cancelLineItemId;
+      const reason = cancelLineReason ? String(cancelLineReason.value || '').trim() : '';
+      if (oid == null || !iid) {
+        closeCancelModal();
+        return;
+      }
+      if (!reason) {
+        showMsg(tK('api.pur.cancel_reason_required'), true);
+        return;
+      }
+      const { ok, data, status } = await window.purApi(`/api/purchasing/orders/${encodeURIComponent(oid)}/items/${encodeURIComponent(iid)}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+      if (!ok) {
+        showMsg(apiMsg(data) || `HTTP ${status}`, true);
+        return;
+      }
+      closeCancelModal();
+      showMsg(tK('purch.proc.cancelOk'));
+      await loadIncomingOrders(true);
+      await loadCompletedOrders(true);
+      await selectOrder(String(oid));
+      highlightSelectedOrder(String(oid));
+    });
+  }
 
   (async function init() {
     if (window.initPurchasingPageNav) {
