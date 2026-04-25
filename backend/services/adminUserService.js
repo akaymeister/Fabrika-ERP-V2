@@ -24,9 +24,12 @@ async function getRoleIdById(roleId) {
 async function listUsers() {
   const [rows] = await pool.query(
     `SELECT u.id, u.username, u.email, u.full_name, u.is_active, u.last_login_at, u.created_at,
-            r.id AS role_id, r.name AS role_name, r.slug AS role_slug
+            r.id AS role_id, r.name AS role_name, r.slug AS role_slug,
+            e.id AS employee_id, e.position_id AS employee_position_id, p.name AS employee_position_name
      FROM users u
      INNER JOIN roles r ON r.id = u.role_id
+     LEFT JOIN employees e ON e.user_id = u.id
+     LEFT JOIN positions p ON p.id = e.position_id
      ORDER BY u.id ASC`
   );
   return rows;
@@ -147,6 +150,87 @@ async function updateUser(userId, payload, { actingUserId }) {
   return { ok: true };
 }
 
+async function getSystemRoleBySlug(slug) {
+  const [rows] = await pool.query(
+    `SELECT id, slug, name
+     FROM roles
+     WHERE slug = :slug
+     LIMIT 1`,
+    { slug }
+  );
+  return rows[0] || null;
+}
+
+async function setUserPermissionSubject(userId, subjectType, subjectId, { actingUserId }) {
+  const uid = parseInt(String(userId), 10);
+  const sid = parseInt(String(subjectId), 10);
+  if (!Number.isFinite(uid) || uid < 1) return err('Geçersiz kullanıcı', 'api.admin.user_invalid');
+  if (!Number.isFinite(sid) || sid < 1) return err('Geçersiz yetki konusu', 'api.admin.invalid_permission_subject');
+
+  const [users] = await pool.query(
+    `SELECT u.id, u.role_id, r.slug AS role_slug, e.id AS employee_id
+     FROM users u
+     INNER JOIN roles r ON r.id = u.role_id
+     LEFT JOIN employees e ON e.user_id = u.id
+     WHERE u.id = :id
+     LIMIT 1`,
+    { id: uid }
+  );
+  if (!users.length) return err('Kullanıcı yok', 'api.admin.user_not_found');
+  const user = users[0];
+
+  if (subjectType === 'system_role') {
+    const [roles] = await pool.query(
+      `SELECT id, slug
+       FROM roles
+       WHERE id = :id
+         AND slug IN ('super_admin', 'admin')
+       LIMIT 1`,
+      { id: sid }
+    );
+    if (!roles.length) return err('Sadece Super Admin veya Admin atanabilir', 'api.admin.system_role_only');
+
+    const toRole = roles[0];
+    if (uid === actingUserId && user.role_slug === SUPER_SLUG && toRole.slug !== SUPER_SLUG) {
+      return err('Kendi süper yönetici rolünüzü kaldıramazsınız', 'api.admin.cannot_downgrade_self_super');
+    }
+    if (user.role_slug === SUPER_SLUG && toRole.slug !== SUPER_SLUG) {
+      const n = await countActiveSuperAdmins();
+      if (n <= 1) {
+        return err('Son aktif süper yönetici rolü kaldırılamaz', 'api.admin.last_super_role');
+      }
+    }
+    await pool.query('UPDATE users SET role_id = :role_id WHERE id = :id', { role_id: toRole.id, id: uid });
+    return { ok: true };
+  }
+
+  if (subjectType === 'hr_position') {
+    const [positions] = await pool.query(
+      `SELECT id
+       FROM positions
+       WHERE id = :id AND is_active = 1
+       LIMIT 1`,
+      { id: sid }
+    );
+    if (!positions.length) return err('Pozisyon bulunamadı', 'api.hr.position_not_found');
+    if (!user.employee_id) {
+      return err('Önce bu kullanıcıyı bir personel kartına bağlayın.', 'api.admin.user_employee_link_required');
+    }
+    await pool.query('UPDATE employees SET position_id = :position_id WHERE id = :employee_id', {
+      position_id: sid,
+      employee_id: user.employee_id,
+    });
+    const adminRole = await getSystemRoleBySlug('admin');
+    if (adminRole && user.role_id !== adminRole.id) {
+      // Operasyonel yetki artık pozisyondan okunacağı için sistem rolünü admin seviyesine sabitle.
+      await pool.query('UPDATE users SET role_id = :role_id WHERE id = :id', { role_id: adminRole.id, id: uid });
+    }
+    return { ok: true };
+  }
+
+  return err('Geçersiz yetki konusu', 'api.admin.invalid_permission_subject');
+}
+
 async function resetPassword(userId, newPassword) {
   if (!newPassword || newPassword.length < 4) {
     return err('Yeni şifre en az 4 karakter', 'api.admin.new_password_short');
@@ -167,6 +251,7 @@ module.exports = {
   pickUpdatePayload,
   createUser,
   updateUser,
+  setUserPermissionSubject,
   resetPassword,
   SUPER_SLUG,
 };

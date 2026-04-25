@@ -4,9 +4,12 @@ const {
   pickUpdatePayload,
   createUser,
   updateUser,
+  setUserPermissionSubject,
   resetPassword,
 } = require('../services/adminUserService');
 const {
+  getRolePermissionIds,
+  setRolePermissionIds,
   getPermissionIdsBySubject,
   setPermissionIdsBySubject,
   getUserExtraPermissionIds,
@@ -207,6 +210,20 @@ async function patchUser(req, res) {
   return res.json(jsonOk());
 }
 
+async function patchUserPermissionSubject(req, res) {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id) || id < 1) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.admin.invalid_id'));
+  }
+  const subjectType = String(req.body?.subject_type || '').trim();
+  const subjectId = parseInt(String(req.body?.subject_id), 10);
+  const out = await setUserPermissionSubject(id, subjectType, subjectId, { actingUserId: req.session.user.id });
+  if (out.error) {
+    return res.status(400).json(jsonError('VALIDATION', out.error, null, out.messageKey));
+  }
+  return res.json(jsonOk());
+}
+
 async function postResetPassword(req, res) {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) {
@@ -233,5 +250,6 @@ module.exports = {
   getUsersList,
   postUser,
   patchUser,
+  patchUserPermissionSubject,
   postResetPassword,
 };

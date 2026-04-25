@@ -57,6 +57,7 @@ let catalog = [];
 let roles = [];
 let permissionSubjects = [];
 let users = [];
+const SYSTEM_ROLE_SLUGS = new Set(['super_admin', 'admin']);
 
 function fillRoleSelects() {
   const nr = document.getElementById('newRole');
@@ -104,6 +105,47 @@ function roleOptionsHtml(selectedId) {
     .join('');
 }
 
+function userSelectedSubjectValue(user) {
+  const roleSlug = String(user?.role_slug || '').toLowerCase();
+  if (SYSTEM_ROLE_SLUGS.has(roleSlug)) {
+    const rid = Number(user?.role_id);
+    if (Number.isFinite(rid) && rid > 0) return `system_role:${rid}`;
+  }
+  const posId = Number(user?.employee_position_id);
+  if (Number.isFinite(posId) && posId > 0) return `hr_position:${posId}`;
+  return '';
+}
+
+function userSubjectMetaText(user) {
+  const roleSlug = String(user?.role_slug || '').toLowerCase();
+  const roleName = user?.role_name || roleSlug || '-';
+  const posName = user?.employee_position_name || '-';
+  return `system=${roleName}; position=${posName}`;
+}
+
+function legacyRoleWarnHtml(user) {
+  const roleSlug = String(user?.role_slug || '').toLowerCase();
+  if (SYSTEM_ROLE_SLUGS.has(roleSlug)) return '';
+  return '<div style="font-size:11px;color:#b45309;font-weight:600">Legacy rol algilandi (eski model).</div>';
+}
+
+function userSubjectOptionsHtml(user) {
+  const selected = userSelectedSubjectValue(user);
+  const options = [];
+  for (const s of permissionSubjects) {
+    const value = `${s.type}:${s.id}`;
+    const prefix = s.type === 'system_role' ? 'Sistem Rolu' : 'IK Pozisyonu';
+    const code = s.code ? ` (${s.code})` : '';
+    options.push(
+      `<option value="${value}" ${value === selected ? 'selected' : ''}>${esc(prefix)}: ${esc(s.name)}${esc(code)}</option>`
+    );
+  }
+  if (!selected) {
+    options.unshift('<option value="" selected disabled>Secim yapin</option>');
+  }
+  return options.join('');
+}
+
 function renderUserTable() {
   const body = document.getElementById('userTableBody');
   if (!body) return;
@@ -114,8 +156,9 @@ function renderUserTable() {
     <td><strong>${esc(u.username)}</strong></td>
     <td class="display-upper">${esc(u.full_name)}</td>
     <td>
-      <select class="js-user-role" data-id="${u.id}" style="min-width: 140px; font-size: 13px">${roleOptionsHtml(u.role_id)}</select>
-      <div><code style="font-size: 11px; color: #64748b">${esc(u.role_slug)}</code></div>
+      <select class="js-user-role" data-id="${u.id}" style="min-width: 180px; font-size: 13px">${userSubjectOptionsHtml(u)}</select>
+      <div><code style="font-size: 11px; color: #64748b">${esc(userSubjectMetaText(u))}</code></div>
+      ${legacyRoleWarnHtml(u)}
     </td>
     <td>${u.is_active ? t('admin.user.yes') : t('admin.user.no')}</td>
     <td class="user-actions">
@@ -126,7 +169,7 @@ function renderUserTable() {
     )
     .join('');
   body.querySelectorAll('select.js-user-role').forEach((sel) => {
-    sel.addEventListener('change', () => onRoleChange(+sel.getAttribute('data-id'), +sel.value));
+    sel.addEventListener('change', () => onRoleChange(+sel.getAttribute('data-id'), String(sel.value || '')));
   });
   body.querySelectorAll('button[data-act]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -140,9 +183,16 @@ function renderUserTable() {
 
 async function onRoleChange(id, newRoleId) {
   clearError();
-  const { res, data } = await api(`/api/admin/users/${id}`, {
+  const [subjectType, subjectIdRaw] = String(newRoleId || '').split(':');
+  const subjectId = Number(subjectIdRaw);
+  if (!subjectType || !Number.isFinite(subjectId) || subjectId < 1) {
+    showError('Gecersiz yetki konusu secimi');
+    await loadUsers();
+    return;
+  }
+  const { res, data } = await api(`/api/admin/users/${id}/permission-subject`, {
     method: 'PATCH',
-    body: JSON.stringify({ role_id: newRoleId }),
+    body: JSON.stringify({ subject_type: subjectType, subject_id: subjectId }),
   });
   if (!res) return;
   if (!res.ok) {
@@ -244,7 +294,7 @@ async function loadRoles() {
     showError(apiErr(r.data, 'api.error.load_roles'));
     return;
   }
-  roles = r.data.roles || [];
+  roles = (r.data.roles || []).filter((x) => SYSTEM_ROLE_SLUGS.has(String(x.slug || '').toLowerCase()));
 }
 
 function getSelectedPermissionSubject() {

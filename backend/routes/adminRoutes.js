@@ -14,6 +14,7 @@ const {
   getUsersList,
   postUser,
   patchUser,
+  patchUserPermissionSubject,
   postResetPassword,
 } = require('../controllers/adminUserController');
 const { getSettings, putSettings } = require('../controllers/systemSettingsController');
@@ -34,6 +35,7 @@ router.put('/permission-subjects/:type/:id/permissions', putPermissionSubjectPer
 router.get('/users', getUsersList);
 router.post('/users', postUser);
 router.patch('/users/:id', patchUser);
+router.patch('/users/:id/permission-subject', patchUserPermissionSubject);
 router.post('/users/:id/reset-password', postResetPassword);
 router.get('/users/:id/permissions', getUserExtraPerms);
 router.put('/users/:id/permissions', putUserExtraPerms);
