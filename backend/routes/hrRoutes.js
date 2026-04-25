@@ -16,6 +16,7 @@ const {
   getAssignableUsers,
   getAttendance,
   postAttendance,
+  patchAttendance,
 } = require('../controllers/hrController');
 
 const router = express.Router();
@@ -37,5 +38,6 @@ router.patch('/employees/:id', patchEmployee);
 router.get('/users', getAssignableUsers);
 router.get('/attendance', getAttendance);
 router.post('/attendance', postAttendance);
+router.patch('/attendance/:id', patchAttendance);
 
 module.exports = router;

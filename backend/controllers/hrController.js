@@ -14,6 +14,7 @@ const {
   listAssignableUsers,
   listAttendance,
   createAttendance,
+  updateAttendance,
 } = require('../services/hrService');
 const { logActivity } = require('../services/activityLogService');
 
@@ -238,6 +239,31 @@ async function postAttendance(req, res) {
   }
 }
 
+async function patchAttendance(req, res) {
+  const id = parseInt(String(req.params.id), 10);
+  try {
+    const out = await updateAttendance(id, req.body || {}, req.session?.user?.id || null);
+    if (out.error) return res.status(400).json(validationOut(out));
+    await logActivity(req, {
+      action_type: 'UPDATE',
+      module_name: 'hr',
+      table_name: 'employee_attendance',
+      record_id: id,
+      new_data: req.body || {},
+      description: 'Puantaj kaydi guncellendi',
+    });
+    return res.json(jsonOk(out));
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json(jsonError('VALIDATION', 'Ayni personel ve gun icin kayit var', null, 'api.hr.attendance_duplicate'));
+    }
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json(jsonError('VALIDATION', 'Personel bulunamadi', null, 'api.hr.employee_not_found'));
+    }
+    throw e;
+  }
+}
+
 module.exports = {
   getHrScope,
   getDepartments,
@@ -253,4 +279,5 @@ module.exports = {
   getAssignableUsers,
   getAttendance,
   postAttendance,
+  patchAttendance,
 };

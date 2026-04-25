@@ -17,6 +17,29 @@ function normalizeWorkStatus(v) {
   return ['worked', 'absent', 'leave', 'sick_leave', 'half_day'].includes(s) ? s : null;
 }
 
+function normalizeTime(v) {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  const m = s.match(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/);
+  if (!m) return null;
+  return `${m[1]}:${m[2]}${m[3] || ':00'}`;
+}
+
+function validateAttendanceRule(workStatus, checkIn, checkOut) {
+  const strictTime = workStatus === 'worked' || workStatus === 'half_day';
+  if (strictTime) {
+    if (!checkIn || !checkOut) return err('Giris ve cikis saati zorunlu', 'api.hr.attendance_time_required');
+    if (checkOut <= checkIn) return err('Cikis saati giristen sonra olmali', 'api.hr.attendance_time_order_invalid');
+    return null;
+  }
+  // absent / leave / sick_leave icin saatler opsiyonel; doluysa tutarli olmali
+  if (checkIn && checkOut && checkOut <= checkIn) {
+    return err('Cikis saati giristen sonra olmali', 'api.hr.attendance_time_order_invalid');
+  }
+  return null;
+}
+
 async function getScope() {
   return { canHr: true };
 }
@@ -312,9 +335,10 @@ async function createAttendance(input, actorId) {
   const workStatus = normalizeWorkStatus(input?.work_status);
   if (!workStatus) return err('Calisma durumu gecersiz', 'api.hr.work_status_invalid');
 
-  const checkIn = input?.check_in_time == null || String(input.check_in_time).trim() === '' ? null : String(input.check_in_time).trim();
-  const checkOut =
-    input?.check_out_time == null || String(input.check_out_time).trim() === '' ? null : String(input.check_out_time).trim();
+  const checkIn = normalizeTime(input?.check_in_time);
+  const checkOut = normalizeTime(input?.check_out_time);
+  const vErr = validateAttendanceRule(workStatus, checkIn, checkOut);
+  if (vErr) return vErr;
   const overtime = Number(input?.overtime_hours);
   const overtimeHours = Number.isFinite(overtime) && overtime >= 0 ? overtime : 0;
   const note = optionalNoteUpperTr(input?.note);
@@ -339,6 +363,77 @@ async function createAttendance(input, actorId) {
   return { id: r.insertId };
 }
 
+async function updateAttendance(id, input, actorId) {
+  const attId = parseId(id);
+  if (!attId) return err('Gecersiz puantaj kaydi', 'api.hr.attendance_invalid');
+
+  const [rows] = await pool.query(
+    `SELECT id, employee_id, work_date, check_in_time, check_out_time, work_status, overtime_hours, note
+     FROM employee_attendance
+     WHERE id = :id
+     LIMIT 1`,
+    { id: attId }
+  );
+  if (!rows.length) return err('Puantaj kaydi bulunamadi', 'api.hr.attendance_not_found');
+  const current = rows[0];
+
+  const next = {
+    employee_id: input?.employee_id !== undefined ? parseId(input.employee_id) : current.employee_id,
+    work_date: input?.work_date !== undefined ? String(input.work_date || '').trim() : String(current.work_date || '').slice(0, 10),
+    work_status: input?.work_status !== undefined ? normalizeWorkStatus(input.work_status) : current.work_status,
+    check_in_time:
+      input?.check_in_time !== undefined
+        ? normalizeTime(input.check_in_time)
+        : normalizeTime(String(current.check_in_time || '').slice(0, 8)),
+    check_out_time:
+      input?.check_out_time !== undefined
+        ? normalizeTime(input.check_out_time)
+        : normalizeTime(String(current.check_out_time || '').slice(0, 8)),
+    overtime_hours:
+      input?.overtime_hours !== undefined
+        ? (() => {
+            const n = Number(input.overtime_hours);
+            return Number.isFinite(n) && n >= 0 ? n : null;
+          })()
+        : Number(current.overtime_hours || 0),
+    note: input?.note !== undefined ? optionalNoteUpperTr(input.note) : current.note,
+  };
+
+  if (!next.employee_id) return err('Personel secin', 'api.hr.employee_required');
+  if (!next.work_date) return err('Tarih gerekli', 'api.hr.work_date_required');
+  if (!next.work_status) return err('Calisma durumu gecersiz', 'api.hr.work_status_invalid');
+  if (next.overtime_hours == null) return err('Fazla mesai saati gecersiz', 'api.hr.overtime_invalid');
+
+  const vErr = validateAttendanceRule(next.work_status, next.check_in_time, next.check_out_time);
+  if (vErr) return vErr;
+
+  const [r] = await pool.query(
+    `UPDATE employee_attendance
+     SET employee_id = :employee_id,
+         work_date = :work_date,
+         check_in_time = :check_in_time,
+         check_out_time = :check_out_time,
+         work_status = :work_status,
+         overtime_hours = :overtime_hours,
+         note = :note,
+         updated_by = :updated_by
+     WHERE id = :id`,
+    {
+      id: attId,
+      employee_id: next.employee_id,
+      work_date: next.work_date,
+      check_in_time: next.check_in_time,
+      check_out_time: next.check_out_time,
+      work_status: next.work_status,
+      overtime_hours: next.overtime_hours,
+      note: next.note,
+      updated_by: actorId || null,
+    }
+  );
+  if (!r.affectedRows) return err('Puantaj kaydi bulunamadi', 'api.hr.attendance_not_found');
+  return { ok: true };
+}
+
 module.exports = {
   getScope,
   listDepartments,
@@ -354,4 +449,5 @@ module.exports = {
   listAssignableUsers,
   listAttendance,
   createAttendance,
+  updateAttendance,
 };

@@ -21,18 +21,79 @@
     <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
     <div class="card">
-      <h2>Devam Kayitlari</h2>
-      <p>Personel, tarih, giris/cikis, durum ve fazla mesai alanlari Faz 1B'de veri ile baglanacaktir.</p>
+      <h2>Puantaj Kaydi</h2>
+      <form id="attendanceForm">
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <select id="employeeId" required><option value="">Personel secin</option></select>
+          <input id="workDate" type="date" required />
+          <input id="checkInTime" type="time" />
+          <input id="checkOutTime" type="time" />
+          <select id="workStatus" required>
+            <option value="worked">Calisti</option>
+            <option value="absent">Gelmedi</option>
+            <option value="leave">Izinli</option>
+            <option value="sick_leave">Raporlu</option>
+            <option value="half_day">Yarim gun</option>
+          </select>
+          <input id="overtimeHours" type="number" min="0" step="0.25" value="0" placeholder="Fazla mesai saati" />
+        </div>
+        <textarea id="attendanceNote" class="input-upper" placeholder="Not"></textarea>
+        <div class="inline-group">
+          <button type="submit" id="attendanceSaveBtn">Kaydet</button>
+          <button type="button" class="secondary-btn" id="attendanceResetBtn">Temizle</button>
+        </div>
+      </form>
+      <div id="msg" class="muted" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Kayit Listesi</h2>
+      <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <select id="filterEmployeeId"><option value="">Tum personeller</option></select>
+        <select id="filterStatus">
+          <option value="">Tum durumlar</option>
+          <option value="worked">Calisti</option>
+          <option value="absent">Gelmedi</option>
+          <option value="leave">Izinli</option>
+          <option value="sick_leave">Raporlu</option>
+          <option value="half_day">Yarim gun</option>
+        </select>
+        <input id="filterFromDate" type="date" />
+        <input id="filterToDate" type="date" />
+      </div>
+      <div class="inline-group" style="margin-top:10px">
+        <button type="button" id="btnApplyFilters">Filtrele</button>
+        <button type="button" class="secondary-btn" id="btnClearFilters">Filtreleri temizle</button>
+      </div>
+      <div class="card" style="padding:12px;margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th>Personel</th>
+              <th>Tarih</th>
+              <th>Durum</th>
+              <th>Giris</th>
+              <th>Cikis</th>
+              <th>Mesai</th>
+              <th>Not</th>
+              <th>Islem</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceBody"><tr><td colspan="8">Yukleniyor...</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-attendance.js" defer></script>
   <script>
     function startHrAttendancePage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('attendance');
+        await window.initHrAttendancePage?.();
       })();
     }
     if (document.readyState === 'loading') {
