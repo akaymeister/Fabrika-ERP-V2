@@ -39,11 +39,10 @@
     {
       moduleKey: 'hr',
       label: 'IK yönetimi',
-      href: '#',
+      href: '/hr.html',
       iconClass: 'mod-hr',
       requiredRole: null,
       requiredPermission: 'module.hr',
-      disabled: true,
     },
     {
       moduleKey: 'admin',

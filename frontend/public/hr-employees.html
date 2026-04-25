@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personeller — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1>Personeller</h1>
+        <p class="subtitle">Faz 1A iskelet ekran</p>
+      </div>
+      <div class="topbar-right">
+        <a href="/hr.html" class="version-btn">IK</a>
+        <a href="/" class="version-btn">Ana sayfa</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <div class="card">
+      <h2>Durum Filtreleri</h2>
+      <p>Aktif / Pasif / Isten ayrildi filtreleri sonraki fazda veri ile doldurulacaktir.</p>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script>
+    function startHrEmployeesPage() {
+      (async function () {
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('employees');
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startHrEmployeesPage);
+    } else {
+      startHrEmployeesPage();
+    }
+  </script>
+</body>
+</html>

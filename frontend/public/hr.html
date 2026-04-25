@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IK Dashboard — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1>IK Dashboard</h1>
+        <p class="subtitle">Faz 1A iskelet ekran</p>
+      </div>
+      <div class="topbar-right">
+        <a href="/" class="version-btn">Ana sayfa</a>
+        <a href="#" class="logout-btn" id="logoutBtn">Cikis</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+
+    <div class="card">
+      <h2>IK Modulu</h2>
+      <p>Bu sayfa Faz 1A iskeletidir. Tam ekran icerigi sonraki adimlarda doldurulacaktir.</p>
+      <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+        <a class="dashboard-card" href="/hr-employees.html" style="text-decoration:none;color:inherit"><h3>Personeller</h3></a>
+        <a class="dashboard-card" href="/hr-employee-form.html" style="text-decoration:none;color:inherit"><h3>Personel Karti</h3></a>
+        <a class="dashboard-card" href="/hr-structure.html" style="text-decoration:none;color:inherit"><h3>Departman / Pozisyon</h3></a>
+        <a class="dashboard-card" href="/hr-attendance.html" style="text-decoration:none;color:inherit"><h3>Puantaj</h3></a>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script>
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+        window.location.href = '/login.html';
+      });
+    });
+    function startHrHubPage() {
+      (async function () {
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('hub');
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startHrHubPage);
+    } else {
+      startHrHubPage();
+    }
+  </script>
+</body>
+</html>

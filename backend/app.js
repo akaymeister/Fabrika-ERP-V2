@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const purchasingRoutes = require('./routes/purchasingRoutes');
+const hrRoutes = require('./routes/hrRoutes');
 const { getPublicConfig } = require('./controllers/publicConfigController');
 const { requirePageSuperAdmin, sendAdminPage } = require('./middlewares/requirePageSuperAdmin');
 const { requirePagePermission, requirePageAnyPermission, sendPage } = require('./middlewares/requirePagePermission');
@@ -37,6 +38,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/purchasing', purchasingRoutes);
+app.use('/api/hr', hrRoutes);
 
 // --- HTML: login / önce; statikten önce (oturum yönlendirmesi) ---
 // Kısayol URL'ler (.html olmadan)
@@ -54,6 +56,7 @@ app.get('/admin.html', requirePageSuperAdmin, sendAdminPage);
 
 // Stok modülü (giriş + module.stock)
 app.get('/stock', (req, res) => res.redirect(302, '/stock.html'));
+app.get('/hr', (req, res) => res.redirect(302, '/hr.html'));
 app.get('/projects', (req, res) => res.redirect(302, '/projects.html'));
 app.get('/project-code', (req, res) => res.redirect(302, '/project-list.html'));
 app.get('/project-costs', (req, res) => res.redirect(302, '/project-costs.html'));
@@ -125,6 +128,11 @@ app.get(
 );
 app.get('/stock-out.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-out.html'));
 app.get('/stock-movements.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-movements.html'));
+app.get('/hr.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr.html'));
+app.get('/hr-employees.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-employees.html'));
+app.get('/hr-employee-form.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-employee-form.html'));
+app.get('/hr-structure.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-structure.html'));
+app.get('/hr-attendance.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-attendance.html'));
 
 // --- Statik: index otomatik kapalı ---
 app.use(
