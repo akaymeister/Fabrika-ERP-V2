@@ -20,19 +20,55 @@
     </div>
     <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
-    <div class="card">
-      <h2>Yapi Yonetimi</h2>
-      <p>Departman ve pozisyon CRUD alanlari sonraki adimda aktif edilecektir.</p>
+    <div id="msg" class="muted" style="margin:10px 0;"></div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Departmanlar</h2>
+        <form id="depForm">
+          <div class="inline-group">
+            <input id="depName" class="input-upper" placeholder="Departman adi" required />
+            <input id="depCode" class="input-upper" placeholder="Kod (opsiyonel)" />
+          </div>
+          <button type="submit" id="depSubmitBtn">Departman Ekle</button>
+        </form>
+        <div class="card" style="padding:12px;margin-top:12px">
+          <table>
+            <thead><tr><th>Ad</th><th>Kod</th><th>Durum</th><th>Islem</th></tr></thead>
+            <tbody id="depBody"><tr><td colspan="4">Yukleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Pozisyonlar</h2>
+        <form id="posForm">
+          <select id="posDepartment" required></select>
+          <div class="inline-group">
+            <input id="posName" class="input-upper" placeholder="Pozisyon adi" required />
+            <input id="posCode" class="input-upper" placeholder="Kod (opsiyonel)" />
+          </div>
+          <button type="submit" id="posSubmitBtn">Pozisyon Ekle</button>
+        </form>
+        <div class="card" style="padding:12px;margin-top:12px">
+          <table>
+            <thead><tr><th>Pozisyon</th><th>Departman</th><th>Kod</th><th>Durum</th><th>Islem</th></tr></thead>
+            <tbody id="posBody"><tr><td colspan="5">Yukleniyor...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-structure.js" defer></script>
   <script>
     function startHrStructurePage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('structure');
+        await window.initHrStructurePage?.();
       })();
     }
     if (document.readyState === 'loading') {

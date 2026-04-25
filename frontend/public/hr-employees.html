@@ -21,18 +21,43 @@
     <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
     <div class="card">
-      <h2>Durum Filtreleri</h2>
-      <p>Aktif / Pasif / Isten ayrildi filtreleri sonraki fazda veri ile doldurulacaktir.</p>
+      <h2>Personel Listesi</h2>
+      <div class="inline-group">
+        <select id="statusFilter">
+          <option value="">Tum durumlar</option>
+          <option value="active">Aktif</option>
+          <option value="passive">Pasif</option>
+          <option value="terminated">Isten ayrildi</option>
+        </select>
+        <input id="searchInput" placeholder="Ad veya personel no ara" />
+      </div>
+      <div class="inline-group" style="margin-top:10px">
+        <button id="btnSearch" type="button">Filtrele</button>
+        <a href="/hr-employee-form.html" class="version-btn" style="text-align:center;line-height:20px;text-decoration:none">Yeni personel</a>
+      </div>
+      <div id="msg" class="muted" style="margin-top:10px"></div>
+      <div class="card" style="padding:12px;margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th><th>Ad soyad</th><th>Departman</th><th>Pozisyon</th><th>Kullanici</th><th>Durum</th><th>Islem</th>
+            </tr>
+          </thead>
+          <tbody id="empBody"><tr><td colspan="7">Yukleniyor...</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-employees.js" defer></script>
   <script>
     function startHrEmployeesPage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('employees');
+        await window.initHrEmployeesPage?.();
       })();
     }
     if (document.readyState === 'loading') {

@@ -22,17 +22,38 @@
     <div id="navSlot"></div>
     <div class="card">
       <h2>Personel Formu</h2>
-      <p>Yeni personel / duzenleme, users baglantisi ve pozisyon secimi sonraki fazda veri ile baglanacaktir.</p>
+      <form id="empForm">
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <input id="employeeNo" placeholder="Personel no (opsiyonel)" />
+          <input id="fullName" class="input-upper" placeholder="Ad soyad" required />
+          <input id="phone" placeholder="Telefon" />
+          <input id="email" placeholder="E-posta" />
+          <input id="hireDate" type="date" required />
+          <select id="employmentStatus" required>
+            <option value="active">Aktif</option>
+            <option value="passive">Pasif</option>
+            <option value="terminated">Isten ayrildi</option>
+          </select>
+          <select id="departmentId"><option value="">Departman secin</option></select>
+          <select id="positionId"><option value="">Pozisyon secin</option></select>
+          <select id="userId"><option value="">Kullanici baglama (opsiyonel)</option></select>
+        </div>
+        <textarea id="note" class="input-upper" placeholder="Not"></textarea>
+        <button type="submit" id="saveBtn">Kaydet</button>
+      </form>
+      <div id="msg" class="muted" style="margin-top:10px"></div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-employee-form.js" defer></script>
   <script>
     function startHrEmployeeFormPage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('employee-form');
+        await window.initHrEmployeeFormPage?.();
       })();
     }
     if (document.readyState === 'loading') {
