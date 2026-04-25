@@ -24,6 +24,7 @@
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
       </div>
     </div>
+    <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
@@ -54,6 +55,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
   <script src="/js/purchasing-common.js" defer></script>
   <script>
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
@@ -62,24 +64,32 @@
         window.location.href = '/login.html';
       });
     });
-    (async function page() {
-      if (window.initPurchasingPageNav) {
-        await window.initPurchasingPageNav('hub');
-      }
-      const s = window.getPurchasingScope && window.getPurchasingScope();
-      if (!s) {
-        return;
-      }
-      const a = (id, show) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.style.display = show ? '' : 'none';
+    function startPurchasingHubPage() {
+      (async function page() {
+        await window.initGlobalNavigation?.('purchasing');
+        if (window.initPurchasingPageNav) {
+          await window.initPurchasingPageNav('hub');
         }
-      };
-      a('linkOpenReq', s.canRequest || s.canPurchasing);
-      a('linkReq', s.canRequest || s.canApprove || s.canPurchasing);
-      a('linkProc', !!s.canPurchasing);
-    })();
+        const s = window.getPurchasingScope && window.getPurchasingScope();
+        if (!s) {
+          return;
+        }
+        const a = (id, show) => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.style.display = show ? '' : 'none';
+          }
+        };
+        a('linkOpenReq', s.canRequest || s.canPurchasing);
+        a('linkReq', s.canRequest || s.canApprove || s.canPurchasing);
+        a('linkProc', !!s.canPurchasing);
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startPurchasingHubPage);
+    } else {
+      startPurchasingHubPage();
+    }
   </script>
 </body>
 </html>

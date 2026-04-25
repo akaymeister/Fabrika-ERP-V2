@@ -24,6 +24,7 @@
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
       </div>
     </div>
+    <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
@@ -50,6 +51,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
   <script src="/js/project-common.js" defer></script>
   <script>
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
@@ -60,6 +62,7 @@
     });
     function startProjectHubPage() {
       (async function () {
+        await window.initGlobalNavigation?.('project');
         const lang = window.i18n && window.i18n.getLang ? window.i18n.getLang() : 'tr';
         if (window.i18n && window.i18n.loadDict) {
           await window.i18n.loadDict(lang);

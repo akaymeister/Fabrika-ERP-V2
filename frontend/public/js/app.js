@@ -160,6 +160,9 @@ async function boot() {
     await window.i18n.loadDict(window.i18n.getLang());
     window.i18n.apply(document);
   }
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('dashboard');
+  }
   try {
     const pr = await fetch('/api/public/config', { cache: 'no-store' });
     const pd = await pr.json();

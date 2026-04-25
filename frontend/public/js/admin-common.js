@@ -24,6 +24,9 @@ function adminModuleNavHTML(active) {
 }
 
 async function initAdminPageNav(active) {
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('admin');
+  }
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }

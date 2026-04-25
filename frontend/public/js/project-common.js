@@ -79,6 +79,9 @@ async function projectApi(path, options = {}) {
  * @param {string} active 'hub' | 'code' | 'cost' | 'quotes'
  */
 async function initProjectPageNav(active) {
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('project');
+  }
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }

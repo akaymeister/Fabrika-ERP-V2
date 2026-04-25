@@ -270,6 +270,9 @@ async function init() {
     await window.i18n.loadDict(window.i18n.getLang());
     window.i18n.apply(document);
   }
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('admin');
+  }
   if (typeof window.initAdminPageNav === 'function') {
     await window.initAdminPageNav('admin');
   }

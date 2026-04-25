@@ -145,6 +145,9 @@ async function loadPurchasingScope() {
 }
 
 async function initPurchasingPageNav(active) {
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('purchasing');
+  }
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }
@@ -177,6 +180,9 @@ async function initPurchasingPageNav(active) {
  * @param {string} purActive purchasing-common anahtarı (örn. 'receipt')
  */
 async function initStockAndPurchasingPageNav(stockActive, purActive) {
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('purchasing');
+  }
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }

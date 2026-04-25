@@ -148,6 +148,9 @@ function toUpperTrClient(s) {
  * Bosh stok sahifasida i18n yuklangach navigatsiyani chizish.
  */
 async function initStockPageNav(active) {
+  if (typeof window.initGlobalNavigation === 'function') {
+    await window.initGlobalNavigation('stock');
+  }
   if (window.i18n && window.i18n.loadDict) {
     await window.i18n.loadDict(window.i18n.getLang());
   }
