@@ -17,6 +17,13 @@ const {
   getAttendance,
   postAttendance,
   patchAttendance,
+  getDailyAttendance,
+  putDailyAttendanceBulk,
+  getMonthlyAttendance,
+  getAttendanceLocks,
+  getAttendanceProjects,
+  postAttendanceLock,
+  postAttendanceUnlock,
 } = require('../controllers/hrController');
 
 const router = express.Router();
@@ -39,5 +46,12 @@ router.get('/users', getAssignableUsers);
 router.get('/attendance', getAttendance);
 router.post('/attendance', postAttendance);
 router.patch('/attendance/:id', patchAttendance);
+router.get('/attendance/daily', getDailyAttendance);
+router.put('/attendance/daily-bulk', putDailyAttendanceBulk);
+router.get('/attendance/monthly', getMonthlyAttendance);
+router.get('/attendance-locks', getAttendanceLocks);
+router.get('/attendance-projects', getAttendanceProjects);
+router.post('/attendance-locks/lock', requirePermission('hr.attendance.unlock'), postAttendanceLock);
+router.post('/attendance-locks/unlock', requirePermission('hr.attendance.unlock'), postAttendanceUnlock);
 
 module.exports = router;

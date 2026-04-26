@@ -1,11 +1,29 @@
 /**
  * Faz 1 (stok ana birim modeli hazırlığı):
+ * - stock_movements.qty_pieces (geri uyumluluk/sıfırdan kurulum güvenliği)
  * - stock_movements.primary_qty
  * - stock_movements.primary_unit
  * - idx_sm_primary_unit
  *
  * Idempotent: tekrar çalıştırıldığında no-op.
  */
+
+SET @sql := (
+  SELECT IF(
+    (
+      SELECT COUNT(*)
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stock_movements'
+        AND COLUMN_NAME = 'qty_pieces'
+    ) > 0,
+    'SELECT 1',
+    'ALTER TABLE stock_movements ADD COLUMN qty_pieces DECIMAL(18,4) NULL AFTER qty'
+  )
+);
+PREPARE _sm_pf_0 FROM @sql;
+EXECUTE _sm_pf_0;
+DEALLOCATE PREPARE _sm_pf_0;
 
 SET @sql := (
   SELECT IF(

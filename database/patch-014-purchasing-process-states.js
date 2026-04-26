@@ -246,6 +246,13 @@ async function main() {
     await addCol(
       conn,
       'purchase_requests',
+      'pr_status',
+      "pr_status VARCHAR(32) NULL COMMENT 'legacy request status mirror' AFTER status",
+      added
+    );
+    await addCol(
+      conn,
+      'purchase_requests',
       'request_status',
       "request_status VARCHAR(32) NULL COMMENT 'draft|pending_approval|approved|revision_requested|rejected|cancelled' AFTER pr_status",
       added

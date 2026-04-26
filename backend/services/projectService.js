@@ -2,13 +2,11 @@ const { pool } = require('../config/database');
 const { err } = require('../utils/serviceError');
 const { toUpperTr } = require('../utils/textNormalize');
 const {
-  formatProjectCodeWithShort,
+  formatProjectCodeGlobalSeq,
+  normalizeProjectCodePrefix,
   normalizeProjectShort,
 } = require('../utils/projectCodeFormat');
-
-function defaultCompanyCode() {
-  return String(process.env.DEFAULT_PROJECT_COMPANY_CODE || 'AHKFC').trim().toUpperCase() || 'AHKFC';
-}
+const { getValue, KEYS } = require('./systemSettingsService');
 
 async function tableExists(name) {
   const [r] = await pool.query(
@@ -43,7 +41,7 @@ async function listActiveProjectsBrief() {
 }
 
 /**
- * Otomatik kod: {şirket_küçük}-{kısatanım}{YY}-NNN — ör. ahkfc-dnm26-001
+ * Otomatik kod: [Sistem ön eki]-[Kısa kod]-[YY][SSS] — ör. PRJ-MOB-26001 (yıl içi global sıra, tekil kod)
  * @param {{ name: string, shortName?: string }} param0
  */
 async function createProject({ name, shortName } = {}) {
@@ -63,16 +61,17 @@ async function createProject({ name, shortName } = {}) {
     return err('Bu isimde bir proje zaten var', 'api.project.name_exists');
   }
   const year = new Date().getFullYear();
-  const companyCode = defaultCompanyCode();
+  const rawPrefix = await getValue(KEYS.PROJECT_CODE_PREFIX);
+  const prefix = normalizeProjectCodePrefix(rawPrefix) || 'PRJ';
 
   const [[mx]] = await pool.query(
-    'SELECT COALESCE(MAX(sequence_no), 0) + 1 AS s FROM projects WHERE year = ? AND company_code = ? AND short_code = ?',
-    [year, companyCode, short]
+    'SELECT COALESCE(MAX(sequence_no), 0) + 1 AS s FROM projects WHERE year = ?',
+    [year]
   );
   let seq = mx && Number(mx.s) > 0 ? Number(mx.s) : 1;
 
   for (let i = 0; i < 30; i += 1) {
-    const code = formatProjectCodeWithShort(companyCode, short, year, seq);
+    const code = formatProjectCodeGlobalSeq(prefix, short, year, seq);
     if (!code) {
       return err('Proje kodu üretilemedi; kısa adı kontrol edin', 'api.project.code_failed');
     }
@@ -81,7 +80,7 @@ async function createProject({ name, shortName } = {}) {
       const [r] = await pool.query(
         `INSERT INTO projects (project_code, company_code, short_code, sequence_no, year, name, status)
          VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-        [code, companyCode, short, seq, year, n]
+        [code, prefix, short, seq, year, n]
       );
       return { id: r.insertId, projectCode: code, name: n, shortCode: short };
     } catch (e) {

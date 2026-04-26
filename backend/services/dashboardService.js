@@ -1,14 +1,28 @@
 const { pool } = require('../config/database');
 const { countPendingRequests } = require('./purchasingService');
 
+async function hasColumn(tableName, columnName) {
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS c
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?`,
+    [tableName, columnName]
+  );
+  return Number(rows[0] && rows[0].c) > 0;
+}
+
 /**
  * Modül 1 — Dashboard: özet KPI ve son hareketler.
  * Boş veritabanında güvenli (0 değerler / boş liste).
  */
 async function getKpis() {
+  const hasStockM2 = await hasColumn('products', 'stock_m2');
+  const stockQtyExpr = hasStockM2 ? 'COALESCE(p.stock_m2, p.stock_qty)' : 'p.stock_qty';
   const [[totals]] = await pool.query(
     `SELECT
-       COALESCE(SUM(COALESCE(p.stock_m2, p.stock_qty) * p.unit_price), 0) AS total_stock_value,
+       COALESCE(SUM((${stockQtyExpr}) * p.unit_price), 0) AS total_stock_value,
        COUNT(p.id) AS product_count
      FROM products p`
   );

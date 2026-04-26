@@ -59,6 +59,25 @@ function formatProjectCodeWithShort(companyCode, shortCode, year, sequence) {
 }
 
 /**
+ * Yeni kural: [Önek]-[KısaKod]-[YY][SSS] — ör. PRJ-MOB-26001 (yıl içi global sıra)
+ * @param {string} prefix normalizeProjectCodePrefix sonrası veya PRJ
+ * @param {string} shortCode normalizeProjectShort sonrası
+ * @param {number} year tam yıl
+ * @param {number} sequence 1..n global (yıl bazında)
+ */
+function formatProjectCodeGlobalSeq(prefix, shortCode, year, sequence) {
+  const p = normalizeProjectCodePrefix(prefix) || 'PRJ';
+  const short = normalizeProjectShort(shortCode);
+  const yy = String(Number(year) % 100).padStart(2, '0');
+  const seq = Math.max(1, Math.floor(Number(sequence)) || 1);
+  const tail = `${yy}${String(seq).padStart(3, '0')}`;
+  if (!short) {
+    return '';
+  }
+  return `${p}-${short}-${tail}`;
+}
+
+/**
  * 2–8 karakter, a–z, 0–9
  * @param {unknown} raw
  * @returns {string} geçersizse boş
@@ -81,5 +100,6 @@ module.exports = {
   normalizeProjectCodePrefix,
   formatAutoProjectCode,
   formatProjectCodeWithShort,
+  formatProjectCodeGlobalSeq,
   normalizeProjectShort,
 };

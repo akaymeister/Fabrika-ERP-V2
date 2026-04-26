@@ -75,19 +75,30 @@ function m3FromStockM2AndDepth(stockM2, depthMm) {
 async function listProducts({ brandId, q, warehouseId, warehouseSubcategoryId } = {}) {
   let where = '1=1';
   const p = [];
+  const hasMaterialLabel = await hasCol('products', 'material_label');
+  const hasWidth = await hasCol('products', 'width_mm');
+  const hasHeight = await hasCol('products', 'height_mm');
+  const hasM2PerPiece = await hasCol('products', 'm2_per_piece');
+  const hasStockPieces = await hasCol('products', 'stock_pieces');
+  const hasStockM2 = await hasCol('products', 'stock_m2');
+  const hasStockQty = await hasCol('products', 'stock_qty');
+  const hasW = await hasCol('products', 'warehouse_id');
+  const hasD = await hasCol('products', 'depth_mm');
+  const hasFx = await hasCol('products', 'list_fx_uzs_per_usd');
+  const hasM3 = await hasCol('products', 'stock_m3');
+
   if (brandId) {
     where += ' AND p.brand_id = ?';
     p.push(parseInt(String(brandId), 10));
   }
   if (warehouseId) {
-    const whCol = await hasCol('products', 'warehouse_id');
-    if (whCol) {
+    if (hasW) {
       where += ' AND p.warehouse_id = ?';
       p.push(parseInt(String(warehouseId), 10));
     }
   }
   if (warehouseSubcategoryId) {
-    const wscCol = await hasCol('products', 'warehouse_subcategory_id');
+    const wscCol = hasW && (await hasCol('products', 'warehouse_subcategory_id'));
     if (wscCol) {
       where += ' AND p.warehouse_subcategory_id = ?';
       p.push(parseInt(String(warehouseSubcategoryId), 10));
@@ -95,11 +106,14 @@ async function listProducts({ brandId, q, warehouseId, warehouseSubcategoryId } 
   }
   if (q) {
     const s = `%${q}%`;
-    where += ' AND (p.name LIKE ? OR p.product_code LIKE ? OR p.material_label LIKE ?)';
-    p.push(s, s, s);
+    if (hasMaterialLabel) {
+      where += ' AND (p.name LIKE ? OR p.product_code LIKE ? OR p.material_label LIKE ?)';
+      p.push(s, s, s);
+    } else {
+      where += ' AND (p.name LIKE ? OR p.product_code LIKE ?)';
+      p.push(s, s);
+    }
   }
-  const hasW = await hasCol('products', 'warehouse_id');
-  const hasD = await hasCol('products', 'depth_mm');
   const wJoin = hasW
     ? 'LEFT JOIN warehouses wh ON wh.id = p.warehouse_id LEFT JOIN warehouse_subcategories wsc ON wsc.id = p.warehouse_subcategory_id'
     : '';
@@ -107,16 +121,21 @@ async function listProducts({ brandId, q, warehouseId, warehouseSubcategoryId } 
     ? ', wh.name AS warehouse_name, wsc.name AS subcategory_name, p.warehouse_id, p.warehouse_subcategory_id'
     : ", '' AS warehouse_name, '' AS subcategory_name, NULL AS warehouse_id, NULL AS warehouse_subcategory_id";
   const dSel = hasD ? 'p.depth_mm' : 'NULL AS depth_mm';
-  const hasFx = await hasCol('products', 'list_fx_uzs_per_usd');
   const pFx = hasFx ? 'p.list_fx_uzs_per_usd' : 'NULL AS list_fx_uzs_per_usd';
   const pUsd = hasFx ? 'p.unit_price_usd' : 'NULL AS unit_price_usd';
-  const hasM3 = await hasCol('products', 'stock_m3');
   const pM3 = hasM3 ? 'p.stock_m3' : '0 AS stock_m3';
+  const materialSel = hasMaterialLabel ? 'p.material_label' : 'NULL AS material_label';
+  const widthSel = hasWidth ? 'p.width_mm' : 'NULL AS width_mm';
+  const heightSel = hasHeight ? 'p.height_mm' : 'NULL AS height_mm';
+  const m2PerPieceSel = hasM2PerPiece ? 'p.m2_per_piece' : '0 AS m2_per_piece';
+  const stockQtySel = hasStockQty ? 'p.stock_qty' : '0 AS stock_qty';
+  const stockM2Sel = hasStockM2 ? 'p.stock_m2' : stockQtySel;
+  const stockPiecesSel = hasStockPieces ? 'p.stock_pieces' : '0 AS stock_pieces';
 
   const [rows] = await pool.query(
-    `SELECT p.id, p.product_code, p.name, p.material_label, p.width_mm, p.height_mm, ${dSel}, p.m2_per_piece,
-            p.brand_id, p.unit_id, p.unit_price, ${pFx}, ${pUsd}, p.stock_qty,
-            COALESCE(p.stock_m2, p.stock_qty) AS stock_m2, p.stock_pieces, ${pM3},
+    `SELECT p.id, p.product_code, p.name, ${materialSel}, ${widthSel}, ${heightSel}, ${dSel}, ${m2PerPieceSel},
+            p.brand_id, p.unit_id, p.unit_price, ${pFx}, ${pUsd}, ${stockQtySel} AS stock_qty,
+            COALESCE(${stockM2Sel}, ${stockQtySel}) AS stock_m2, ${stockPiecesSel}, ${pM3},
             p.unit AS unit_legacy, u.code AS unit_code,
             b.name AS brand_name
             ${wSel}

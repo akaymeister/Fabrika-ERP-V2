@@ -138,8 +138,12 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
     ? `, sm.input_currency, sm.line_total_uzs, sm.line_total_usd, sm.fx_uzs_per_usd, sm.cogs_uzs_total, sm.qty_pieces`
     : '';
   const hasUnitId = await columnExists('products', 'unit_id');
+  const hasM2PerPiece = await columnExists('products', 'm2_per_piece');
+  const hasDepthMm = await columnExists('products', 'depth_mm');
   const unitCol = hasUnitId ? 'u2.code AS unit_code' : 'p.unit AS unit_code';
   const unitJoin = hasUnitId ? 'LEFT JOIN units u2 ON u2.id = p.unit_id' : '';
+  const m2PerPieceSel = hasM2PerPiece ? 'p.m2_per_piece' : '0 AS m2_per_piece';
+  const depthMmSel = hasDepthMm ? 'p.depth_mm' : 'NULL AS depth_mm';
   const hasDirectM2 = await columnExists('stock_movements', 'direct_m2_entry');
   const directM2Sel = hasDirectM2 ? 'sm.direct_m2_entry' : 'NULL AS direct_m2_entry';
   const hasMs = await columnExists('stock_movements', 'movement_source');
@@ -169,7 +173,7 @@ async function listMovements({ productId, movementType, projectId, limit = 100, 
     `SELECT sm.id, sm.product_id, sm.movement_type, sm.qty, sm.note, sm.ref_type, sm.ref_id, sm.created_at
             ${primarySel},
             ${msSel},
-            p.product_code, p.name AS product_name, p.m2_per_piece, p.depth_mm, p.unit AS p_unit, ${unitCol}${receiptUnitSel},
+            p.product_code, p.name AS product_name, ${m2PerPieceSel}, ${depthMmSel}, p.unit AS p_unit, ${unitCol}${receiptUnitSel},
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS user_username, ${directM2Sel}, ${whSel}, ${projSel}${extra}
      FROM stock_movements sm
      INNER JOIN products p ON p.id = sm.product_id

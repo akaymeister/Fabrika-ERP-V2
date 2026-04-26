@@ -59,9 +59,12 @@ CREATE TABLE IF NOT EXISTS employee_attendance (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   employee_id INT UNSIGNED NOT NULL,
   work_date DATE NOT NULL,
+  project_id INT UNSIGNED NULL,
+  work_type ENUM('normal', 'assembly', 'production', 'shipment', 'office', 'other') NOT NULL DEFAULT 'normal',
   check_in_time TIME NULL,
   check_out_time TIME NULL,
-  work_status ENUM('worked', 'absent', 'leave', 'sick_leave', 'half_day') NOT NULL DEFAULT 'worked',
+  work_status ENUM('worked', 'absent', 'leave', 'sick_leave', 'half_day', 'overtime') NOT NULL DEFAULT 'worked',
+  total_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00,
   overtime_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00,
   note VARCHAR(1000) NULL,
   created_by INT UNSIGNED NULL,
@@ -71,10 +74,30 @@ CREATE TABLE IF NOT EXISTS employee_attendance (
   PRIMARY KEY (id),
   UNIQUE KEY uq_employee_attendance_one_day (employee_id, work_date),
   KEY idx_employee_attendance_date (work_date),
+  KEY idx_employee_attendance_project (project_id),
+  KEY idx_employee_attendance_work_type (work_type),
   KEY idx_employee_attendance_status (work_status),
   CONSTRAINT fk_employee_attendance_employee FOREIGN KEY (employee_id) REFERENCES employees (id) ON DELETE CASCADE,
+  CONSTRAINT fk_employee_attendance_project FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE SET NULL,
   CONSTRAINT fk_employee_attendance_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL,
   CONSTRAINT fk_employee_attendance_updated_by FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS attendance_month_locks (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  month_key CHAR(7) NOT NULL COMMENT 'YYYY-MM',
+  is_locked TINYINT(1) NOT NULL DEFAULT 1,
+  locked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  locked_by INT UNSIGNED NULL,
+  unlocked_at DATETIME NULL,
+  unlocked_by INT UNSIGNED NULL,
+  note VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_attendance_month_lock (month_key),
+  CONSTRAINT fk_att_lock_locked_by FOREIGN KEY (locked_by) REFERENCES users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_att_lock_unlocked_by FOREIGN KEY (unlocked_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.att.locks.title">Puantaj kilitleri</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="hr.att.locks.title">Puantaj kilitleri</h1>
+        <p class="subtitle" data-i18n="hr.att.locks.sub">Ay kapatma ve kilit acma</p>
+      </div>
+      <div class="topbar-right">
+        <a href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <section class="card">
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div><label for="lockMonth" data-i18n="hr.att.monthly.month">Ay</label><input id="lockMonth" type="month" /></div>
+        <input id="lockNote" type="text" data-i18n-placeholder="common.note" placeholder="Not" style="min-width:260px" />
+        <button type="button" id="btnLockMonth" class="version-btn" data-i18n="hr.att.lock">Ay kilitle</button>
+        <button type="button" id="btnUnlockMonth" class="logout-btn" data-i18n="hr.att.unlock">Kilidi ac</button>
+      </div>
+      <p id="locksMsg" style="min-height:1.2em"></p>
+      <div style="overflow-x:auto">
+        <table><thead><tr>
+          <th data-i18n="hr.att.monthly.month">Ay</th><th data-i18n="hr.att.lockState">Durum</th><th data-i18n="common.note">Not</th>
+        </tr></thead><tbody id="locksBody"></tbody></table>
+      </div>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-attendance-locks.js" defer></script>
+  <script>
+    function start() {
+      (async function () {
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('attendance-locks');
+        await window.initHrAttendanceLocksPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  </script>
+</body>
+</html>
+

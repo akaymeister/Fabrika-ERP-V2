@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.att.monthly.title">Aylik puantaj</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="topbar-left">
+        <h1 data-i18n="hr.att.monthly.title">Aylik puantaj</h1>
+        <p class="subtitle" data-i18n="hr.att.monthly.sub">Ay bazinda satir ve ozet</p>
+      </div>
+      <div class="topbar-right">
+        <a href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div id="navSlot"></div>
+    <section class="card">
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div>
+          <label for="monthKey" data-i18n="hr.att.monthly.month">Ay</label>
+          <input id="monthKey" type="month" />
+        </div>
+        <button type="button" id="btnLoadMonthly" class="version-btn" data-i18n="hr.att.monthly.load">Listele</button>
+      </div>
+      <p id="monthlyMsg" style="min-height:1.2em"></p>
+      <h3 data-i18n="hr.att.monthly.summary">Personel ozeti</h3>
+      <div style="overflow-x:auto"><table><thead><tr>
+        <th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colTotalHours">Toplam saat</th><th data-i18n="hr.att.colOvertimeHours">Fazla mesai</th>
+      </tr></thead><tbody id="summaryBody"></tbody></table></div>
+      <h3 data-i18n="hr.att.monthly.rows">Gunluk satirlar</h3>
+      <div style="overflow-x:auto"><table><thead><tr>
+        <th data-i18n="hr.att.colDate">Tarih</th><th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colProject">Proje</th>
+        <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th>
+      </tr></thead><tbody id="monthlyBody"></tbody></table></div>
+    </section>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-attendance-monthly.js" defer></script>
+  <script>
+    function start() {
+      (async function () {
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('attendance-monthly');
+        await window.initHrAttendanceMonthlyPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  </script>
+</body>
+</html>
+

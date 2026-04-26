@@ -5,16 +5,10 @@ const { recordMovementIn } = require('./stockMovementService');
 const { usdToSystemAmount } = require('./systemSettingsService');
 const { listProducts, m3FromStockM2AndDepth } = require('./stockProductService');
 const { logActivity } = require('./activityLogService');
+const { legacyPurchaseRequestStatusFromPrStatus, PR_STATUS_AFTER_PO } = require('../constants/purchaseWorkflow');
 
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function legacyStatusFromPrStatus(pr) {
-  const s = String(pr);
-  if (s === 'pending') return 'submitted';
-  if (s === 'revision_requested') return 'submitted';
-  return s;
 }
 
 function isM2Unit(code) {
@@ -345,9 +339,9 @@ async function recomputeRequestStatusAfterPoLines(conn, requestIds) {
       // eslint-disable-next-line no-continue
       continue;
     }
-    let nst = 'partial';
-    if (t > 0 && p >= t) nst = 'ordered';
-    const leg = legacyStatusFromPrStatus(nst);
+    let nst = PR_STATUS_AFTER_PO.PARTIAL;
+    if (t > 0 && p >= t) nst = PR_STATUS_AFTER_PO.ORDERED;
+    const leg = legacyPurchaseRequestStatusFromPrStatus(nst);
     await conn.query('UPDATE purchase_requests SET pr_status = ?, `status` = ? WHERE id = ?', [nst, leg, rid]);
   }
 }
@@ -406,13 +400,20 @@ async function listPurchaseRequests({ status, statuses, projectId, requestId, re
   }
   const exSm = await hasCol('purchase_requests', 'status_message');
   const exProc = await hasCol('purchase_requests', 'procurement_state');
+  const exReqCode = await hasCol('purchase_requests', 'request_code');
+  const exReqNo = await hasCol('purchase_requests', 'request_no');
   const extraSel = exSm
     ? ', pr.status_message, pr.decided_by, pr.decided_at, COALESCE(NULLIF(TRIM(ua.full_name), \'\'), ua.username) AS approver_name'
     : '';
   const procSel = exProc ? ', pr.procurement_state' : '';
+  const requestCodeSel = exReqCode
+    ? 'pr.request_code'
+    : exReqNo
+      ? 'pr.request_no'
+      : "CONCAT('TAL-', LPAD(pr.id, 5, '0'))";
   const extraJoin = exSm ? 'LEFT JOIN users ua ON ua.id = pr.decided_by' : '';
   const [list] = await pool.query(
-    `SELECT pr.id, pr.request_code, pr.title, pr.pr_status, pr.project_id, pr.requester_id, pr.created_at, pr.note,
+    `SELECT pr.id, ${requestCodeSel} AS request_code, pr.title, pr.pr_status, pr.project_id, pr.requester_id, pr.created_at, pr.note,
             prj.project_code, prj.name AS project_name,
             COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS requester_name
             ${procSel}
@@ -2158,6 +2159,13 @@ async function runOrderBuyerAction({ id, action }) {
     return { ok: true };
   }
   if (a === 'complete') {
+    const pendingSupName = toUpperTr('Tedarikçi bekleniyor');
+    const [[pendingSupRow]] = await pool.query(
+      'SELECT id FROM suppliers WHERE name = ? ORDER BY id ASC LIMIT 1',
+      [pendingSupName]
+    );
+    const pendingSupplierId =
+      pendingSupRow && pendingSupRow.id != null ? parseInt(String(pendingSupRow.id), 10) : null;
     const hasLineStatus = await hasCol('purchase_order_items', 'line_status');
     const hasSupplierCol = await hasCol('purchase_order_items', 'supplier_id');
     const lineSql = hasLineStatus
@@ -2182,6 +2190,17 @@ async function runOrderBuyerAction({ id, action }) {
       const unitPrice = Number(row.unit_price);
       const lineCur = normalizePricingCurrency(row.currency || '');
       const fxRate = Number(row.fx_rate);
+      if (
+        Number.isFinite(pendingSupplierId) &&
+        pendingSupplierId > 0 &&
+        Number.isFinite(supplierId) &&
+        supplierId === pendingSupplierId
+      ) {
+        return err(
+          'Gerçek bir tedarikçi seçilmeden sipariş tamamlanamaz.',
+          'api.pur.supplier_pending_forbidden'
+        );
+      }
       if (
         !Number.isFinite(supplierId) ||
         supplierId <= 0 ||

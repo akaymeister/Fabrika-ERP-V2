@@ -1,192 +1,159 @@
 (function () {
-  const form = document.getElementById('attendanceForm');
-  const saveBtn = document.getElementById('attendanceSaveBtn');
-  const resetBtn = document.getElementById('attendanceResetBtn');
-  const msgEl = document.getElementById('msg');
-  const employeeIdEl = document.getElementById('employeeId');
   const workDateEl = document.getElementById('workDate');
-  const checkInTimeEl = document.getElementById('checkInTime');
-  const checkOutTimeEl = document.getElementById('checkOutTime');
-  const workStatusEl = document.getElementById('workStatus');
-  const overtimeEl = document.getElementById('overtimeHours');
-  const noteEl = document.getElementById('attendanceNote');
+  const btnLoadDaily = document.getElementById('btnLoadDaily');
+  const btnSaveDaily = document.getElementById('btnSaveDaily');
+  const dailyBody = document.getElementById('dailyBody');
+  const msgEl = document.getElementById('msg');
+  const lockHint = document.getElementById('lockHint');
 
-  const filterEmployeeEl = document.getElementById('filterEmployeeId');
-  const filterStatusEl = document.getElementById('filterStatus');
-  const filterFromDateEl = document.getElementById('filterFromDate');
-  const filterToDateEl = document.getElementById('filterToDate');
-  const btnApplyFilters = document.getElementById('btnApplyFilters');
-  const btnClearFilters = document.getElementById('btnClearFilters');
-  const attendanceBody = document.getElementById('attendanceBody');
+  let dailyRows = [];
+  let projects = [];
+  let isLocked = false;
 
-  let employees = [];
-  let attendanceRows = [];
-  let editingId = null;
+  function t(k) {
+    return window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t(k) : k;
+  }
 
-  function showMsg(text, ok = true) {
+  function showMsg(text, isErr) {
     if (!msgEl) return;
     msgEl.textContent = text || '';
-    msgEl.style.color = ok ? '#065f46' : '#b91c1c';
+    msgEl.style.color = isErr ? '#b91c1c' : '#166534';
   }
 
-  function statusLabel(s) {
-    if (s === 'worked') return 'Calisti';
-    if (s === 'absent') return 'Gelmedi';
-    if (s === 'leave') return 'Izinli';
-    if (s === 'sick_leave') return 'Raporlu';
-    if (s === 'half_day') return 'Yarim gun';
-    return s || '-';
-  }
-
-  function normalizeTime(v) {
-    if (v == null) return null;
-    const s = String(v).trim();
-    if (!s) return null;
-    const m = s.match(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/);
-    if (!m) return null;
-    return `${m[1]}:${m[2]}`;
-  }
-
-  function validateClient() {
-    const status = String(workStatusEl.value || '');
-    const inTime = normalizeTime(checkInTimeEl.value);
-    const outTime = normalizeTime(checkOutTimeEl.value);
-    if ((status === 'worked' || status === 'half_day') && (!inTime || !outTime)) {
-      return 'Calisti/Yarim gun icin giris-cikis saati zorunlu.';
-    }
-    if (inTime && outTime && outTime <= inTime) {
-      return 'Cikis saati giris saatinden sonra olmali.';
-    }
-    return null;
-  }
-
-  async function loadEmployees() {
-    const { ok, data } = await window.hrApi('/api/hr/employees');
-    if (!ok || !data?.ok) {
-      showMsg(data?.message || 'Personeller yuklenemedi', false);
-      return false;
-    }
-    employees = data.data?.employees || data.employees || [];
-    const opts =
-      '<option value="">Personel secin</option>' +
-      employees
-        .map((e) => `<option value="${e.id}">${e.full_name}${e.employee_no ? ` (${e.employee_no})` : ''}</option>`)
-        .join('');
-    employeeIdEl.innerHTML = opts;
-    filterEmployeeEl.innerHTML = '<option value="">Tum personeller</option>' + opts.replace('<option value="">Personel secin</option>', '');
-    return true;
-  }
-
-  function rowTime(v) {
+  function fmtTime(v) {
     const s = String(v || '');
-    if (!s) return '-';
-    return s.slice(0, 5);
+    return s ? s.slice(0, 5) : '';
   }
 
-  function renderAttendance() {
-    if (!attendanceRows.length) {
-      attendanceBody.innerHTML = '<tr><td colspan="8">Kayit bulunamadi</td></tr>';
+  function statusOptionsHtml(selected) {
+    const v = String(selected || 'worked');
+    const opts = [
+      ['worked', 'hr.att.status.worked'],
+      ['absent', 'hr.att.status.absent'],
+      ['leave', 'hr.att.status.leave'],
+      ['sick_leave', 'hr.att.status.sick_leave'],
+      ['half_day', 'hr.att.status.half_day'],
+      ['overtime', 'hr.att.status.overtime'],
+    ];
+    return opts.map(([key, tk]) => `<option value="${key}"${key === v ? ' selected' : ''}>${t(tk)}</option>`).join('');
+  }
+
+  function workTypeOptionsHtml(selected) {
+    const v = String(selected || 'normal');
+    const opts = [
+      ['normal', 'hr.att.workType.normal'],
+      ['assembly', 'hr.att.workType.assembly'],
+      ['production', 'hr.att.workType.production'],
+      ['shipment', 'hr.att.workType.shipment'],
+      ['office', 'hr.att.workType.office'],
+      ['other', 'hr.att.workType.other'],
+    ];
+    return opts.map(([key, tk]) => `<option value="${key}"${key === v ? ' selected' : ''}>${t(tk)}</option>`).join('');
+  }
+
+  function projectOptionsHtml(selected) {
+    const cur = String(selected || '');
+    let html = `<option value="">${t('hr.att.noProject')}</option>`;
+    projects.forEach((p) => {
+      const sel = String(p.id) === cur ? ' selected' : '';
+      html += `<option value="${p.id}"${sel}>${p.project_code || p.name || p.id}</option>`;
+    });
+    return html;
+  }
+
+  function renderDailyRows() {
+    if (!dailyRows.length) {
+      dailyBody.innerHTML = `<tr><td colspan="9">${t('hr.att.empty')}</td></tr>`;
       return;
     }
-    attendanceBody.innerHTML = attendanceRows
+    dailyBody.innerHTML = dailyRows
       .map(
-        (r) => `<tr>
-          <td>${r.employee_name || '-'}</td>
-          <td>${String(r.work_date || '').slice(0, 10)}</td>
-          <td>${statusLabel(r.work_status)}</td>
-          <td>${rowTime(r.check_in_time)}</td>
-          <td>${rowTime(r.check_out_time)}</td>
-          <td>${Number(r.overtime_hours || 0)}</td>
-          <td>${r.note || '-'}</td>
-          <td class="table-actions"><button type="button" class="secondary-btn btn-edit" data-act="edit" data-id="${r.id}">Duzenle</button></td>
-        </tr>`
+        (r, idx) => `<tr class="${isLocked ? 'att-row-locked' : ''}" data-i="${idx}">
+        <td>${r.full_name || '-'}${r.employee_no ? ` <span style="color:#64748b">(${r.employee_no})</span>` : ''}</td>
+        <td><select class="pur-inp x-project" ${isLocked ? 'disabled' : ''}>${projectOptionsHtml(r.project_id)}</select></td>
+        <td><select class="pur-inp x-status" ${isLocked ? 'disabled' : ''}>${statusOptionsHtml(r.work_status)}</select></td>
+        <td><select class="pur-inp x-worktype" ${isLocked ? 'disabled' : ''}>${workTypeOptionsHtml(r.work_type)}</select></td>
+        <td><input class="pur-inp x-in" type="time" value="${fmtTime(r.check_in_time)}" ${isLocked ? 'disabled' : ''}/></td>
+        <td><input class="pur-inp x-out" type="time" value="${fmtTime(r.check_out_time)}" ${isLocked ? 'disabled' : ''}/></td>
+        <td><input class="pur-inp x-total" type="number" min="0" step="0.25" value="${Number(r.total_hours || 0)}" ${isLocked ? 'disabled' : ''}/></td>
+        <td><input class="pur-inp x-ot" type="number" min="0" step="0.25" value="${Number(r.overtime_hours || 0)}" ${isLocked ? 'disabled' : ''}/></td>
+        <td><input class="pur-inp x-note" type="text" value="${String(r.note || '').replace(/"/g, '&quot;')}" ${isLocked ? 'disabled' : ''}/></td>
+      </tr>`
       )
       .join('');
   }
 
-  async function loadAttendance() {
-    const qs = new URLSearchParams();
-    if (filterEmployeeEl.value) qs.set('employeeId', filterEmployeeEl.value);
-    if (filterStatusEl.value) qs.set('status', filterStatusEl.value);
-    if (filterFromDateEl.value) qs.set('from', filterFromDateEl.value);
-    if (filterToDateEl.value) qs.set('to', filterToDateEl.value);
-    const { ok, data } = await window.hrApi(`/api/hr/attendance?${qs.toString()}`);
+  async function loadProjects() {
+    const { ok, data } = await window.hrApi('/api/hr/attendance-projects');
+    if (!ok || !data || !data.ok) return;
+    projects = data.data?.projects || data.projects || [];
+  }
+
+  async function loadDaily() {
+    const date = workDateEl && workDateEl.value ? workDateEl.value : '';
+    if (!date) return showMsg(t('hr.att.dateRequired'), true);
+    const { ok, data } = await window.hrApi(`/api/hr/attendance/daily?date=${encodeURIComponent(date)}`);
     if (!ok || !data?.ok) {
-      attendanceBody.innerHTML = '<tr><td colspan="8">Kayitlar yuklenemedi</td></tr>';
-      showMsg(data?.message || 'Kayitlar yuklenemedi', false);
-      return false;
+      showMsg((window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || t('api.error.unknown'), true);
+      return;
     }
-    attendanceRows = data.data?.attendance || data.attendance || [];
-    renderAttendance();
-    return true;
+    const payload = data.data || data;
+    dailyRows = payload.rows || [];
+    isLocked = !!payload.isLocked;
+    if (lockHint) lockHint.style.display = isLocked ? 'block' : 'none';
+    if (btnSaveDaily) btnSaveDaily.disabled = isLocked;
+    renderDailyRows();
   }
 
-  function resetForm() {
-    editingId = null;
-    form.reset();
-    overtimeEl.value = '0';
-    saveBtn.textContent = 'Kaydet';
+  function collectRows() {
+    const rows = [];
+    dailyBody.querySelectorAll('tr[data-i]').forEach((tr, idx) => {
+      const src = dailyRows[idx];
+      if (!src || !src.employee_id) return;
+      rows.push({
+        employee_id: src.employee_id,
+        project_id: tr.querySelector('.x-project')?.value || null,
+        work_status: tr.querySelector('.x-status')?.value || 'worked',
+        work_type: tr.querySelector('.x-worktype')?.value || 'normal',
+        check_in_time: tr.querySelector('.x-in')?.value || null,
+        check_out_time: tr.querySelector('.x-out')?.value || null,
+        total_hours: tr.querySelector('.x-total')?.value || 0,
+        overtime_hours: tr.querySelector('.x-ot')?.value || 0,
+        note: tr.querySelector('.x-note')?.value || null,
+      });
+    });
+    return rows;
   }
 
-  function setFormFromRow(row) {
-    editingId = row.id;
-    employeeIdEl.value = row.employee_id ? String(row.employee_id) : '';
-    workDateEl.value = String(row.work_date || '').slice(0, 10);
-    checkInTimeEl.value = normalizeTime(row.check_in_time) || '';
-    checkOutTimeEl.value = normalizeTime(row.check_out_time) || '';
-    workStatusEl.value = row.work_status || 'worked';
-    overtimeEl.value = String(Number(row.overtime_hours || 0));
-    noteEl.value = row.note || '';
-    saveBtn.textContent = 'Guncelle';
-  }
-
-  async function submitForm(e) {
-    e.preventDefault();
-    const v = validateClient();
-    if (v) return showMsg(v, false);
-    const payload = {
-      employee_id: employeeIdEl.value || null,
-      work_date: workDateEl.value || null,
-      check_in_time: checkInTimeEl.value || null,
-      check_out_time: checkOutTimeEl.value || null,
-      work_status: workStatusEl.value || null,
-      overtime_hours: overtimeEl.value || 0,
-      note: noteEl.value || null,
-    };
-    const url = editingId ? `/api/hr/attendance/${editingId}` : '/api/hr/attendance';
-    const method = editingId ? 'PATCH' : 'POST';
-    const { ok, data } = await window.hrApi(url, { method, body: JSON.stringify(payload) });
+  async function saveDaily() {
+    if (isLocked) {
+      showMsg(t('hr.att.locked.hint'), true);
+      return;
+    }
+    const date = workDateEl && workDateEl.value ? workDateEl.value : '';
+    if (!date) return showMsg(t('hr.att.dateRequired'), true);
+    const payload = { workDate: date, entries: collectRows() };
+    const { ok, data } = await window.hrApi('/api/hr/attendance/daily-bulk', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
     if (!ok || !data?.ok) {
-      return showMsg(data?.message || 'Kayit basarisiz', false);
+      showMsg((window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || t('api.error.unknown'), true);
+      return;
     }
-    showMsg(editingId ? 'Kayit guncellendi' : 'Kayit eklendi');
-    resetForm();
-    await loadAttendance();
-  }
-
-  function onTableClick(e) {
-    const btn = e.target.closest('button[data-act="edit"]');
-    if (!btn) return;
-    const id = String(btn.getAttribute('data-id') || '');
-    const row = attendanceRows.find((x) => String(x.id) === id);
-    if (!row) return;
-    setFormFromRow(row);
+    showMsg(t('hr.att.daily.saved'), false);
+    if (window.appNotify?.success) window.appNotify.success(t('hr.att.daily.saved'));
+    await loadDaily();
   }
 
   async function initHrAttendancePage() {
-    form?.addEventListener('submit', submitForm);
-    resetBtn?.addEventListener('click', resetForm);
-    btnApplyFilters?.addEventListener('click', loadAttendance);
-    btnClearFilters?.addEventListener('click', async () => {
-      filterEmployeeEl.value = '';
-      filterStatusEl.value = '';
-      filterFromDateEl.value = '';
-      filterToDateEl.value = '';
-      await loadAttendance();
-    });
-    attendanceBody?.addEventListener('click', onTableClick);
-    await loadEmployees();
-    await loadAttendance();
+    if (workDateEl && !workDateEl.value) {
+      workDateEl.value = new Date().toISOString().slice(0, 10);
+    }
+    btnLoadDaily?.addEventListener('click', loadDaily);
+    btnSaveDaily?.addEventListener('click', saveDaily);
+    await loadProjects();
+    await loadDaily();
   }
 
   window.initHrAttendancePage = initHrAttendancePage;

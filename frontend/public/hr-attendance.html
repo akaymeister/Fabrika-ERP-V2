@@ -3,88 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Puantaj / Devam Takip — Fabrika ERP V2</title>
+  <title data-i18n="hr.att.daily.title">Gunluk puantaj</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    .att-scroll { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .att-table { min-width: 1520px; width: 100%; }
+    .att-table th, .att-table td { font-size: 12px; padding: 6px 8px; vertical-align: middle; }
+    .att-table select, .att-table input { min-height: 36px; font-size: 12px; }
+    .att-row-locked { opacity: 0.7; background: #f8fafc; }
+  </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar dashboard-topbar">
       <div class="topbar-left">
-        <h1>Puantaj / Devam Takip</h1>
-        <p class="subtitle">Faz 1A iskelet ekran</p>
+        <h1 data-i18n="hr.att.daily.title">Gunluk puantaj</h1>
+        <p class="subtitle" data-i18n="hr.att.daily.sub">Aktif personeller icin toplu gunluk giris</p>
       </div>
       <div class="topbar-right">
-        <a href="/hr.html" class="version-btn">IK</a>
-        <a href="/" class="version-btn">Ana sayfa</a>
+        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
       </div>
     </div>
     <div id="globalNavSlot"></div>
     <div id="navSlot"></div>
-    <div class="card">
-      <h2>Puantaj Kaydi</h2>
-      <form id="attendanceForm">
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
-          <select id="employeeId" required><option value="">Personel secin</option></select>
-          <input id="workDate" type="date" required />
-          <input id="checkInTime" type="time" />
-          <input id="checkOutTime" type="time" />
-          <select id="workStatus" required>
-            <option value="worked">Calisti</option>
-            <option value="absent">Gelmedi</option>
-            <option value="leave">Izinli</option>
-            <option value="sick_leave">Raporlu</option>
-            <option value="half_day">Yarim gun</option>
-          </select>
-          <input id="overtimeHours" type="number" min="0" step="0.25" value="0" placeholder="Fazla mesai saati" />
-        </div>
-        <textarea id="attendanceNote" class="input-upper" placeholder="Not"></textarea>
-        <div class="inline-group">
-          <button type="submit" id="attendanceSaveBtn">Kaydet</button>
-          <button type="button" class="secondary-btn" id="attendanceResetBtn">Temizle</button>
-        </div>
-      </form>
-      <div id="msg" class="muted" style="margin-top:10px"></div>
-    </div>
 
-    <div class="card">
-      <h2>Kayit Listesi</h2>
-      <div class="grid" style="grid-template-columns: 1fr 1fr;">
-        <select id="filterEmployeeId"><option value="">Tum personeller</option></select>
-        <select id="filterStatus">
-          <option value="">Tum durumlar</option>
-          <option value="worked">Calisti</option>
-          <option value="absent">Gelmedi</option>
-          <option value="leave">Izinli</option>
-          <option value="sick_leave">Raporlu</option>
-          <option value="half_day">Yarim gun</option>
-        </select>
-        <input id="filterFromDate" type="date" />
-        <input id="filterToDate" type="date" />
+    <section class="card">
+      <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div>
+          <label for="workDate" data-i18n="hr.att.daily.date">Tarih</label>
+          <input id="workDate" type="date" />
+        </div>
+        <button type="button" id="btnLoadDaily" class="version-btn" data-i18n="hr.att.daily.load">Listele</button>
+        <button type="button" id="btnSaveDaily" class="logout-btn" style="background:#1d4ed8;border:none" data-i18n="hr.att.daily.save">Toplu kaydet</button>
       </div>
-      <div class="inline-group" style="margin-top:10px">
-        <button type="button" id="btnApplyFilters">Filtrele</button>
-        <button type="button" class="secondary-btn" id="btnClearFilters">Filtreleri temizle</button>
-      </div>
-      <div class="card" style="padding:12px;margin-top:12px">
-        <table>
+      <p id="lockHint" style="margin-top:8px;font-size:13px;color:#b91c1c;display:none" data-i18n="hr.att.locked.hint">Bu ay kilitli</p>
+      <p id="msg" class="api-msg" style="min-height:1.2em;margin-top:8px"></p>
+      <div class="att-scroll" style="margin-top:12px">
+        <table class="att-table">
           <thead>
             <tr>
-              <th>Personel</th>
-              <th>Tarih</th>
-              <th>Durum</th>
-              <th>Giris</th>
-              <th>Cikis</th>
-              <th>Mesai</th>
-              <th>Not</th>
-              <th>Islem</th>
+              <th data-i18n="hr.att.colEmployee">Personel</th>
+              <th data-i18n="hr.att.colProject">Proje</th>
+              <th data-i18n="hr.att.colStatus">Durum</th>
+              <th data-i18n="hr.att.colWorkType">Is tipi</th>
+              <th data-i18n="hr.att.colCheckIn">Giris</th>
+              <th data-i18n="hr.att.colCheckOut">Cikis</th>
+              <th data-i18n="hr.att.colTotalHours">Toplam saat</th>
+              <th data-i18n="hr.att.colOvertimeHours">Fazla mesai</th>
+              <th data-i18n="hr.att.colNote">Not</th>
             </tr>
           </thead>
-          <tbody id="attendanceBody"><tr><td colspan="8">Yukleniyor...</td></tr></tbody>
+          <tbody id="dailyBody"><tr><td colspan="9" data-i18n="purch.req.loading">Yukleniyor…</td></tr></tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
+
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-notify.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-attendance.js" defer></script>
@@ -92,7 +75,7 @@
     function startHrAttendancePage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
-        await window.initHrPageNav?.('attendance');
+        await window.initHrPageNav?.('attendance-daily');
         await window.initHrAttendancePage?.();
       })();
     }

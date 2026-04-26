@@ -1,13 +1,15 @@
 /**
  * IK modulu hizli menu standardi: <div id="navSlot"></div> + initHrPageNav(activeKey)
- * Anahtarlar: hub | employees | employee-form | structure | attendance
+ * Anahtarlar: hub | employees | employee-form | structure | attendance-daily | attendance-monthly | attendance-locks
  */
 const HR_NAV_FALLBACK_TR = {
   'nav.hr.hub': 'IK PANELI',
   'nav.hr.employees': 'PERSONELLER',
   'nav.hr.employeeForm': 'PERSONEL KARTI',
   'nav.hr.structure': 'DEPARTMAN / POZISYON',
-  'nav.hr.attendance': 'PUANTAJ',
+  'nav.hr.attendanceDaily': 'GUNLUK PUANTAJ',
+  'nav.hr.attendanceMonthly': 'AYLIK PUANTAJ',
+  'nav.hr.attendanceLocks': 'PUANTAJ KILITLERI',
 };
 
 function tHrNav(k) {
@@ -24,7 +26,9 @@ function hrNavHTML(active) {
     { href: '/hr-employees.html', key: 'employees', k: 'nav.hr.employees' },
     { href: '/hr-employee-form.html', key: 'employee-form', k: 'nav.hr.employeeForm' },
     { href: '/hr-structure.html', key: 'structure', k: 'nav.hr.structure' },
-    { href: '/hr-attendance.html', key: 'attendance', k: 'nav.hr.attendance' },
+    { href: '/hr-attendance.html', key: 'attendance-daily', k: 'nav.hr.attendanceDaily' },
+    { href: '/hr-attendance-monthly.html', key: 'attendance-monthly', k: 'nav.hr.attendanceMonthly' },
+    { href: '/hr-attendance-locks.html', key: 'attendance-locks', k: 'nav.hr.attendanceLocks' },
   ];
   return `<nav class="stock-nav" aria-label="HR">
     ${items

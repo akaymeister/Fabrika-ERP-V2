@@ -144,6 +144,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-notify.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
@@ -491,7 +492,9 @@
       }
       if (data.warn) {
         const w = data.warnKey && window.i18n ? window.i18n.t(data.warnKey) : data.warn;
-        alert(w);
+        if (window.appNotify && typeof window.appNotify.toast === 'function') {
+          window.appNotify.toast(w, { type: 'warning', durationMs: 6000 });
+        }
       }
       document.getElementById('fProd').reset();
       setFormNewMode();

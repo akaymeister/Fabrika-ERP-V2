@@ -17,6 +17,8 @@
     .pur-req-btns { width: 100%; box-sizing: border-box; margin-top: 16px; text-align: right; }
     .pur-req-btns-row { display: inline-flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
     .pur-req-btns .version-btn, .pur-req-btns .logout-btn, .pur-req-btns a.version-btn { width: auto; min-width: 0; flex: 0 0 auto; }
+    .proc-top-print-wrap { display: inline-flex; align-items: center; gap: 8px; }
+    .proc-lock-hint { margin: 8px 0 0; font-size: 12px; color: #64748b; }
     .proc-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
     .proc-badge { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: #f1f5f9; color: #0f172a; font-size: 12px; font-weight: 600; }
     .po-line-cancelled { background: #fef2f2 !important; opacity: 0.92; }
@@ -44,6 +46,9 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
+        <div class="proc-top-print-wrap">
+          <button type="button" class="version-btn" id="btnPrint" disabled data-i18n="purch.proc.btnPrint" style="background:#475569;border:none;color:#fff">Yazdır</button>
+        </div>
         <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
         <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
         <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
@@ -73,8 +78,66 @@
     </section>
 
     <section class="card" style="margin-top:16px">
+      <h3 data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
+      <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
+      <div id="orderFormBlock" hidden>
+        <p id="orderMeta" style="font-weight:600;margin-bottom:12px"></p>
+        <div id="orderBadges" class="proc-meta"></div>
+        <div class="pur-line-scroll">
+          <table class="pur-line-table">
+            <thead>
+              <tr>
+                <th data-i18n="purch.proc.colProductName">Ürün adı</th>
+                <th data-i18n="purch.gr.colOrderQty">Sipariş miktarı</th>
+                <th data-i18n="purch.proc.colReceivedQty">Gelen miktar</th>
+                <th data-i18n="purch.proc.colRemainingQty">Kalan miktar</th>
+                <th data-i18n="purch.col.supplier">Tedarikçi</th>
+                <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
+                <th data-i18n="purch.proc.colLineTotal">Toplam</th>
+                <th data-i18n="purch.cur">Para birimi</th>
+                <th data-i18n="purch.proc.colFxRate">Kur</th>
+                <th data-i18n="purch.proc.colActions">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="linesDetailBody"></tbody>
+          </table>
+        </div>
+        <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
+          <div class="pur-req-btns-row">
+            <button type="button" class="version-btn" id="btnStart" style="background:#0d9488;border:none;color:#fff" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
+            <button type="button" class="version-btn" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing" style="background:#16a34a;border:none;color:#fff">Fiyatları kaydet</button>
+            <button type="button" class="version-btn" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder" style="background:#2563eb;border:none;color:#fff">Siparişi tamamla</button>
+            <button type="button" class="version-btn" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder" style="background:#b45309;border:none;color:#fff">Siparişi revizeye gönder</button>
+          </div>
+        </div>
+        <p id="procLockHint" class="proc-lock-hint" data-i18n="purch.proc.lockedHint">Fiyat, tedarikçi, para birimi ve kur alanları sipariş işleme alınmadan düzenlenemez.</p>
+        <p class="muted" style="font-size:12px;margin-top:10px" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+      <h3 data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>
+      <p class="muted" style="font-size:13px" data-i18n="purch.proc.activeSub">İşleme alınmış fakat tamamlanmamış siparişler. Satıra tıklayarak yukarıda düzenleyin.</p>
+      <div class="pur-line-scroll">
+        <table class="pur-line-table">
+          <thead>
+            <tr>
+              <th data-i18n="purch.proc.colOrderCode">Sipariş</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.proc.colReceiptStatus">Mal kabul</th>
+              <th data-i18n="purch.proc.colPricingStatus">Fiyatlama</th>
+              <th data-i18n="purch.proc.colBuyerStatus">Satınalmacı durumu</th>
+              <th data-i18n="purch.wf.colDate">Tarih</th>
+            </tr>
+          </thead>
+          <tbody id="activeOrdBody"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px">
       <h3 data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
-      <p class="muted" style="font-size:13px" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak aşağıda inceleyebilirsiniz.</p>
+      <p class="muted" style="font-size:13px" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak yukarıda inceleyebilirsiniz.</p>
       <div class="pur-line-scroll">
         <table class="pur-line-table">
           <thead>
@@ -91,43 +154,6 @@
         </table>
       </div>
     </section>
-
-    <section class="card" style="margin-top:16px">
-      <h3 data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
-      <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
-      <div id="orderFormBlock" hidden>
-        <p id="orderMeta" style="font-weight:600;margin-bottom:12px"></p>
-        <div id="orderBadges" class="proc-meta"></div>
-        <div class="pur-line-scroll">
-          <table class="pur-line-table">
-            <thead>
-              <tr>
-                <th data-i18n="purch.proc.colProductName">Ürün adı</th>
-                <th data-i18n="purch.gr.colOrderQty">Sipariş miktarı</th>
-                <th data-i18n="purch.proc.colReceivedQty">Gelen miktar</th>
-                <th data-i18n="purch.proc.colRemainingQty">Kalan miktar</th>
-                <th data-i18n="purch.col.supplier">Tedarikçi</th>
-                <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
-                <th data-i18n="purch.cur">Para birimi</th>
-                <th data-i18n="purch.proc.colFxRate">Kur</th>
-                <th data-i18n="purch.proc.colActions">İşlem</th>
-              </tr>
-            </thead>
-            <tbody id="linesDetailBody"></tbody>
-          </table>
-        </div>
-        <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
-          <div class="pur-req-btns-row">
-            <button type="button" class="version-btn" id="btnStart" style="background:#0d9488;border:none;color:#fff" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-            <button type="button" class="version-btn" id="btnPrint" disabled data-i18n="purch.proc.btnPrint" style="background:#475569;border:none;color:#fff">YAZDIR</button>
-            <button type="button" class="version-btn" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing" style="background:#16a34a;border:none;color:#fff">FİYATLARI KAYDET</button>
-            <button type="button" class="version-btn" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder" style="background:#2563eb;border:none;color:#fff">SİPARİŞİ TAMAMLA</button>
-            <button type="button" class="version-btn" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder" style="background:#b45309;border:none;color:#fff">SİPARİŞİ REVİZE ET</button>
-          </div>
-        </div>
-        <p class="muted" style="font-size:12px;margin-top:10px" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
-      </div>
-    </section>
   </div>
   <div id="cancelLineModal" class="proc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelLineTitle">
     <div class="proc-modal">
@@ -141,6 +167,7 @@
     </div>
   </div>
   <script src="/js/i18n.js?v=15" defer></script>
+  <script src="/js/ui-notify.js?v=1" defer></script>
   <script src="/js/ui-format.js?v=2" defer></script>
   <script src="/js/navigation.js?v=1" defer></script>
   <script src="/js/purchasing-common.js?v=14" defer></script>

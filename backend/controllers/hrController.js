@@ -15,6 +15,13 @@ const {
   listAttendance,
   createAttendance,
   updateAttendance,
+  listDailyAttendance,
+  saveDailyAttendanceBulk,
+  listMonthlyAttendance,
+  listAttendanceLocks,
+  listAttendanceProjects,
+  lockAttendanceMonth,
+  unlockAttendanceMonth,
 } = require('../services/hrService');
 const { logActivity } = require('../services/activityLogService');
 
@@ -264,6 +271,78 @@ async function patchAttendance(req, res) {
   }
 }
 
+async function getDailyAttendance(req, res) {
+  const out = await listDailyAttendance(req.query?.date);
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
+async function putDailyAttendanceBulk(req, res) {
+  try {
+    const out = await saveDailyAttendanceBulk(req.body || {}, req.session?.user?.id || null);
+    if (out.error) return res.status(400).json(validationOut(out));
+    await logActivity(req, {
+      action_type: 'UPSERT',
+      module_name: 'hr',
+      table_name: 'employee_attendance',
+      new_data: req.body || {},
+      description: 'Gunluk toplu puantaj kaydi',
+    });
+    return res.json(jsonOk(out));
+  } catch (e) {
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') {
+      return res.status(400).json(jsonError('VALIDATION', 'Iliskili kayit bulunamadi', null, 'api.hr.reference_not_found'));
+    }
+    throw e;
+  }
+}
+
+async function getMonthlyAttendance(req, res) {
+  const out = await listMonthlyAttendance({
+    month: req.query?.month,
+    employeeId: req.query?.employeeId,
+    projectId: req.query?.projectId,
+  });
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
+async function getAttendanceLocks(_req, res) {
+  const out = await listAttendanceLocks();
+  return res.json(jsonOk(out));
+}
+
+async function getAttendanceProjects(_req, res) {
+  const out = await listAttendanceProjects();
+  return res.json(jsonOk(out));
+}
+
+async function postAttendanceLock(req, res) {
+  const out = await lockAttendanceMonth(req.body || {}, req.session?.user?.id || null);
+  if (out.error) return res.status(400).json(validationOut(out));
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'hr',
+    table_name: 'attendance_month_locks',
+    new_data: req.body || {},
+    description: 'Puantaj ay kilidi kapatildi',
+  });
+  return res.json(jsonOk(out));
+}
+
+async function postAttendanceUnlock(req, res) {
+  const out = await unlockAttendanceMonth(req.body || {}, req.session?.user?.id || null);
+  if (out.error) return res.status(400).json(validationOut(out));
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'hr',
+    table_name: 'attendance_month_locks',
+    new_data: req.body || {},
+    description: 'Puantaj ay kilidi acildi',
+  });
+  return res.json(jsonOk(out));
+}
+
 module.exports = {
   getHrScope,
   getDepartments,
@@ -280,4 +359,11 @@ module.exports = {
   getAttendance,
   postAttendance,
   patchAttendance,
+  getDailyAttendance,
+  putDailyAttendanceBulk,
+  getMonthlyAttendance,
+  getAttendanceLocks,
+  getAttendanceProjects,
+  postAttendanceLock,
+  postAttendanceUnlock,
 };

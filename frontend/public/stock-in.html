@@ -315,7 +315,7 @@
         </div>
         <div class="form-stock-in-r3">
           <div class="form-field">
-            <label for="unitPriceSysM2" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / m²)</label>
+            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / m²)</label>
             <input type="number" id="unitPriceSysM2" min="0" step="0.0001" required />
           </div>
           <div class="form-field">
@@ -405,6 +405,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-notify.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
@@ -552,6 +553,26 @@
         el.textContent = tLoc('stock.in.unitPiece', 'ADET');
       }
     }
+    function updateUnitPriceCaption() {
+      const lbl = document.getElementById('unitPriceLabel');
+      if (!lbl) {
+        return;
+      }
+      const pid = +document.getElementById('pid').value;
+      const m2p = productM2p.get(pid) || 0;
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      if (!pid || pid < 1) {
+        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / m²)');
+        return;
+      }
+      if (mode === 'm2') {
+        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / m²)');
+      } else if (m2p > 0) {
+        lbl.textContent = tLoc('stock.in.unitPriceSystemPiece', 'Birim fiyat (sistem para / adet)');
+      } else {
+        lbl.textContent = tLoc('stock.in.unitPriceSystemQtyUnit', 'Birim fiyat (sistem para / miktar birimi)');
+      }
+    }
     function updateProductHint(p) {
       const hint = document.getElementById('productUnitHint');
       if (!hint) {
@@ -606,20 +627,34 @@
       el.textContent = s;
     }
     function recalcLineTotals() {
-      const m2 = getM2In();
-      const sysPerM2 = +document.getElementById('unitPriceSysM2')?.value;
+      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const pid = +document.getElementById('pid').value;
+      const m2p = productM2p.get(pid) || 0;
+      const q = +document.getElementById('qtyInput')?.value;
+      const unitPx = +document.getElementById('unitPriceSysM2')?.value;
       const fx = +document.getElementById('fxUzsInput')?.value;
       const lineEl = document.getElementById('lineUzs');
       if (!lineEl) {
         return;
       }
-      if (!Number.isFinite(m2) || m2 <= 0 || !Number.isFinite(sysPerM2) || sysPerM2 < 0) {
+      let lineUzs = NaN;
+      if (Number.isFinite(unitPx) && unitPx >= 0) {
+        if (mode === 'm2') {
+          const m2 = Number.isFinite(q) && q > 0 ? q : 0;
+          lineUzs = m2 > 0 ? unitPx * m2 : NaN;
+        } else {
+          const qp = Number.isFinite(q) && q > 0 ? q : 0;
+          if (qp > 0) {
+            lineUzs = unitPx * qp;
+          }
+        }
+      }
+      if (!Number.isFinite(lineUzs) || lineUzs <= 0) {
         lineEl.value = '';
         updateLineUsdReadout(0, fx);
         updateM2M3Readout();
         return;
       }
-      const lineUzs = sysPerM2 * m2;
       lineEl.value = String(lineUzs.toFixed(2));
       updateLineUsdReadout(lineUzs, fx);
       updateM2M3Readout();
@@ -640,6 +675,7 @@
         qm.value = m2p > 0 ? 'pieces' : 'm2';
       }
       updateQtyBadge();
+      updateUnitPriceCaption();
       updateProductHint(p);
       recalcLineTotals();
     }
@@ -669,6 +705,7 @@
       }
       qm.value = qm.value === 'm2' ? 'pieces' : 'm2';
       updateQtyBadge();
+      updateUnitPriceCaption();
       recalcLineTotals();
     });
     function fillWh() {
@@ -689,6 +726,7 @@
       document.getElementById('productQ').value = '';
       selectedProduct = null;
       updateProductHint(null);
+      updateUnitPriceCaption();
       inProducts = [];
       if (!w) {
         sc.disabled = true;
@@ -706,6 +744,7 @@
       document.getElementById('productQ').value = '';
       selectedProduct = null;
       updateProductHint(null);
+      updateUnitPriceCaption();
       inProducts = [];
       if (!wid || !scid) {
         return;
@@ -734,6 +773,7 @@
       document.getElementById('pid').value = '';
       selectedProduct = null;
       updateProductHint(null);
+      updateUnitPriceCaption();
       if (inProducts.length) {
         renderProductDd();
       }
@@ -1136,9 +1176,21 @@
         }
       }
       updateQtyBadge();
+      updateUnitPriceCaption();
       const lineUzsV = movNum(m.line_total_uzs != null ? m.line_total_uzs : m.lineTotalUzs);
-      const m2i = getM2In();
-      const ups = m2i > 0 && Number.isFinite(lineUzsV) ? lineUzsV / m2i : 0;
+      const m2p = productM2p.get(m.product_id) || 0;
+      const qmVal = document.getElementById('qtyMode')?.value || 'pieces';
+      let ups = 0;
+      if (qmVal === 'm2') {
+        const m2i = getM2In();
+        ups = m2i > 0 && Number.isFinite(lineUzsV) ? lineUzsV / m2i : 0;
+      } else if (m2p > 0) {
+        const qp = movNum(document.getElementById('qtyInput')?.value);
+        ups = qp > 0 && Number.isFinite(lineUzsV) ? lineUzsV / qp : 0;
+      } else {
+        const qp = movNum(document.getElementById('qtyInput')?.value);
+        ups = qp > 0 && Number.isFinite(lineUzsV) ? lineUzsV / qp : 0;
+      }
       const fxR = movNum(m.fx_uzs_per_usd != null ? m.fx_uzs_per_usd : m.fxUzsPerUsd);
       const upEl = document.getElementById('unitPriceSysM2');
       const fxEl = document.getElementById('fxUzsInput');
@@ -1194,9 +1246,20 @@
       const mode = document.getElementById('qtyMode')?.value || 'pieces';
       const qv = +document.getElementById('qtyInput').value;
       const m2 = getM2In();
-      const sysPerM2 = +document.getElementById('unitPriceSysM2').value;
+      const unitPx = +document.getElementById('unitPriceSysM2').value;
       const fx = +document.getElementById('fxUzsInput').value;
-      const lineUzs = sysPerM2 * m2;
+      let lineUzs = NaN;
+      if (Number.isFinite(unitPx) && unitPx >= 0) {
+        if (mode === 'm2') {
+          const m2d = Number.isFinite(qv) && qv > 0 ? qv : NaN;
+          lineUzs = Number.isFinite(m2d) ? unitPx * m2d : NaN;
+        } else {
+          const pid = +document.getElementById('pid').value;
+          const m2p = productM2p.get(pid) || 0;
+          const qp = Number.isFinite(qv) && qv > 0 ? qv : NaN;
+          lineUzs = Number.isFinite(qp) ? unitPx * qp : NaN;
+        }
+      }
       const lineUsd = !Number.isFinite(fx) || fx <= 0 ? 0 : lineUzs / fx;
       if (!Number.isFinite(m2) || m2 <= 0) {
         const m = document.getElementById('msg');
@@ -1204,7 +1267,7 @@
         m.style.display = 'block';
         return;
       }
-      if (!Number.isFinite(sysPerM2) || sysPerM2 < 0 || !Number.isFinite(fx) || fx <= 0) {
+      if (!Number.isFinite(unitPx) || unitPx < 0 || !Number.isFinite(fx) || fx <= 0) {
         const m = document.getElementById('msg');
         m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Sistem birim fiyatı (m²) ve geçerli kur girin');
         m.style.display = 'block';
@@ -1357,6 +1420,7 @@
       (async function () {
         await initStockPageNav('in');
         updateQtyBadge();
+        updateUnitPriceCaption();
         const hint = document.getElementById('productUnitHint');
         if (hint) {
           hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');
