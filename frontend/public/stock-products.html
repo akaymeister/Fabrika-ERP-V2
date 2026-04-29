@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="stock.product.title">Ürünler</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="stock.product.title">Ürünler</h1>
         <p class="subtitle" data-i18n="stock.product.sub">En × boy × yükseklik; marka; depo ve alt kategori. Maliyet: stok girişi.</p>
@@ -20,13 +25,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <div class="card">
       <h3 id="formCardTitle" data-i18n="stock.product.formNew">Yeni ürün</h3>
@@ -133,14 +140,16 @@
               <th data-i18n="stock.product.colSub">Alt kategori</th>
               <th data-i18n="stock.product.colBrand">Marka</th>
               <th data-i18n="stock.product.colPcs">Stok adet</th>
-              <th data-i18n="stock.product.colStockM2">Stok m²</th>
-              <th data-i18n="stock.product.colStockM3">Stok m³</th>
+              <th data-i18n="stock.product.colStockM2">Stok mÂ²</th>
+              <th data-i18n="stock.product.colStockM3">Stok mÂ³</th>
               <th data-i18n="stock.product.colAction">İşlem</th>
             </tr>
           </thead>
           <tbody id="tb"></tbody>
         </table>
       </div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
@@ -630,3 +639,4 @@
   </script>
 </body>
 </html>
+

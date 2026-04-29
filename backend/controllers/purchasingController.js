@@ -88,7 +88,7 @@ async function getScope(req, res) {
   const canRequestRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.request');
   const canApproveRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.approve');
   const canRequest = canRequestRaw || canPurchasing;
-  const canApprove = canApproveRaw || canPurchasing;
+  const canApprove = canApproveRaw;
   const canReceipt = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.receipt');
   const canStock = await userHasPermission(u.id, u.role?.slug, 'module.stock');
   return res.json(jsonOk({ canPurchasing, canRequest, canApprove, canReceipt, canStock }));

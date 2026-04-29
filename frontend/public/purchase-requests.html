@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -12,9 +12,14 @@
     .pur-list-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ</h1>
         <p class="subtitle" data-i18n="purch.wf.listSub">Liste, detay, onay / red / revizyon</p>
@@ -26,13 +31,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
     <div class="pur-list-actions">
       <a class="version-btn" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen" style="text-decoration:none">Talep aç</a>
@@ -74,6 +81,8 @@
         <p class="muted" data-i18n="purch.wf.selectRow">Bir satır seçin…</p>
       </section>
     </div>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
@@ -81,3 +90,4 @@
   <script src="/js/purchase-requests-workflow.js" defer></script>
 </body>
 </html>
+

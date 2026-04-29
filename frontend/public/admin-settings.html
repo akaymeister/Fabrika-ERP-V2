@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title>Sistem ayarları — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-admin-nav="settings">
+<body class="app-shell app-master-page" data-admin-nav="settings">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1>Sistem ayarları</h1>
         <p class="subtitle">Varsayılan para birimi, dil ve proje kod ayarları</p>
@@ -20,12 +25,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/admin.html" class="version-btn">Süper yönetim</a>
-        <a href="#" class="logout-btn" id="logoutBtn">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/admin.html" class="version-btn">Süper yönetim</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
 
     <section class="card admin-section" style="margin-top:24px;max-width:520px">
@@ -51,6 +59,44 @@
       <button type="button" class="module-button" id="btnSaveSettings" style="width:auto;padding:10px 16px">Ayarları kaydet</button>
       <p id="setMsg" style="display:none;margin-top:8px;color:#166534;font-weight:600"></p>
     </section>
+
+    <section id="tunnelCard" class="card admin-section" style="margin-top:16px;max-width:820px;display:none">
+      <div class="section-header">
+        <h3 data-i18n="admin.tunnel.title">Geçici Online Erişim</h3>
+        <p data-i18n="admin.tunnel.desc">
+          Localhost üzerinde çalışan ERP sistemini geçici süreyle güvenli HTTPS linki üzerinden dış erişime açar.
+        </p>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <div class="form-field">
+          <label data-i18n="admin.tunnel.status">Durum</label>
+          <input id="tunnelStatus" type="text" readonly />
+        </div>
+        <div class="form-field">
+          <label data-i18n="admin.tunnel.remaining">Kalan süre</label>
+          <input id="tunnelRemaining" type="text" readonly />
+        </div>
+        <div class="form-field">
+          <label data-i18n="admin.tunnel.link">Oluşturulan link</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="tunnelUrl" type="text" readonly />
+            <button type="button" class="module-button" id="btnTunnelCopy" style="width:auto;padding:8px 12px" data-i18n="admin.tunnel.copy">
+              Linki kopyala
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" class="module-button" id="btnTunnel1h" style="width:auto;padding:8px 12px" data-i18n="admin.tunnel.open1h">1 Saat Aç</button>
+        <button type="button" class="module-button" id="btnTunnel4h" style="width:auto;padding:8px 12px" data-i18n="admin.tunnel.open4h">4 Saat Aç</button>
+        <button type="button" class="module-button" id="btnTunnel8h" style="width:auto;padding:8px 12px" data-i18n="admin.tunnel.open8h">8 Saat Aç</button>
+        <button type="button" class="logout-btn" id="btnTunnelStop" style="width:auto;padding:8px 12px" data-i18n="admin.tunnel.stop">Erişimi Kapat</button>
+      </div>
+      <p id="tunnelLastCheck" class="muted" style="margin-top:8px;font-size:12px">Son kontrol: -</p>
+      <p id="tunnelMsg" class="login-error" style="display:none;margin-top:8px;color:#b91c1c"></p>
+    </section>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
@@ -59,3 +105,4 @@
   <script src="/js/admin.js" defer></script>
 </body>
 </html>
+

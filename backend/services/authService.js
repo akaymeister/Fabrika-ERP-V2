@@ -7,6 +7,7 @@ const { pool } = require('../config/database');
 async function findUserWithRoleByUsername(username) {
   const [rows] = await pool.query(
     `SELECT u.id, u.username, u.email, u.password_hash, u.full_name, u.is_active,
+            u.must_change_password,
             r.id AS role_id, r.name AS role_name, r.slug AS role_slug
      FROM users u
      INNER JOIN roles r ON r.id = u.role_id
@@ -27,12 +28,17 @@ async function verifyPassword(plain, hash) {
  */
 function toSessionUser(row) {
   const isSuperAdmin = row.role_slug === 'super_admin';
+  const mustChange =
+    row.must_change_password !== undefined && row.must_change_password !== null
+      ? Number(row.must_change_password) === 1
+      : false;
   return {
     id: row.id,
     username: row.username,
     email: row.email,
     fullName: row.full_name,
     isSuperAdmin,
+    mustChangePassword: mustChange,
     role: {
       id: row.role_id,
       name: row.role_name,

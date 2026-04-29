@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="project.hub.title">Proje yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="project.hub.title">Proje yönetimi</h1>
         <p class="subtitle" data-i18n="project.hub.sub">Yeni proje, kod ve ileride maliyet / teklif</p>
@@ -20,12 +25,14 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
       <div class="hero-text">
@@ -48,6 +55,8 @@
         <h3 data-i18n="nav.project.quotes">Proje fiyat teklifleri</h3>
         <p data-i18n="project.hub.cardQuotes">Teklifler ve onay (yakında)</p>
       </a>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
@@ -95,3 +104,4 @@
   </script>
 </body>
 </html>
+

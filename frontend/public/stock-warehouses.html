@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -123,9 +123,14 @@
     }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="stock.warehouse.title">Depolar</h1>
         <p class="subtitle" data-i18n="stock.warehouse.sub">Fiziksel depo (üst) ve alt kategoriler — ürün kaydında zorunlu</p>
@@ -137,13 +142,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <div class="wh-top-forms">
       <div class="card">
@@ -178,6 +185,8 @@
       <div id="whList" style="margin-top: 12px"></div>
     </div>
     <p id="pmsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
@@ -281,7 +290,7 @@
                   '</div><code class="wh-sub-id">#' +
                   s.id +
                   (s.productCount > 0
-                    ? ' · ' + tW('stock.warehouse.nProducts', '· {n} ürün').replace('{n}', String(s.productCount))
+                    ? ' Â· ' + tW('stock.warehouse.nProducts', 'Â· {n} ürün').replace('{n}', String(s.productCount))
                     : '') +
                   '</code></li>'
                 );
@@ -460,3 +469,4 @@
   </script>
 </body>
 </html>
+

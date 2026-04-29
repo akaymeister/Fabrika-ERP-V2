@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="stock.mov.title">Stok hareketleri</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="stock.mov.title">Stok hareketleri</h1>
         <p class="subtitle" data-i18n="stock.mov.sub">Giriş ve çıkış kayıtları</p>
@@ -20,13 +25,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <div class="card">
       <div class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
         <div class="form-field" style="margin: 0; min-width: 220px">
@@ -45,8 +52,8 @@
               <th data-i18n="stock.mov.colType">Tip</th>
               <th data-i18n="stock.mov.colQty">Miktar</th>
               <th data-i18n="stock.mov.colBirim">Birim</th>
-              <th data-i18n="stock.mov.colQtyM2Helper">Yardımcı m²</th>
-              <th data-i18n="stock.mov.colQtyM3Helper">Yardımcı m³</th>
+              <th data-i18n="stock.mov.colQtyM2Helper">Yardımcı mÂ²</th>
+              <th data-i18n="stock.mov.colQtyM3Helper">Yardımcı mÂ³</th>
               <th data-i18n="stock.mov.colFx">Kur (1 USD)</th>
               <th data-i18n="stock.mov.colLineUsd">Tutar (USD)</th>
               <th data-i18n="stock.mov.colLineUzs">Tutar (sistem)</th>
@@ -56,6 +63,8 @@
           <tbody id="tb"></tbody>
         </table>
       </div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
@@ -144,3 +153,4 @@
   </script>
 </body>
 </html>
+

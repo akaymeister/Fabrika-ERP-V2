@@ -1,12 +1,17 @@
 /**
  * Express uygulama omurgası: middleware + statik + API.
  */
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { createSessionMiddleware } = require('./config/session');
 const { requirePageAuth, serveLoginOrRedirectToDashboard } = require('./middlewares/requirePageAuth');
-const { FRONTEND_PUBLIC } = require('./utils/paths');
+const { FRONTEND_PUBLIC, UPLOADS_ROOT } = require('./utils/paths');
+
+if (!fs.existsSync(UPLOADS_ROOT)) {
+  fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+}
 
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -15,7 +20,9 @@ const stockRoutes = require('./routes/stockRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const purchasingRoutes = require('./routes/purchasingRoutes');
 const hrRoutes = require('./routes/hrRoutes');
+const meRoutes = require('./routes/meRoutes');
 const { getPublicConfig } = require('./controllers/publicConfigController');
+const { jsonError } = require('./utils/apiResponse');
 const { requirePageSuperAdmin, sendAdminPage } = require('./middlewares/requirePageSuperAdmin');
 const { requirePagePermission, requirePageAnyPermission, sendPage } = require('./middlewares/requirePagePermission');
 
@@ -30,6 +37,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(createSessionMiddleware());
 
+/** İlk girişte zorunlu şifre değişimi: /api/me ve çıkış dışındaki API'ler kilitli */
+app.use((req, res, next) => {
+  const raw = req.originalUrl ? String(req.originalUrl).split('?')[0] : '';
+  const p = raw || req.path || '';
+  if (!p.startsWith('/api/')) return next();
+  if (p.startsWith('/api/auth/login') || p.startsWith('/api/public/')) return next();
+  if (!req.session?.user?.mustChangePassword) return next();
+  if (p.startsWith('/api/me') || p.startsWith('/api/auth/logout')) return next();
+  return res
+    .status(403)
+    .json(jsonError('FORBIDDEN', 'Parola degisikligi gerekli', null, 'api.auth.password_change_required'));
+});
+
 // --- API (açık: login) ---
 app.get('/api/public/config', getPublicConfig);
 app.use('/api/auth', authRoutes);
@@ -39,6 +59,15 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/purchasing', purchasingRoutes);
 app.use('/api/hr', hrRoutes);
+app.use('/api/me', meRoutes);
+
+app.use(
+  '/uploads',
+  express.static(UPLOADS_ROOT, {
+    index: false,
+    dotfiles: 'ignore',
+  })
+);
 
 // --- HTML: login / önce; statikten önce (oturum yönlendirmesi) ---
 // Kısayol URL'ler (.html olmadan)
@@ -131,8 +160,11 @@ app.get('/stock-movements.html', requirePageAuth, requirePagePermission('module.
 app.get('/hr.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr.html'));
 app.get('/hr-employees.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-employees.html'));
 app.get('/hr-employee-form.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-employee-form.html'));
+app.get('/hr-employee-detail.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-employee-detail.html'));
 app.get('/hr-structure.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-structure.html'));
 app.get('/hr-attendance.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-attendance.html'));
+app.get('/hr-settings.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-settings.html'));
+app.get('/my-profile.html', requirePageAuth, sendPage('my-profile.html'));
 
 // --- Statik: index otomatik kapalı ---
 app.use(

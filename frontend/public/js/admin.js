@@ -53,6 +53,46 @@ async function api(path, options = {}) {
   return { res, data };
 }
 
+function secondsToHuman(sec) {
+  const s = Math.max(0, Number(sec) || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  if (h > 0) return `${h}sa ${m}dk`;
+  if (m > 0) return `${m}dk ${r}sn`;
+  return `${r}sn`;
+}
+
+function showTunnelMsg(message) {
+  const el = document.getElementById('tunnelMsg');
+  if (!el) return;
+  el.textContent = message || '';
+  el.style.display = message ? 'block' : 'none';
+}
+
+function setTunnelLastCheck(ok) {
+  const el = document.getElementById('tunnelLastCheck');
+  if (!el) return;
+  if (!ok) {
+    el.textContent = 'Son kontrol: başarısız';
+    return;
+  }
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  el.textContent = `Son kontrol: ${hh}:${mm}:${ss}`;
+}
+
+function renderTunnelStatus(tunnel) {
+  const statusEl = document.getElementById('tunnelStatus');
+  const remEl = document.getElementById('tunnelRemaining');
+  const urlEl = document.getElementById('tunnelUrl');
+  if (statusEl) statusEl.value = tunnel?.isOpen ? t('admin.tunnel.open') : t('admin.tunnel.closed');
+  if (remEl) remEl.value = tunnel?.isOpen ? secondsToHuman(tunnel?.remainingSeconds) : '-';
+  if (urlEl) urlEl.value = tunnel?.publicUrl || '';
+}
+
 let catalog = [];
 let roles = [];
 let permissionSubjects = [];
@@ -64,10 +104,19 @@ function fillRoleSelects() {
   const rs = document.getElementById('roleSelect');
   if (nr) {
     nr.innerHTML = '';
-    for (const r of roles) {
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = t('admin.newUser.rolePlaceholder');
+    nr.appendChild(placeholder);
+    for (const s of permissionSubjects) {
+      if (s.type !== 'system_role') continue;
+      const slug = String(s.code || '').toLowerCase();
+      if (!SYSTEM_ROLE_SLUGS.has(slug)) continue;
       const o = document.createElement('option');
-      o.value = r.id;
-      o.textContent = `${r.name} (${r.slug})`;
+      o.value = `${s.type}:${s.id}`;
+      o.textContent = `${s.name} (${s.code})`;
       nr.appendChild(o);
     }
   }
@@ -81,6 +130,58 @@ function fillRoleSelects() {
       o.textContent = `${prefix}: ${s.name}${code}`;
       rs.appendChild(o);
     }
+  }
+}
+
+async function loadUnlinkedEmployeesForNewUser() {
+  const sel = document.getElementById('newEmployee');
+  if (!sel) return;
+  const r = await api('/api/admin/employees/unlinked');
+  if (!r || !r.res.ok) {
+    showError(apiErr(r?.data, 'api.error.load_unlinked_employees'));
+    return;
+  }
+  const list = r.data.employees || [];
+  sel.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  placeholder.textContent = t('admin.newUser.employeePlaceholder');
+  sel.appendChild(placeholder);
+  for (const e of list) {
+    const o = document.createElement('option');
+    o.value = String(e.id);
+    const dept = e.department_name ? ` — ${e.department_name}` : '';
+    const pos = e.position_name ? ` / ${e.position_name}` : '';
+    const name = [e.first_name, e.last_name].filter(Boolean).join(' ').trim() || e.full_name || '';
+    const no = e.employee_no ? `${e.employee_no} - ` : '';
+    o.textContent = `${no}${name}${dept}${pos}`;
+    sel.appendChild(o);
+  }
+}
+
+function syncNewUserAccountFields() {
+  const kind = document.querySelector('input[name="newAccountKind"]:checked')?.value || 'system';
+  const roleEl = document.getElementById('newRole');
+  const empEl = document.getElementById('newEmployee');
+  const roleRow = document.getElementById('newUserSystemRow');
+  const empRow = document.getElementById('newUserEmployeeRow');
+  if (!roleEl || !empEl) return;
+  if (kind === 'system') {
+    if (roleRow) roleRow.style.display = '';
+    if (empRow) empRow.style.display = 'none';
+    roleEl.required = true;
+    empEl.required = false;
+    empEl.disabled = true;
+    roleEl.disabled = false;
+  } else {
+    if (roleRow) roleRow.style.display = 'none';
+    if (empRow) empRow.style.display = '';
+    roleEl.required = false;
+    empEl.required = true;
+    empEl.disabled = false;
+    roleEl.disabled = true;
   }
 }
 
@@ -152,18 +253,26 @@ function renderUserTable() {
   body.innerHTML = users
     .map(
       (u) => `<tr>
-    <td>${u.id}</td>
-    <td><strong>${esc(u.username)}</strong></td>
-    <td class="display-upper">${esc(u.full_name)}</td>
     <td>
-      <select class="js-user-role" data-id="${u.id}" style="min-width: 180px; font-size: 13px">${userSubjectOptionsHtml(u)}</select>
-      <div><code style="font-size: 11px; color: #64748b">${esc(userSubjectMetaText(u))}</code></div>
+      <div class="admin-user-name-cell">
+        <span class="admin-user-avatar">${esc(String(u.username || '?').slice(0, 2).toUpperCase())}</span>
+        <strong>${esc(u.username)}</strong>
+      </div>
+    </td>
+    <td class="display-upper">${esc(u.full_name)}</td>
+    <td>${esc(u.email || '-')}</td>
+    <td>
+      <div class="admin-role-wrap">
+        <select class="js-user-role" data-id="${u.id}" style="min-width: 180px; font-size: 13px">${userSubjectOptionsHtml(u)}</select>
+        <div><code style="font-size: 11px; color: #64748b">${esc(userSubjectMetaText(u))}</code></div>
+      </div>
       ${legacyRoleWarnHtml(u)}
     </td>
-    <td>${u.is_active ? t('admin.user.yes') : t('admin.user.no')}</td>
+    <td><span class="admin-status-badge ${u.is_active ? 'is-active' : 'is-passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></td>
     <td class="user-actions">
-      <button type="button" class="secondary-btn" data-act="active" data-id="${u.id}" data-active="${u.is_active}">${u.is_active ? t('admin.user.deactivate') : t('admin.user.activate')}</button>
-      <button type="button" class="secondary-btn" data-act="pass" data-id="${u.id}">${t('admin.user.password')}</button>
+      <button type="button" class="secondary-btn admin-action-btn" data-act="active" data-id="${u.id}" data-active="${Number(u.is_active) ? 1 : 0}" title="${u.is_active ? t('admin.user.deactivate') : t('admin.user.activate')}">👁</button>
+      <button type="button" class="secondary-btn admin-action-btn" data-act="pass" data-id="${u.id}" title="${t('admin.user.password')}">✎</button>
+      <button type="button" class="secondary-btn admin-action-btn" data-act="menu" data-id="${u.id}" title="menu">⋮</button>
     </td>
   </tr>`
     )
@@ -273,6 +382,8 @@ async function loadUsers() {
     return;
   }
   users = r.data.users || [];
+  const totalEl = document.getElementById('totalUsersCount');
+  if (totalEl) totalEl.textContent = String(users.length);
   renderUserTable();
   fillUserSelectExtra();
 }
@@ -285,16 +396,6 @@ async function loadCatalog() {
     return;
   }
   catalog = r.data.permissions || [];
-}
-
-async function loadRoles() {
-  const r = await api('/api/admin/roles');
-  if (!r) return;
-  if (!r.res.ok) {
-    showError(apiErr(r.data, 'api.error.load_roles'));
-    return;
-  }
-  roles = (r.data.roles || []).filter((x) => SYSTEM_ROLE_SLUGS.has(String(x.slug || '').toLowerCase()));
 }
 
 function getSelectedPermissionSubject() {
@@ -364,10 +465,39 @@ async function init() {
     window.location.href = '/';
     return;
   }
+  const isSuperAdmin = !!(u?.role?.slug === 'super_admin' || u?.isSuperAdmin);
+  const userNameEl = document.getElementById('adminUserName');
+  const userRoleEl = document.getElementById('adminUserRole');
+  const userAvatarEl = document.getElementById('adminUserAvatar');
+  if (userNameEl) userNameEl.textContent = u?.fullName || u?.username || '-';
+  if (userRoleEl) userRoleEl.textContent = u?.role?.name || u?.role?.slug || '-';
+  if (userAvatarEl) {
+    const name = String(u?.fullName || u?.username || 'U').trim();
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((x) => x[0].toUpperCase())
+      .join('');
+    userAvatarEl.textContent = initials || 'U';
+  }
+  if (isSuperAdmin) {
+    const tunnelCard = document.getElementById('tunnelCard');
+    if (tunnelCard) tunnelCard.style.display = '';
+  }
   clearError();
   await loadCatalog();
-  await loadRoles();
   await loadPermissionSubjects();
+  document.querySelectorAll('input[name="newAccountKind"]').forEach((inp) => {
+    inp.addEventListener('change', () => {
+      clearError();
+      syncNewUserAccountFields();
+    });
+  });
+  if (document.getElementById('newEmployee')) {
+    await loadUnlinkedEmployeesForNewUser();
+    syncNewUserAccountFields();
+  }
   await loadUsers();
   const rs = document.getElementById('roleSelect');
   if (rs?.value) {
@@ -428,11 +558,32 @@ async function init() {
   document.getElementById('formNewUser')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError();
+    const kind = document.querySelector('input[name="newAccountKind"]:checked')?.value || 'system';
+    let role_assignment_type;
+    let role_assignment_id;
+    if (kind === 'system') {
+      const rawRole = String(document.getElementById('newRole')?.value || '');
+      const [t0, idRaw] = rawRole.split(':');
+      role_assignment_type = t0;
+      role_assignment_id = +idRaw;
+      if (role_assignment_type !== 'system_role' || !Number.isFinite(role_assignment_id) || role_assignment_id < 1) {
+        showError(t('admin.newUser.validationSystemRole'));
+        return;
+      }
+    } else {
+      role_assignment_type = 'employee';
+      role_assignment_id = +document.getElementById('newEmployee')?.value;
+      if (!Number.isFinite(role_assignment_id) || role_assignment_id < 1) {
+        showError(t('admin.newUser.validationEmployee'));
+        return;
+      }
+    }
     const body = {
       username: document.getElementById('newUsername').value.trim(),
       full_name: toUpperTrClient(document.getElementById('newFullname').value.trim()),
       email: document.getElementById('newEmail').value.trim() || null,
-      role_id: +document.getElementById('newRole').value,
+      role_assignment_type,
+      role_assignment_id,
       password: document.getElementById('newPass').value,
     };
     const { res, data } = await api('/api/admin/users', { method: 'POST', body: JSON.stringify(body) });
@@ -442,6 +593,10 @@ async function init() {
       return;
     }
     document.getElementById('formNewUser').reset();
+    const sysRadio = document.querySelector('input[name="newAccountKind"][value="system"]');
+    if (sysRadio) sysRadio.checked = true;
+    syncNewUserAccountFields();
+    await loadUnlinkedEmployeesForNewUser();
     await loadUsers();
     window.alert(t('admin.alert.userCreated'));
   });
@@ -453,6 +608,39 @@ async function init() {
     e.preventDefault();
     await api('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login.html';
+  });
+  document.getElementById('logoutBtnMenu')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await api('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  });
+
+  const userMenuBtn = document.getElementById('adminUserMenuBtn');
+  const userMenu = document.getElementById('adminUserMenu');
+  function closeUserMenu() {
+    if (!userMenu || !userMenuBtn) return;
+    userMenu.hidden = true;
+    userMenuBtn.setAttribute('aria-expanded', 'false');
+  }
+  function openUserMenu() {
+    if (!userMenu || !userMenuBtn) return;
+    userMenu.hidden = false;
+    userMenuBtn.setAttribute('aria-expanded', 'true');
+  }
+  userMenuBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!userMenu) return;
+    if (userMenu.hidden) openUserMenu();
+    else closeUserMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!userMenu || !userMenuBtn || userMenu.hidden) return;
+    const target = e.target;
+    if (target instanceof Node && (userMenu.contains(target) || userMenuBtn.contains(target))) return;
+    closeUserMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeUserMenu();
   });
 
   async function loadSysSettings() {
@@ -496,6 +684,68 @@ async function init() {
     } else {
       showError(apiErr(data, 'api.error.settings_failed'));
     }
+  });
+
+  let tunnelPoll = null;
+  async function loadTunnelStatus() {
+    const r = await api('/api/admin/tunnel/status');
+    if (!r?.res) {
+      setTunnelLastCheck(false);
+      return;
+    }
+    if (!r.res.ok) {
+      showTunnelMsg(apiErr(r.data, 'api.error.unknown'));
+      setTunnelLastCheck(false);
+      return;
+    }
+    showTunnelMsg('');
+    renderTunnelStatus(r.data.tunnel || {});
+    setTunnelLastCheck(true);
+  }
+
+  async function startTunnelFor(hours) {
+    showTunnelMsg('');
+    const r = await api('/api/admin/tunnel/start', {
+      method: 'POST',
+      body: JSON.stringify({ hours }),
+    });
+    if (!r?.res) return;
+    if (!r.res.ok) {
+      showTunnelMsg(apiErr(r.data, 'api.admin.tunnel_start_failed'));
+      return;
+    }
+    renderTunnelStatus(r.data.tunnel || {});
+  }
+
+  async function stopTunnelNow() {
+    showTunnelMsg('');
+    const r = await api('/api/admin/tunnel/stop', { method: 'POST' });
+    if (!r?.res) return;
+    if (!r.res.ok) {
+      showTunnelMsg(apiErr(r.data, 'api.admin.tunnel_stop_failed'));
+      return;
+    }
+    renderTunnelStatus(r.data.tunnel || {});
+  }
+
+  document.getElementById('btnTunnel1h')?.addEventListener('click', () => startTunnelFor(1));
+  document.getElementById('btnTunnel4h')?.addEventListener('click', () => startTunnelFor(4));
+  document.getElementById('btnTunnel8h')?.addEventListener('click', () => startTunnelFor(8));
+  document.getElementById('btnTunnelStop')?.addEventListener('click', stopTunnelNow);
+  document.getElementById('btnTunnelCopy')?.addEventListener('click', async () => {
+    const url = document.getElementById('tunnelUrl')?.value || '';
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      window.appNotify?.success?.(t('admin.tunnel.copied'));
+    } catch (_) {
+      window.prompt('Linki kopyalayın', url);
+    }
+  });
+  await loadTunnelStatus();
+  tunnelPoll = setInterval(loadTunnelStatus, 15000);
+  window.addEventListener('beforeunload', () => {
+    if (tunnelPoll) clearInterval(tunnelPoll);
   });
 }
 

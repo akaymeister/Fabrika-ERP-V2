@@ -1,56 +1,232 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personel Karti — Fabrika ERP V2</title>
+  <title data-i18n="hr.emp.form.title">Personel kartı</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
-        <h1>Personel Karti</h1>
-        <p class="subtitle">Faz 1A iskelet ekran</p>
+        <h1 data-i18n="hr.emp.form.title">Personel kartı</h1>
+        <p class="subtitle" data-i18n="hr.emp.form.sub">Faz 1</p>
       </div>
       <div class="topbar-right">
-        <a href="/hr.html" class="version-btn">IK</a>
-        <a href="/" class="version-btn">Ana sayfa</a>
-      </div>
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
-    <div class="card">
-      <h2>Personel Formu</h2>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+    <div class="card emp-form-shell">
+      <h2 data-i18n="hr.emp.form.title">Personel formu</h2>
       <form id="empForm">
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
-          <input id="employeeNo" placeholder="Personel no (opsiyonel)" />
-          <input id="fullName" class="input-upper" placeholder="Ad soyad" required />
-          <input id="phone" placeholder="Telefon" />
-          <input id="email" placeholder="E-posta" />
-          <input id="hireDate" type="date" required />
-          <select id="employmentStatus" required>
-            <option value="active">Aktif</option>
-            <option value="passive">Pasif</option>
-            <option value="terminated">Isten ayrildi</option>
-          </select>
-          <select id="departmentId"><option value="">Departman secin</option></select>
-          <select id="positionId"><option value="">Pozisyon secin</option></select>
-          <select id="userId"><option value="">Kullanici baglama (opsiyonel)</option></select>
+        <div class="emp-form-grid-top">
+          <section class="emp-form-card">
+            <h3 data-i18n="hr.emp.identity">Kimlik Bilgileri</h3>
+            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+              <div>
+                <label for="employeeNoDisplay" data-i18n="hr.emp.employeeNo">Personel no</label>
+                <input id="employeeNoDisplay" type="text" readonly class="muted" data-i18n-placeholder="hr.emp.employeeNoHint" placeholder="Otomatik" />
+              </div>
+              <div></div>
+              <div>
+                <label for="firstName" data-i18n="hr.emp.firstName">Ad</label>
+                <input id="firstName" class="input-upper" required data-i18n-placeholder="hr.emp.firstName" placeholder="Ad" />
+              </div>
+              <div>
+                <label for="lastName" data-i18n="hr.emp.lastName">Soyad</label>
+                <input id="lastName" class="input-upper" required data-i18n-placeholder="hr.emp.lastName" placeholder="Soyad" />
+              </div>
+              <div>
+                <label for="birthDate" data-i18n="hr.emp.birthDate">Doğum Tarihi</label>
+                <input id="birthDate" type="date" />
+              </div>
+              <div>
+                <label for="gender" data-i18n="hr.emp.gender">Cinsiyet</label>
+                <select id="gender">
+                  <option value="" data-i18n="hr.emp.regionPick">Seçin</option>
+                  <option value="male" data-i18n="hr.emp.gender.male">Erkek</option>
+                  <option value="female" data-i18n="hr.emp.gender.female">Kadın</option>
+                  <option value="other" data-i18n="hr.emp.gender.other">Diğer</option>
+                </select>
+              </div>
+              <div>
+                <label for="maritalStatus" data-i18n="hr.emp.marital">Medeni Durum</label>
+                <select id="maritalStatus">
+                  <option value="" data-i18n="hr.emp.regionPick">Seçin</option>
+                  <option value="single" data-i18n="hr.emp.marital.single">Bekar</option>
+                  <option value="married" data-i18n="hr.emp.marital.married">Evli</option>
+                  <option value="divorced" data-i18n="hr.emp.marital.divorced">Boşanmış</option>
+                  <option value="widowed" data-i18n="hr.emp.marital.widowed">Dul</option>
+                </select>
+              </div>
+              <div>
+                <label for="nationality" data-i18n="hr.emp.nationality">Uyruk</label>
+                <select id="nationality">
+                  <option value="" data-i18n="hr.emp.regionPick">Seçin</option>
+                  <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+                  <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+                  <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+                  <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+                  <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+                </select>
+              </div>
+              <div>
+                <label for="identityNo" data-i18n="hr.emp.identityNo">Kimlik / Pasaport No</label>
+                <input id="identityNo" type="text" />
+              </div>
+              <div>
+                <label for="passportNo" data-i18n="hr.emp.passportNo">Pasaport No</label>
+                <input id="passportNo" type="text" />
+              </div>
+            </div>
+          </section>
+          <section class="emp-form-card emp-form-photo-card">
+            <h3 data-i18n="hr.emp.photo">Fotoğraf</h3>
+            <img id="photoPreview" class="emp-form-photo-preview" style="display:none" alt="" />
+            <div id="photoFallback" class="emp-form-photo-fallback">?</div>
+            <label for="photoFile" data-i18n="hr.emp.photo">Fotoğraf</label>
+            <input id="photoFile" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+            <p class="muted" style="font-size:12px;margin:4px 0 0" data-i18n="hr.emp.photoHint">JPG, PNG, WebP</p>
+          </section>
         </div>
-        <textarea id="note" class="input-upper" placeholder="Not"></textarea>
-        <button type="submit" id="saveBtn">Kaydet</button>
+
+        <h3 data-i18n="hr.emp.salaryGroup">Maaş</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label for="salaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
+            <select id="salaryCurrency">
+              <option value="UZS">UZS</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div></div>
+          <div>
+            <label for="salaryAmount" data-i18n="hr.emp.salaryTotal">Toplam maaş</label>
+            <input id="salaryAmount" type="number" min="0" step="0.01" value="0" />
+          </div>
+          <div>
+            <label for="officialSalary" data-i18n="hr.emp.salaryOfficial">Resmi maaş</label>
+            <input id="officialSalary" type="number" min="0" step="0.01" value="0" />
+          </div>
+          <div>
+            <label for="unofficialSalary" data-i18n="hr.emp.salaryUnofficial">Resmi olmayan</label>
+            <input id="unofficialSalary" type="number" readonly value="0" />
+          </div>
+        </div>
+
+        <h3 data-i18n="hr.emp.addressGroup">Adres</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label for="countryCode" data-i18n="hr.emp.country">Ülke</label>
+            <select id="countryCode">
+              <option value="" data-i18n="hr.emp.countryPick">Ülke seçin</option>
+              <option value="TR" data-i18n="hr.emp.country.tr">Türkiye</option>
+              <option value="UZ" data-i18n="hr.emp.country.uz">Özbekistan</option>
+            </select>
+          </div>
+          <div>
+            <label for="regionSelect" data-i18n="hr.emp.region">İl / bölge</label>
+            <select id="regionSelect" disabled>
+              <option value="" data-i18n="hr.emp.regionPick">Seçin</option>
+            </select>
+          </div>
+        </div>
+        <label for="addressLine" data-i18n="hr.emp.addressLine">Açık adres</label>
+        <textarea id="addressLine" class="input-upper" rows="2"></textarea>
+
+        <h3 data-i18n="nav.hr.structure">Organizasyon</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label for="phone" data-i18n="hr.emp.phone">Telefon</label>
+            <input id="phone" type="text" />
+          </div>
+          <div>
+            <label for="phoneSecondary" data-i18n="hr.emp.phone2">Telefon 2</label>
+            <input id="phoneSecondary" type="text" />
+          </div>
+          <div>
+            <label for="email" data-i18n="hr.emp.email">E-posta</label>
+            <input id="email" type="email" />
+          </div>
+          <div>
+            <label for="hireDate" data-i18n="hr.emp.hireDate">İşe giriş</label>
+            <input id="hireDate" type="date" required />
+          </div>
+          <div>
+            <label for="employmentStatus" data-i18n="hr.emp.status">Durum</label>
+            <select id="employmentStatus" required>
+              <option value="active" data-i18n="hr.emp.status.active">Aktif</option>
+              <option value="passive" data-i18n="hr.emp.status.passive">Pasif</option>
+              <option value="terminated" data-i18n="hr.emp.status.terminated">İşten ayrıldı</option>
+            </select>
+          </div>
+          <div>
+            <label for="departmentId" data-i18n="hr.emp.department">Departman</label>
+            <select id="departmentId"><option value="" data-i18n="hr.emp.regionPick">Seçin</option></select>
+          </div>
+          <div>
+            <label for="positionId" data-i18n="hr.emp.position">Pozisyon</label>
+            <select id="positionId"><option value="" data-i18n="hr.emp.regionPick">Seçin</option></select>
+          </div>
+          <div style="grid-column: 1 / -1">
+            <label for="userId" data-i18n="hr.emp.userLink">Kullanıcı</label>
+            <select id="userId"><option value="" data-i18n="hr.emp.regionPick">Seçin</option></select>
+          </div>
+        </div>
+        <h3 data-i18n="hr.emp.telegramGroup">Telegram</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+          <div>
+            <label for="telegramUsername" data-i18n="hr.emp.telegramUsername">Telegram kullanıcı adı</label>
+            <input id="telegramUsername" type="text" autocomplete="off" data-i18n-placeholder="hr.emp.telegramUsernamePlaceholder" placeholder="@" />
+          </div>
+          <div>
+            <label for="telegramChatId" data-i18n="hr.emp.telegramChatId">Telegram chat ID</label>
+            <input id="telegramChatId" type="text" autocomplete="off" data-i18n-placeholder="hr.emp.telegramChatIdPlaceholder" placeholder="id" />
+          </div>
+          <div style="grid-column: 1 / -1">
+            <label for="telegramNotifyEnabled" data-i18n="hr.emp.telegramNotify">Telegram bildirimi</label>
+            <select id="telegramNotifyEnabled">
+              <option value="1" data-i18n="hr.emp.telegramNotifyOn">Açık</option>
+              <option value="0" data-i18n="hr.emp.telegramNotifyOff">Kapalı</option>
+            </select>
+          </div>
+        </div>
+        <label for="note" data-i18n="hr.emp.note">Not</label>
+        <textarea id="note" class="input-upper"></textarea>
+        <button type="submit" id="saveBtn" data-i18n="hr.emp.save">Kaydet</button>
       </form>
       <div id="msg" class="muted" style="margin-top:10px"></div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/location-data.js" defer></script>
   <script src="/js/hr-employee-form.js" defer></script>
   <script>
     function startHrEmployeeFormPage() {
       (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('employee-form');
         await window.initHrEmployeeFormPage?.();
@@ -64,3 +240,4 @@
   </script>
 </body>
 </html>
+

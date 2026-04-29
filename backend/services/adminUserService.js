@@ -36,12 +36,31 @@ async function listUsers() {
 }
 
 function pickCreatePayload(body) {
+  const username = String(body?.username || '').trim();
+  const full_name = String(body?.full_name || '').trim();
+  const email = body?.email == null || body?.email === '' ? null : String(body.email).trim();
+  const password = String(body?.password || '');
+  const rawType = String(body?.role_assignment_type || '').trim();
+  const assignId = parseInt(String(body?.role_assignment_id), 10);
+  const legacyRoleId = parseInt(String(body?.role_id), 10);
+
+  let role_assignment_type = null;
+  let role_assignment_id = null;
+  if (rawType === 'system_role' || rawType === 'employee') {
+    role_assignment_type = rawType;
+    role_assignment_id = assignId;
+  } else if (Number.isFinite(legacyRoleId) && legacyRoleId > 0) {
+    role_assignment_type = 'system_role';
+    role_assignment_id = legacyRoleId;
+  }
+
   return {
-    username: String(body?.username || '').trim(),
-    full_name: String(body?.full_name || '').trim(),
-    email: body?.email == null || body?.email === '' ? null : String(body.email).trim(),
-    role_id: parseInt(String(body?.role_id), 10),
-    password: String(body?.password || ''),
+    username,
+    full_name,
+    email,
+    password,
+    role_assignment_type,
+    role_assignment_id,
   };
 }
 
@@ -53,6 +72,9 @@ function pickUpdatePayload(body) {
   if (body.is_active != null) o.is_active = body.is_active ? 1 : 0;
   return o;
 }
+
+const SYSTEM_CREATE_SLUGS = new Set(['super_admin', 'admin']);
+const STAFF_SLUG = 'staff';
 
 /**
  * @returns {{ userId: number } | { error: string }}
@@ -67,21 +89,81 @@ async function createUser(input) {
   if (!input.password || input.password.length < 4) {
     return err('Şifre en az 4 karakter', 'api.admin.password_short');
   }
-  if (!Number.isFinite(input.role_id) || input.role_id < 1) {
+  const assignType = input.role_assignment_type;
+  const assignId = input.role_assignment_id;
+  if (!assignType || !Number.isFinite(assignId) || assignId < 1) {
     return err('Geçerli bir rol seçin', 'api.admin.role_invalid');
   }
 
-  const role = await getRoleIdById(input.role_id);
-  if (!role) {
-    return err('Rol bulunamadı', 'api.admin.role_not_found');
+  const fullNameUpper = toUpperTr(input.full_name);
+  const passwordHash = await bcrypt.hash(input.password, 10);
+
+  if (assignType === 'system_role') {
+    const role = await getRoleIdById(assignId);
+    if (!role) {
+      return err('Rol bulunamadı', 'api.admin.role_not_found');
+    }
+    const slug = String(role.slug || '').toLowerCase();
+    if (!SYSTEM_CREATE_SLUGS.has(slug)) {
+      return err('Yeni kullanıcı için yalnızca super_admin veya admin seçilebilir', 'api.admin.create_system_role_only');
+    }
+    const [r] = await pool.query(
+      'INSERT INTO users (username, email, password_hash, full_name, role_id, must_change_password) VALUES (?,?,?,?,?,?)',
+      [input.username, input.email, passwordHash, fullNameUpper, role.id, 0]
+    );
+    return { userId: r.insertId, linkedEmployeeId: null };
   }
 
-  const passwordHash = await bcrypt.hash(input.password, 10);
-  const [r] = await pool.query(
-    'INSERT INTO users (username, email, password_hash, full_name, role_id) VALUES (?,?,?,?,?)',
-    [input.username, input.email, passwordHash, toUpperTr(input.full_name), input.role_id]
-  );
-  return { userId: r.insertId };
+  if (assignType === 'employee') {
+    const staffRole = await getSystemRoleBySlug(STAFF_SLUG);
+    if (!staffRole) {
+      return err('staff rolü yok: migrasyonu çalıştırın', 'api.admin.staff_role_missing');
+    }
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [empRows] = await conn.query(
+        `SELECT id, user_id
+         FROM employees
+         WHERE id = ?
+           AND employment_status = 'active'
+         LIMIT 1
+         FOR UPDATE`,
+        [assignId]
+      );
+      if (!empRows.length) {
+        await conn.rollback();
+        return err('Personel bulunamadı veya aktif değil', 'api.admin.employee_not_found_or_inactive');
+      }
+      if (empRows[0].user_id != null) {
+        await conn.rollback();
+        return err('Bu personel zaten bir kullanıcıya bağlı', 'api.admin.employee_already_linked');
+      }
+      const [ur] = await conn.query(
+        'INSERT INTO users (username, email, password_hash, full_name, role_id, must_change_password) VALUES (?,?,?,?,?,?)',
+        [input.username, input.email, passwordHash, fullNameUpper, staffRole.id, 1]
+      );
+      const userId = ur.insertId;
+      const [upd] = await conn.query('UPDATE employees SET user_id = ? WHERE id = ? AND user_id IS NULL', [
+        userId,
+        assignId,
+      ]);
+      if (!upd.affectedRows) {
+        await conn.rollback();
+        return err('Personel bağlantısı güncellenemedi', 'api.admin.employee_link_failed');
+      }
+      await conn.commit();
+      return { userId, linkedEmployeeId: assignId };
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+  }
+
+  return err('Geçersiz rol ataması', 'api.admin.role_invalid');
 }
 
 /**
@@ -148,6 +230,20 @@ async function updateUser(userId, payload, { actingUserId }) {
 
   await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = :id`, values);
   return { ok: true };
+}
+
+async function listUnlinkedActiveEmployees() {
+  const [rows] = await pool.query(
+    `SELECT e.id, e.employee_no, e.first_name, e.last_name, e.full_name, e.department_id, d.name AS department_name,
+            e.position_id, p.name AS position_name
+     FROM employees e
+     LEFT JOIN departments d ON d.id = e.department_id
+     LEFT JOIN positions p ON p.id = e.position_id
+     WHERE e.user_id IS NULL
+       AND e.employment_status = 'active'
+     ORDER BY e.first_name ASC, e.last_name ASC, e.full_name ASC, e.id ASC`
+  );
+  return rows;
 }
 
 async function getSystemRoleBySlug(slug) {
@@ -247,6 +343,7 @@ module.exports = {
   countActiveSuperAdmins,
   getRoleIdById,
   listUsers,
+  listUnlinkedActiveEmployees,
   pickCreatePayload,
   pickUpdatePayload,
   createUser,

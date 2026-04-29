@@ -32,7 +32,7 @@ function projectNavHTML(active) {
     { href: '/project-costs.html', key: 'cost', k: 'nav.project.costs' },
     { href: '/project-quotes.html', key: 'quotes', k: 'nav.project.quotes' },
   ];
-  return `<nav class="stock-nav" aria-label="Project module">
+  return `<nav class="stock-nav app-sub-nav" aria-label="Project module">
     ${items
       .map(
         (i) =>

@@ -71,11 +71,6 @@ function renderUser(user) {
     const show = user.isSuperAdmin === true || user.role?.slug === 'super_admin';
     admin.style.display = show ? 'inline-flex' : 'none';
   }
-  const quickStockIn = document.getElementById('quickLinkStockIn');
-  if (quickStockIn) {
-    const showIn = user.isSuperAdmin === true || user.role?.slug === 'super_admin';
-    quickStockIn.style.display = showIn ? '' : 'none';
-  }
 }
 
 async function loadSummary() {
@@ -90,7 +85,10 @@ async function loadSummary() {
   const elP = document.getElementById('kpiProductCount');
   const elA = document.getElementById('kpiActiveProjects');
   const elB = document.getElementById('kpiPendingPurchases');
-  if (elV) elV.textContent = fmtMoney(data.totalStockValue);
+  const valStr = fmtMoney(data.totalStockValue);
+  if (elV) elV.textContent = valStr;
+  const heroStock = document.getElementById('heroStockValue');
+  if (heroStock) heroStock.textContent = valStr;
   if (elP) elP.textContent = String(data.productCount ?? 0);
   if (elA) elA.textContent = String(data.activeProjectCount ?? 0);
   if (elB) elB.textContent = String(data.pendingPurchaseCount ?? 0);

@@ -1,17 +1,22 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yeni kullanıcı ekle — Fabrika ERP V2</title>
+  <title data-i18n="admin.newUserPageTitle">—</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-admin-nav="new-user">
+<body class="app-shell app-master-page" data-admin-nav="new-user">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
-        <h1>Yeni kullanıcı ekle</h1>
-        <p class="subtitle">Yeni kullanıcı oluştur ve ilk rolünü ata</p>
+        <h1 data-i18n="admin.newUserPageHeading">—</h1>
+        <p class="subtitle" data-i18n="admin.newUserPageSub">—</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
@@ -20,45 +25,67 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/admin.html" class="version-btn">Süper yönetim</a>
-        <a href="#" class="logout-btn" id="logoutBtn">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/admin.html" class="version-btn" data-i18n="nav.admin">—</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
 
     <section class="card admin-section" style="max-width:680px">
       <div class="section-header">
-        <h3>Yeni kullanıcı</h3>
-        <p>İlk aşamada tüm alanlar zorunlu (şifre en az 4 karakter)</p>
+        <h3 data-i18n="admin.newUser">—</h3>
+        <p data-i18n="admin.newUserSub">—</p>
       </div>
       <form id="formNewUser" class="product-form-grid" style="grid-template-columns: 1fr">
         <div class="form-field">
-          <label for="newUsername">Kullanıcı adı</label>
+          <label for="newUsername" data-i18n="admin.usernameField">—</label>
           <input type="text" id="newUsername" name="username" required autocomplete="off" />
         </div>
         <div class="form-field">
-          <label for="newFullname">Ad soyad</label>
+          <label for="newFullname" data-i18n="admin.fullName">—</label>
           <input type="text" id="newFullname" name="full_name" class="input-upper" required />
         </div>
         <div class="form-field">
-          <label for="newEmail">E-posta (opsiyonel)</label>
+          <label for="newEmail" data-i18n="admin.email">—</label>
           <input type="email" id="newEmail" name="email" />
         </div>
         <div class="form-field">
-          <label for="newRole">Rol</label>
+          <div data-i18n="admin.newUser.accountKind" style="font-weight:600;margin-bottom:8px">—</div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px 20px">
+            <label class="perm-item" style="margin:0">
+              <input type="radio" name="newAccountKind" value="system" checked />
+              <span data-i18n="admin.newUser.accountKindSystem">—</span>
+            </label>
+            <label class="perm-item" style="margin:0">
+              <input type="radio" name="newAccountKind" value="operational" />
+              <span data-i18n="admin.newUser.accountKindOperational">—</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-field" id="newUserSystemRow">
+          <label for="newRole" data-i18n="admin.newUser.systemRoleLabel">—</label>
           <select id="newRole" name="role_id" required></select>
         </div>
+        <div class="form-field" id="newUserEmployeeRow" style="display:none">
+          <label for="newEmployee" data-i18n="admin.newUser.employeeCardLabel">—</label>
+          <select id="newEmployee" name="employee_id"></select>
+        </div>
         <div class="form-field">
-          <label for="newPass">Şifre</label>
+          <label for="newPass" data-i18n="admin.user.password">—</label>
           <input type="password" id="newPass" name="password" required minlength="4" autocomplete="new-password" />
         </div>
         <div class="form-field form-actions">
-          <button type="submit" class="module-button" style="width:auto;padding:10px 16px">Oluştur</button>
+          <button type="submit" class="module-button" style="width:auto;padding:10px 16px" data-i18n="admin.create">—</button>
         </div>
       </form>
     </section>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
@@ -67,3 +94,4 @@
   <script src="/js/admin.js" defer></script>
 </body>
 </html>
+

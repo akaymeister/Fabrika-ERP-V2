@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -17,9 +17,14 @@
     .sup-filter input { padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; min-width:220px; font:inherit; }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="suppliers.title">Tedarikçiler</h1>
         <p class="subtitle" data-i18n="suppliers.sub">Tedarikçi listesi, yeni tedarikçi ekleme. Sipariş işleme ekranında bu liste kullanılır.</p>
@@ -31,13 +36,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
 
     <section class="card">
@@ -77,6 +84,8 @@
         </table>
       </div>
     </section>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js?v=14" defer></script>
   <script src="/js/navigation.js?v=1" defer></script>
@@ -144,3 +153,4 @@
   </script>
 </body>
 </html>
+

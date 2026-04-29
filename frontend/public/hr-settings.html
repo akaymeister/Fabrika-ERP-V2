@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.settings.title">IK Ayarlar</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
+      <div class="topbar-left">
+        <h1 data-i18n="hr.settings.title">IK Ayarlar</h1>
+        <p class="subtitle" data-i18n="hr.settings.sub">Puantaj parametreleri ve tanimlar</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+</div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+
+    <section class="card hr-settings-card">
+      <h3 data-i18n="hr.settings.workSchedule">Calisma Programi</h3>
+      <div class="hr-settings-grid">
+        <div><label data-i18n="hr.settings.dailyStart">Gunluk giris</label><input id="daily_start_time" type="time" /></div>
+        <div><label data-i18n="hr.settings.dailyEnd">Gunluk cikis</label><input id="daily_end_time" type="time" /></div>
+        <div><label data-i18n="hr.settings.break1">Mola 1 (dk)</label><input id="break_1_minutes" type="number" min="0" step="1" /></div>
+        <div><label data-i18n="hr.settings.break2">Mola 2 (dk)</label><input id="break_2_minutes" type="number" min="0" step="1" /></div>
+        <div><label data-i18n="hr.settings.break3">Mola 3 (dk)</label><input id="break_3_minutes" type="number" min="0" step="1" /></div>
+        <div><label data-i18n="hr.settings.lunch">Ogle yemegi (dk)</label><input id="lunch_minutes" type="number" min="0" step="1" /></div>
+        <div><label data-i18n="hr.settings.holidays">Tatil gunleri</label><input id="holiday_days" type="text" /></div>
+        <div><label data-i18n="hr.settings.weeklyHours">Haftalik saat</label><input id="weekly_work_hours" type="number" min="0" step="0.25" /></div>
+        <div><label data-i18n="hr.settings.dailyHours">Gunluk saat</label><input id="daily_work_hours" type="number" min="0" step="0.25" /></div>
+        <div><label data-i18n="hr.settings.ot1">Fazla mesai 1</label><input id="overtime_multiplier_1" type="number" min="0" step="0.01" /></div>
+        <div><label data-i18n="hr.settings.ot2">Fazla mesai 2</label><input id="overtime_multiplier_2" type="number" min="0" step="0.01" /></div>
+        <div><label data-i18n="hr.settings.ot3">Fazla mesai 3</label><input id="overtime_multiplier_3" type="number" min="0" step="0.01" /></div>
+      </div>
+      <div class="hr-settings-actions">
+        <button id="btnSaveSettings" class="version-btn" data-i18n="common.save">Kaydet</button>
+      </div>
+      <p id="settingsMsg" class="api-msg"></p>
+    </section>
+
+    <section class="card hr-settings-card">
+      <div class="hr-settings-head">
+        <h3 data-i18n="hr.settings.workTypes">Is Tipleri</h3>
+        <button id="btnAddWorkType" class="version-btn" data-i18n="common.add">Ekle</button>
+      </div>
+      <div id="workTypesList"></div>
+    </section>
+
+    <section class="card hr-settings-card">
+      <div class="hr-settings-head">
+        <h3 data-i18n="hr.settings.workStatuses">Calisma Durumlari</h3>
+        <button id="btnAddWorkStatus" class="version-btn" data-i18n="common.add">Ekle</button>
+      </div>
+      <div id="workStatusesList"></div>
+    </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-notify.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-settings.js" defer></script>
+  <script>
+    function startHrSettingsPage() {
+      (async function () {
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('settings');
+        await window.initHrSettingsPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startHrSettingsPage);
+    } else {
+      startHrSettingsPage();
+    }
+  </script>
+</body>
+</html>
+

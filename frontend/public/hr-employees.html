@@ -1,60 +1,105 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personeller — Fabrika ERP V2</title>
+  <title data-i18n="hr.emp.list.title">Personeller</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
-        <h1>Personeller</h1>
-        <p class="subtitle">Faz 1A iskelet ekran</p>
+        <h1 data-i18n="hr.emp.list.title">Personeller</h1>
+        <p class="subtitle" data-i18n="hr.emp.list.sub">Liste</p>
       </div>
       <div class="topbar-right">
-        <a href="/hr.html" class="version-btn">IK</a>
-        <a href="/" class="version-btn">Ana sayfa</a>
-      </div>
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <div class="card">
-      <h2>Personel Listesi</h2>
-      <div class="inline-group">
+      <h2 data-i18n="hr.emp.list.title">Personel listesi</h2>
+      <p class="muted" data-i18n="hr.emp.filtersTitle">Filtreler</p>
+      <div class="emp-filter-grid">
         <select id="statusFilter">
-          <option value="">Tum durumlar</option>
-          <option value="active">Aktif</option>
-          <option value="passive">Pasif</option>
-          <option value="terminated">Isten ayrildi</option>
+          <option value="" data-i18n="hr.emp.allStatus">Tüm durumlar</option>
+          <option value="active" data-i18n="hr.emp.status.active">Aktif</option>
+          <option value="passive" data-i18n="hr.emp.status.passive">Pasif</option>
+          <option value="terminated" data-i18n="hr.emp.status.terminated">İşten ayrıldı</option>
         </select>
-        <input id="searchInput" placeholder="Ad veya personel no ara" />
+        <select id="natFilter">
+          <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
+          <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+          <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+          <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+          <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+          <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+        </select>
+        <select id="countryFilter">
+          <option value="" data-i18n="hr.emp.filterCountry">Ülke</option>
+          <option value="TR" data-i18n="hr.emp.country.tr">Türkiye</option>
+          <option value="UZ" data-i18n="hr.emp.country.uz">Özbekistan</option>
+        </select>
+        <select id="regionFilter" disabled>
+          <option value="" data-i18n="hr.emp.filterRegion">İl / bölge</option>
+        </select>
+        <select id="departmentFilter"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+        <select id="positionFilter"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
+        <input id="searchInput" class="emp-filter-search" data-i18n-placeholder="hr.emp.search" placeholder="Ara" />
       </div>
-      <div class="inline-group" style="margin-top:10px">
-        <button id="btnSearch" type="button">Filtrele</button>
-        <a href="/hr-employee-form.html" class="version-btn" style="text-align:center;line-height:20px;text-decoration:none">Yeni personel</a>
+      <div class="emp-filter-actions">
+        <button id="btnSearch" type="button" class="version-btn" data-i18n="hr.emp.filter">Filtrele</button>
+        <a href="/hr-employee-form.html" class="version-btn" style="text-align:center;line-height:20px;text-decoration:none" data-i18n="hr.emp.new">Yeni personel</a>
       </div>
       <div id="msg" class="muted" style="margin-top:10px"></div>
       <div class="card" style="padding:12px;margin-top:12px">
         <table>
           <thead>
             <tr>
-              <th>No</th><th>Ad soyad</th><th>Departman</th><th>Pozisyon</th><th>Kullanici</th><th>Durum</th><th>Islem</th>
+              <th data-i18n="hr.emp.colPhoto">Foto</th>
+              <th data-i18n="hr.emp.colNo">No</th>
+              <th data-i18n="hr.emp.colName">Ad soyad</th>
+              <th data-i18n="hr.emp.colNat">Uyruk</th>
+              <th data-i18n="hr.emp.colDept">Departman</th>
+              <th data-i18n="hr.emp.colPos">Pozisyon</th>
+              <th data-i18n="hr.emp.colUser">Kullanıcı</th>
+              <th data-i18n="hr.emp.colStatus">Durum</th>
+              <th data-i18n="hr.emp.colAction">İşlem</th>
             </tr>
           </thead>
-          <tbody id="empBody"><tr><td colspan="7">Yukleniyor...</td></tr></tbody>
+          <tbody id="empBody"><tr><td colspan="9" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
         </table>
       </div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/location-data.js" defer></script>
   <script src="/js/hr-employees.js" defer></script>
   <script>
     function startHrEmployeesPage() {
       (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('employees');
         await window.initHrEmployeesPage?.();
@@ -68,3 +113,4 @@
   </script>
 </body>
 </html>
+

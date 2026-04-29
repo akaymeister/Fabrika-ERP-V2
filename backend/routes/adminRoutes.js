@@ -12,12 +12,14 @@ const {
   getUserExtraPerms,
   putUserExtraPerms,
   getUsersList,
+  getUnlinkedEmployees,
   postUser,
   patchUser,
   patchUserPermissionSubject,
   postResetPassword,
 } = require('../controllers/adminUserController');
 const { getSettings, putSettings } = require('../controllers/systemSettingsController');
+const { getTunnelStatus, postTunnelStart, postTunnelStop } = require('../controllers/adminTunnelController');
 
 const router = express.Router();
 
@@ -33,6 +35,7 @@ router.get('/permission-subjects/:type/:id/permissions', getPermissionSubjectPer
 router.put('/permission-subjects/:type/:id/permissions', putPermissionSubjectPermissions);
 
 router.get('/users', getUsersList);
+router.get('/employees/unlinked', getUnlinkedEmployees);
 router.post('/users', postUser);
 router.patch('/users/:id', patchUser);
 router.patch('/users/:id/permission-subject', patchUserPermissionSubject);
@@ -42,5 +45,8 @@ router.put('/users/:id/permissions', putUserExtraPerms);
 
 router.get('/settings', getSettings);
 router.put('/settings', putSettings);
+router.get('/tunnel/status', getTunnelStatus);
+router.post('/tunnel/start', postTunnelStart);
+router.post('/tunnel/stop', postTunnelStop);
 
 module.exports = router;

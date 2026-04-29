@@ -38,7 +38,6 @@ const {
 const router = express.Router();
 const PUR = 'module.purchasing';
 const PUR_REQ = ['module.purchasing.request', 'module.purchasing'];
-const PUR_APP = ['module.purchasing.approve', 'module.purchasing'];
 const PUR_SEE_BASE = ['module.purchasing.request', 'module.purchasing.approve', 'module.purchasing'];
 /** Depo (module.stock) talep listesini görebilsin — satınalma «gelen» ile aynı kaynak */
 const PUR_SEE = [...PUR_SEE_BASE, 'module.stock'];
@@ -81,7 +80,7 @@ router.put('/requests/:id', requireAnyPermission(PUR_REQ), putRequest);
 router.post('/requests', requireAnyPermission(PUR_REQ), postRequest);
 router.post('/requests/:id/submit', requireAnyPermission(PUR_REQ), postRequestSubmit);
 router.post('/requests/:id/cancel', requireAnyPermission(PUR_SEE_BASE), postRequestCancel);
-router.patch('/requests/:id/status', requireAnyPermission(PUR_APP), patchRequestStatus);
+router.patch('/requests/:id/status', requirePermission('module.purchasing.approve'), patchRequestStatus);
 router.post('/requests/:id/buyer-action', requirePermission(PUR), postRequestBuyerAction);
 router.get('/approved-request-items', requirePermission(PUR), getApprovedRequestItems);
 router.post('/orders', requirePermission(PUR), postOrder);

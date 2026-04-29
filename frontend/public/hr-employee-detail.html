@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.emp.form.title">Personel kartı</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page">
+  <div class="container emp-detail-page">
+    <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
+      <div class="topbar-left">
+        <h1 data-i18n="hr.emp.form.title">Personel kartı</h1>
+        <p class="subtitle emp-breadcrumb" data-i18n="hr.emp.breadcrumb">Personel > Personel Kartı</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" id="btnBack" href="/hr-employees.html" class="version-btn" data-i18n="hr.emp.back">Geri</a>
+        <a data-topbar-persist="1" id="btnEdit" href="/hr-employee-form.html" class="version-btn" data-i18n="hr.emp.edit">Düzenle</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+
+    <section class="emp-detail-grid-top emp-section">
+      <article class="emp-detail-card">
+        <h2 class="emp-detail-title" data-i18n="hr.emp.identity">Kimlik Bilgileri</h2>
+        <div class="emp-detail-fields emp-detail-fields--3" id="identityFields"></div>
+      </article>
+      <article class="emp-detail-card emp-photo-card">
+        <div class="emp-photo-head">
+          <h2 class="emp-detail-title" data-i18n="hr.emp.photoCardTitle">Personel Fotoğrafı</h2>
+          <button type="button" class="emp-photo-delete" aria-label="remove-photo" title="remove-photo">×</button>
+        </div>
+        <div class="emp-photo-wrap" id="photoSlot"></div>
+        <div class="emp-photo-actions">
+          <a id="btnPhotoEdit" href="/hr-employee-form.html" class="version-btn" data-i18n="hr.emp.photoChange">Fotoğrafı Değiştir</a>
+        </div>
+        <p class="muted emp-photo-note" data-i18n="hr.emp.photoSpec">JPG, PNG veya WebP (Maks. 5MB)</p>
+      </article>
+    </section>
+
+    <section class="emp-detail-card emp-section">
+      <h2 class="emp-detail-title" data-i18n="hr.emp.detail.salary">Maaş Bilgileri</h2>
+      <div class="emp-stat-grid" id="salaryFields"></div>
+      <div class="emp-note-box" data-i18n="hr.emp.salaryInfo">Resmi olmayan maaş tutarı sistem tarafından otomatik hesaplanmaktadır.</div>
+    </section>
+
+    <section class="emp-detail-card emp-section">
+      <h2 class="emp-detail-title" data-i18n="hr.emp.detail.address">Adres Bilgileri</h2>
+      <div class="emp-detail-fields emp-detail-fields--4" id="addressFields"></div>
+    </section>
+
+    <div id="msg" class="muted emp-detail-msg"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-employee-detail.js" defer></script>
+  <script>
+    function startHrEmployeeDetailPage() {
+      (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('employees');
+        await window.initHrEmployeeDetailPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startHrEmployeeDetailPage);
+    } else {
+      startHrEmployeeDetailPage();
+    }
+  </script>
+</body>
+</html>
+

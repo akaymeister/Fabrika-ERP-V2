@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -21,7 +21,7 @@
     .pl-row-cancelled { text-decoration: line-through; opacity: 0.85; background: #fef2f2; }
   </style>
 </head>
-<body>
+<body class="app-shell">
   <p class="no-print" style="padding:12px">
     <button type="button" class="logout-btn" id="btnPr" data-i18n="purch.print.btn">Yazdır</button>
     <a href="/purchase-processing.html" class="version-btn" data-i18n="purch.print.back">İşleme dön</a>
@@ -101,7 +101,7 @@
           <td style="text-align:right">${fmtQty(it.qty_ordered)}</td>
           <td>${money(it.unit_price)}</td>
           <td style="text-align:right">${money(it.line_total)}</td>
-          <td style="font-size:11px">${it.request_line_image_path || it.request_line_pdf_path ? '●' : '—'}</td>
+          <td style="font-size:11px">${it.request_line_image_path || it.request_line_pdf_path ? 'â—' : '—'}</td>
           <td style="font-size:11px">${noteCell.replace(/</g, '')}</td>
         </tr>`;
           }
@@ -124,10 +124,10 @@
       document.getElementById('root').innerHTML = `
         <div class="ph">
           <h1 style="margin:0;">${fmtTitleLabel(tK('purch.print.title'))}</h1>
-          <p><strong>${fmtDisplayUpper((o.order_code || '').replace(/</g, ''))}</strong> · ${fmtDisplayUpper((o.project_label || o.project_code || '—').toString().replace(/</g, ''))}</p>
-          <p>${tK('purch.wf.colDate')}: ${(o.order_date || '—').toString().replace(/</g, '')} · ${tK('purch.delivery')}: ${(o.delivery_date || '—').toString().replace(/</g, '')}</p>
-          <p>${tK('purch.col.supplier')}: ${fmtDisplayUpper((o.supplier_name || '—').replace(/</g, ''))} · ${tK('purch.wf.issuer')}: ${fmtDisplayUpper((o.order_creator_name || '—').replace(/</g, ''))}</p>
-          <p>${tK('purch.wf.talepNo')}: ${fmtDisplayUpper((o.request_code || o.requester_name ? (o.request_code || '') : '—').replace(/</g, ''))} · ${tK('purch.wf.requester')}: ${fmtDisplayUpper((o.requester_name || '—').replace(/</g, ''))} · ${tK('purch.wf.approver')}: ${fmtDisplayUpper((o.approver_name || '—').replace(/</g, ''))}</p>
+          <p><strong>${fmtDisplayUpper((o.order_code || '').replace(/</g, ''))}</strong> Â· ${fmtDisplayUpper((o.project_label || o.project_code || '—').toString().replace(/</g, ''))}</p>
+          <p>${tK('purch.wf.colDate')}: ${(o.order_date || '—').toString().replace(/</g, '')} Â· ${tK('purch.delivery')}: ${(o.delivery_date || '—').toString().replace(/</g, '')}</p>
+          <p>${tK('purch.col.supplier')}: ${fmtDisplayUpper((o.supplier_name || '—').replace(/</g, ''))} Â· ${tK('purch.wf.issuer')}: ${fmtDisplayUpper((o.order_creator_name || '—').replace(/</g, ''))}</p>
+          <p>${tK('purch.wf.talepNo')}: ${fmtDisplayUpper((o.request_code || o.requester_name ? (o.request_code || '') : '—').replace(/</g, ''))} Â· ${tK('purch.wf.requester')}: ${fmtDisplayUpper((o.requester_name || '—').replace(/</g, ''))} Â· ${tK('purch.wf.approver')}: ${fmtDisplayUpper((o.approver_name || '—').replace(/</g, ''))}</p>
           <p style="font-size:12px;color:#334155">${fmtDisplayUpper((o.note || '').replace(/</g, ''))}</p>
         </div>
         <table class="pl-table">
@@ -180,3 +180,4 @@
   </script>
 </body>
 </html>
+

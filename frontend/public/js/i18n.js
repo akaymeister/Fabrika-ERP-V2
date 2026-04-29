@@ -2,11 +2,31 @@
   const SUPPORTED = ['tr', 'uz', 'ru', 'en'];
   let dict = {};
 
+  function ensureLanguageSelect() {
+    let sel = document.getElementById('languageSelect');
+    if (sel) return sel;
+    const host =
+      document.querySelector('.topbar-right') ||
+      document.querySelector('.topbar') ||
+      document.querySelector('.container') ||
+      document.body;
+    if (!host) return null;
+    sel = document.createElement('select');
+    sel.id = 'languageSelect';
+    sel.setAttribute('aria-label', 'Language');
+    sel.style.maxWidth = '120px';
+    sel.style.padding = '8px';
+    sel.style.borderRadius = '8px';
+    sel.innerHTML =
+      '<option value="tr">Türkçe</option>' +
+      '<option value="uz">O‘zbekcha</option>' +
+      '<option value="ru">Русский</option>' +
+      '<option value="en">English</option>';
+    host.appendChild(sel);
+    return sel;
+  }
+
   function getLang() {
-    const fromLs = localStorage.getItem('erp_lang');
-    if (fromLs && SUPPORTED.includes(fromLs)) {
-      return fromLs;
-    }
     const sel = document.getElementById('languageSelect');
     if (sel && SUPPORTED.includes(sel.value)) {
       return sel.value;
@@ -120,15 +140,18 @@
   }
 
   async function init() {
-    const lang = getLang();
+    // ERP V2 kurali: varsayilan dil her zaman Turkce.
+    const sel = ensureLanguageSelect();
+    const lang = 'tr';
+    if (sel && SUPPORTED.includes(lang)) {
+      sel.value = lang;
+    }
     setDocumentLang(lang);
     await loadDict(lang);
     apply(document);
-    const sel = document.getElementById('languageSelect');
     if (sel) {
       sel.value = lang;
       sel.addEventListener('change', async () => {
-        localStorage.setItem('erp_lang', sel.value);
         setDocumentLang(sel.value);
         await loadDict(sel.value);
         apply(document);

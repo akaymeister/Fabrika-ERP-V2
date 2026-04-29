@@ -10,6 +10,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const ROLES = [
   { name: 'Süper Yönetici', slug: 'super_admin' },
   { name: 'Admin', slug: 'admin' },
+  { name: 'PERSONEL', slug: 'staff' },
   { name: 'Yönetici', slug: 'yonetici' },
   { name: 'Satın almacı', slug: 'satin_almaci' },
   { name: 'Depocu', slug: 'depocu' },

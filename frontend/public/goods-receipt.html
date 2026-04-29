@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -81,9 +81,14 @@
     }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container pur-wide">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="purch.gr.title">MAL KABUL</h1>
         <p class="subtitle" data-i18n="purch.gr.subShort">Depo: siparişe göre miktarsal kabul. Fiyat / maliyet satınalma tarafında.</p>
@@ -95,13 +100,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock.hub">Stok</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock.hub">Stok</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="msg" style="min-height: 1.2em; margin: 8px 0" role="status"></p>
 
     <section class="card">
@@ -182,6 +189,8 @@
         </table>
       </div>
     </section>
+      </main>
+    </div>
   </div>
   <script src="/js/stock-common.js?v=gr10"></script>
   <script src="/js/i18n.js?v=gr10"></script>
@@ -233,11 +242,11 @@
       }
       function isM2Unit(v) {
         const s = String(v || '').trim().toLowerCase();
-        return s === 'm2' || s === 'm²' || s === 'sqm';
+        return s === 'm2' || s === 'mÂ²' || s === 'sqm';
       }
       function isM3Unit(v) {
         const s = String(v || '').trim().toLowerCase();
-        return s === 'm3' || s.indexOf('m³') >= 0;
+        return s === 'm3' || s.indexOf('mÂ³') >= 0;
       }
       function calcM2ForQty(it, qty) {
         const q = Number(qty) || 0;
@@ -535,3 +544,4 @@
   </style>
 </body>
 </html>
+

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="project.costs.pageTitle">Proje maliyet kontrolü</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="project.costs.pageTitle">Proje maliyet kontrolü</h1>
         <p class="subtitle" data-i18n="project.costs.sub">Planlanan bölüm</p>
@@ -20,17 +25,21 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <div class="card" style="max-width: 720px">
       <span class="module-tag plan-tag" data-i18n="dashboard.tagPlan">Yakında</span>
       <h2 data-i18n="project.placeholder.title" style="margin-top: 12px">Geliştirme aşamasında</h2>
       <p class="muted" data-i18n="project.costs.placeholderP">Bütçe, gerçekleşen maliyet ve sapma; sonraki sürümler.</p>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
@@ -69,3 +78,4 @@
   </script>
 </body>
 </html>
+

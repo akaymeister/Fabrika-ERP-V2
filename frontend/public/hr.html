@@ -3,35 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IK Dashboard — Fabrika ERP V2</title>
+  <title data-i18n="hr.hub.title">İK Dashboard — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
-        <h1>IK Dashboard</h1>
-        <p class="subtitle">Faz 1A iskelet ekran</p>
+        <h1 data-i18n="hr.hub.title">İK Dashboard</h1>
+        <p class="subtitle" data-i18n="hr.hub.sub">Faz 1A iskelet ekran</p>
       </div>
       <div class="topbar-right">
-        <a href="/" class="version-btn">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn">Cikis</a>
-      </div>
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <div class="card">
-      <h2>IK Modulu</h2>
-      <p>Bu sayfa Faz 1A iskeletidir. Tam ekran icerigi sonraki adimlarda doldurulacaktir.</p>
+      <h2 data-i18n="hr.hub.moduleTitle">İK Modülü</h2>
+      <p data-i18n="hr.hub.moduleDesc">Bu sayfa Faz 1A iskeletidir. Tam ekran içeriği sonraki adımlarda doldurulacaktır.</p>
       <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
-        <a class="dashboard-card" href="/hr-employees.html" style="text-decoration:none;color:inherit"><h3>Personeller</h3></a>
-        <a class="dashboard-card" href="/hr-employee-form.html" style="text-decoration:none;color:inherit"><h3>Personel Karti</h3></a>
-        <a class="dashboard-card" href="/hr-structure.html" style="text-decoration:none;color:inherit"><h3>Departman / Pozisyon</h3></a>
-        <a class="dashboard-card" href="/hr-attendance.html" style="text-decoration:none;color:inherit"><h3>Gunluk puantaj</h3></a>
-        <a class="dashboard-card" href="/hr-attendance-monthly.html" style="text-decoration:none;color:inherit"><h3>Aylik puantaj</h3></a>
-        <a class="dashboard-card" href="/hr-attendance-locks.html" style="text-decoration:none;color:inherit"><h3>Puantaj kilitleri</h3></a>
+        <a class="dashboard-card" href="/hr-employees.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.employees">Personeller</h3></a>
+        <a class="dashboard-card" href="/hr-employee-form.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.employeeForm">Personel Kartı</h3></a>
+        <a class="dashboard-card" href="/hr-structure.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.structure">Departman / Pozisyon</h3></a>
+        <a class="dashboard-card" href="/hr-attendance.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceDaily">Günlük puantaj</h3></a>
+        <a class="dashboard-card" href="/hr-attendance-monthly.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
+        <a class="dashboard-card" href="/hr-attendance-locks.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
+        <a class="dashboard-card" href="/hr-settings.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
       </div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>

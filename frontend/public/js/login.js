@@ -30,6 +30,11 @@ form.addEventListener('submit', async (e) => {
       err.style.display = 'block';
       return;
     }
+    const u = data.user;
+    if (u && u.mustChangePassword) {
+      window.location.href = '/my-profile.html?mustChangePassword=1';
+      return;
+    }
     window.location.href = '/';
   } catch {
     err.textContent = t('login.network');

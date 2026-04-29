@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -11,11 +11,22 @@
     .att-table th, .att-table td { font-size: 12px; padding: 6px 8px; vertical-align: middle; }
     .att-table select, .att-table input { min-height: 36px; font-size: 12px; }
     .att-row-locked { opacity: 0.7; background: #f8fafc; }
+    .att-inline-5 { display:grid; grid-template-columns: 1.1fr 1.1fr 1.5fr auto auto; gap:10px; align-items:end; }
+    .att-inline-5 > * { width:100%; min-width:0; }
+    .att-inline-5 > button { height:34px; width:auto; min-width:90px; justify-self:end; font-size:12px; border-radius:8px; }
+    .att-date-row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; justify-content:space-between; }
+    .att-missing-badge { font-size:12px; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; border-radius:999px; padding:6px 10px; }
+    @media (max-width: 980px) { .att-inline-5 { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="hr.att.daily.title">Gunluk puantaj</h1>
         <p class="subtitle" data-i18n="hr.att.daily.sub">Aktif personeller icin toplu gunluk giris</p>
@@ -27,21 +38,38 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-      </div>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <section class="card">
-      <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+      <div class="form-row att-date-row">
         <div>
           <label for="workDate" data-i18n="hr.att.daily.date">Tarih</label>
           <input id="workDate" type="date" />
         </div>
+        <p id="missingCount" class="att-missing-badge" data-i18n="hr.att.daily.missingCount">Giriş yapılmayan personel: 0</p>
+      </div>
+      <p class="muted" style="margin-top:10px" data-i18n="hr.emp.filtersTitle">Filtreler</p>
+      <div class="att-inline-5" style="margin-top:6px">
+        <select id="attNatFilter" aria-label="nat">
+          <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
+          <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+          <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+          <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+          <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+          <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+        </select>
+        <select id="attDepFilter" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+        <input id="attNameFilter" type="text" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" />
         <button type="button" id="btnLoadDaily" class="version-btn" data-i18n="hr.att.daily.load">Listele</button>
-        <button type="button" id="btnSaveDaily" class="logout-btn" style="background:#1d4ed8;border:none" data-i18n="hr.att.daily.save">Toplu kaydet</button>
+        <button type="button" id="btnSaveDaily" class="version-btn" data-i18n="hr.att.daily.save">Kaydet</button>
       </div>
       <p id="lockHint" style="margin-top:8px;font-size:13px;color:#b91c1c;display:none" data-i18n="hr.att.locked.hint">Bu ay kilitli</p>
       <p id="msg" class="api-msg" style="min-height:1.2em;margin-top:8px"></p>
@@ -60,10 +88,12 @@
               <th data-i18n="hr.att.colNote">Not</th>
             </tr>
           </thead>
-          <tbody id="dailyBody"><tr><td colspan="9" data-i18n="purch.req.loading">Yukleniyor…</td></tr></tbody>
+          <tbody id="dailyBody"><tr><td colspan="9" data-i18n="hr.att.loading">Yukleniyor…</td></tr></tbody>
         </table>
       </div>
     </section>
+      </main>
+    </div>
   </div>
 
   <script src="/js/i18n.js" defer></script>
@@ -87,3 +117,4 @@
   </script>
 </body>
 </html>
+

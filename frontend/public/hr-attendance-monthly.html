@@ -1,31 +1,74 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="hr.att.monthly.title">Aylik puantaj</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    .attm-inline-5 { display:grid; grid-template-columns:1.1fr 1.4fr 1.2fr 1.2fr auto; gap:10px; align-items:end; }
+    .attm-inline-5 > * { min-width:0; }
+    .attm-row-btn { width:auto; min-width:86px; height:32px; padding:0 10px; font-size:12px; border-radius:8px; }
+    .attm-month-row { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+    .attm-daily-wrap { overflow-x:auto; margin-top:8px; }
+    .attm-daily-table { font-size:11px; }
+    .attm-daily-table th, .attm-daily-table td { padding:4px 6px; vertical-align:middle; }
+    .attm-daily-table select, .attm-daily-table input { min-height:30px; font-size:11px; }
+    @media (max-width:980px) { .attm-inline-5 { grid-template-columns:1fr; } }
+  </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="hr.att.monthly.title">Aylik puantaj</h1>
         <p class="subtitle" data-i18n="hr.att.monthly.sub">Ay bazinda satir ve ozet</p>
       </div>
       <div class="topbar-right">
-        <a href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Ana sayfa</a>
-      </div>
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <section class="card">
-      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+      <div class="attm-month-row">
         <div>
           <label for="monthKey" data-i18n="hr.att.monthly.month">Ay</label>
           <input id="monthKey" type="month" />
         </div>
+        <div>
+          <label for="mDayFilter" data-i18n="hr.att.monthly.day">Gün</label>
+          <select id="mDayFilter" aria-label="day"><option value="" data-i18n="hr.att.monthly.allDays">Tüm günler</option></select>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:10px" data-i18n="hr.emp.filtersTitle">Filtreler</p>
+      <div class="attm-inline-5" style="margin-top:6px">
+        <select id="mNatFilter" aria-label="nat">
+          <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
+          <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+          <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+          <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+          <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+          <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+        </select>
+        <input id="mNameFilter" type="text" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" />
+        <select id="mDepFilter" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+        <select id="mPosFilter" aria-label="pos"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
         <button type="button" id="btnLoadMonthly" class="version-btn" data-i18n="hr.att.monthly.load">Listele</button>
       </div>
       <p id="monthlyMsg" style="min-height:1.2em"></p>
@@ -34,19 +77,23 @@
         <th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colTotalHours">Toplam saat</th><th data-i18n="hr.att.colOvertimeHours">Fazla mesai</th>
       </tr></thead><tbody id="summaryBody"></tbody></table></div>
       <h3 data-i18n="hr.att.monthly.rows">Gunluk satirlar</h3>
-      <div style="overflow-x:auto"><table><thead><tr>
+      <div class="attm-daily-wrap"><table class="attm-daily-table"><thead><tr>
         <th data-i18n="hr.att.colDate">Tarih</th><th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colProject">Proje</th>
-        <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th>
+        <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th><th data-i18n="hr.att.colNote">Not</th><th data-i18n="hr.emp.colAction">İşlem</th>
       </tr></thead><tbody id="monthlyBody"></tbody></table></div>
     </section>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
+  <script src="/js/location-data.js" defer></script>
   <script src="/js/hr-attendance-monthly.js" defer></script>
   <script>
     function start() {
       (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('attendance-monthly');
         await window.initHrAttendanceMonthlyPage?.();
@@ -56,4 +103,5 @@
   </script>
 </body>
 </html>
+
 

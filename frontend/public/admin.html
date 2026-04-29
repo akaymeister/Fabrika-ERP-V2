@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="admin.pageTitle">Süper yönetim — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-admin-nav="home">
+<body class="app-shell app-master-page" data-admin-nav="home">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="admin.title">Süper yönetim</h1>
         <p class="subtitle">Kullanici, yetki ve sistem ayari yonetim merkezi</p>
@@ -20,12 +25,14 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
 
     <section class="hero-panel premium-hero" style="margin-bottom:24px">
@@ -54,6 +61,8 @@
         <p>Varsayilan para, dil ve proje kod ayarlari</p>
       </a>
     </div>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
@@ -64,3 +73,4 @@
   </footer>
 </body>
 </html>
+

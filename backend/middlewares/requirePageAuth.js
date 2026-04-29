@@ -6,6 +6,12 @@ const { FRONTEND_PUBLIC } = require('../utils/paths');
  */
 function requirePageAuth(req, res, next) {
   if (req.session && req.session.user) {
+    if (req.session.user.mustChangePassword) {
+      const p = req.path || '';
+      if (p !== '/my-profile.html') {
+        return res.redirect('/my-profile.html?mustChangePassword=1');
+      }
+    }
     return next();
   }
   return res.redirect('/login.html');

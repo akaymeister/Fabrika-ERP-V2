@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -208,9 +208,14 @@
     }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="stock.out.title">Stok çıkış</h1>
         <p class="subtitle" data-i18n="stock.out.sub">Proje, depo, ürün; önce proje stoku, sonra genel, sonra diğer (FIFO)</p>
@@ -222,13 +227,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <div class="card stock-out-form-card">
       <form id="f">
         <div class="form-stock-out-r1">
@@ -389,6 +396,8 @@
         </table>
       </div>
     </div>
+      </main>
+    </div>
   </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
@@ -453,12 +462,12 @@
       const n = p.name || '';
       return (pc + ' — ' + n).trim() || n || '#' + p.id;
     }
-    /** Ürün giriş birimi m² (alan) mı? Aksi halde adet/plaka vb. */
+    /** Ürün giriş birimi mÂ² (alan) mı? Aksi halde adet/plaka vb. */
     function entryUnitIsM2(p) {
       const u = String((p && (p.unit_code || p.unit_legacy)) || '')
         .trim()
         .toLowerCase();
-      return u === 'm2' || u === 'm²' || u === 'sqm' || u === 'mt2';
+      return u === 'm2' || u === 'mÂ²' || u === 'sqm' || u === 'mt2';
     }
     function plakaCountFromProduct(p) {
       if (!p) return 0;
@@ -483,21 +492,21 @@
       return s.toLocaleUpperCase('tr-TR');
     }
     /**
-     * Güncel stok: sadece giriş biriminde (örn. 50 ADET veya 12,5 M²)
+     * Güncel stok: sadece giriş biriminde (örn. 50 ADET veya 12,5 MÂ²)
      */
     function formatStockInEntryUnit(p) {
       if (!p) return '—';
       const m2 = Number(p.stock_m2) || 0;
       if (m2 < 0.0001) {
         if (entryUnitIsM2(p)) {
-          return tLoc('stock.out.noStock', '0 m²');
+          return tLoc('stock.out.noStock', '0 mÂ²');
         }
         return '0 ' + entryUnitLabelUpper(p);
       }
       if (entryUnitIsM2(p)) {
         const q =
           typeof window.fmtQty === 'function' ? window.fmtQty(m2) : String(m2);
-        return q + ' M²';
+        return q + ' MÂ²';
       }
       const n = plakaCountFromProduct(p);
       const q = typeof window.fmtQty === 'function' ? window.fmtQty(n) : String(n);
@@ -592,7 +601,7 @@
       const mode = document.getElementById('qtyMode')?.value || 'pieces';
       const el = document.getElementById('qtyUnitBadge');
       if (!el) return;
-      el.textContent = mode === 'm2' ? 'M²' : tLoc('stock.in.unitPiece', 'ADET');
+      el.textContent = mode === 'm2' ? 'MÂ²' : tLoc('stock.in.unitPiece', 'ADET');
     }
     function updateProductHint(p) {
       const hint = document.getElementById('productUnitHint');
@@ -614,11 +623,11 @@
       const m3s = m3 != null && Number.isFinite(m3) ? Number(m3).toFixed(4) : '—';
       el.innerHTML =
         '<span>' +
-        tLoc('stock.in.sysM2', 'Sistem m²') +
+        tLoc('stock.in.sysM2', 'Sistem mÂ²') +
         '</span>: ' +
         m2s +
         ' &nbsp;|&nbsp; <span>' +
-        tLoc('stock.in.sysM3', 'Sistem m³') +
+        tLoc('stock.in.sysM3', 'Sistem mÂ³') +
         '</span>: ' +
         m3s;
     }
@@ -817,7 +826,7 @@
       }
       const dm = Number(m.direct_m2_entry);
       if (dm === 1) {
-        return tLoc('stock.mov.birimM2', 'M²');
+        return tLoc('stock.mov.birimM2', 'MÂ²');
       }
       const u = (m.unit_code || m.p_unit || '').trim();
       return u ? u.toLocaleUpperCase('tr-TR') : '—';
@@ -901,10 +910,10 @@
       const b = document.getElementById('outEditQtyUnit');
       if (!b) return;
       if (m2p <= 0) {
-        b.textContent = tLoc('stock.mov.birimM2', 'M²');
+        b.textContent = tLoc('stock.mov.birimM2', 'MÂ²');
         return;
       }
-      b.textContent = mode === 'm2' ? 'M²' : tLoc('stock.in.unitPiece', 'ADET');
+      b.textContent = mode === 'm2' ? 'MÂ²' : tLoc('stock.in.unitPiece', 'ADET');
     }
     function openOutVoidFromRow(mid) {
       voidOutTargetMid = +mid;
@@ -1142,7 +1151,7 @@
       const m2 = getM2In();
       if (!Number.isFinite(m2) || m2 <= 0) {
         const m = document.getElementById('msg');
-        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem m²)');
+        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem mÂ²)');
         m.style.display = 'block';
         return;
       }
@@ -1172,7 +1181,7 @@
       }
       pushFrequentId(productId);
       const o = document.getElementById('ok');
-      o.textContent = tLoc('stock.out.okShort', 'Tamam. Kalan m²: {m}').replace(
+      o.textContent = tLoc('stock.out.okShort', 'Tamam. Kalan mÂ²: {m}').replace(
         '{m}',
         data.newStockM2 != null ? String(data.newStockM2) : '—'
       );
@@ -1221,3 +1230,4 @@
   </script>
 </body>
 </html>
+

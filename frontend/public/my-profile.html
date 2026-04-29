@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="me.title">Benim Hesabım</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
+      <div class="topbar-left">
+        <h1 data-i18n="me.title">Benim Hesabım</h1>
+        <p class="subtitle" data-i18n="me.subtitle">Kişisel bilgileriniz, çalışma bilgileriniz ve hesap ayarlarınız.</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+</div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+    <p id="profileMsg" class="login-error" style="display:none"></p>
+    <p id="mustChangeBanner" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#fef3c7;color:#92400e"></p>
+
+    <section class="card my-prof-card">
+      <h3 data-i18n="me.profileSummary">Profil Özeti</h3>
+      <div class="my-prof-summary">
+        <div id="myAvatar" class="my-prof-avatar">U</div>
+        <div class="my-prof-grid" id="summaryGrid"></div>
+      </div>
+      <p id="unlinkedInfo" class="muted" style="display:none" data-i18n="me.unlinked">
+        Bu kullanıcı henüz bir personel kartına bağlanmamış.
+      </p>
+    </section>
+
+    <section class="card my-prof-card" id="change-password">
+      <h3 data-i18n="me.accountInfo">Hesap Bilgileri</h3>
+      <div class="my-prof-grid" id="accountGrid"></div>
+      <div class="my-pass-grid">
+        <input id="curPass" type="password" data-i18n-placeholder="me.currentPassword" placeholder="Mevcut şifre" />
+        <input id="newPass" type="password" data-i18n-placeholder="me.newPassword" placeholder="Yeni şifre" />
+        <input id="confirmPass" type="password" data-i18n-placeholder="me.confirmPassword" placeholder="Yeni şifre tekrar" />
+        <button id="btnMePass" class="version-btn" type="button" data-i18n="me.changePassword">Şifre Değiştir</button>
+      </div>
+      <p id="passMsg" class="api-msg"></p>
+    </section>
+
+    <section class="card my-prof-card">
+      <h3 data-i18n="me.salary">Maaş Bilgilerim</h3>
+      <div class="my-prof-grid" id="salaryGrid"></div>
+    </section>
+
+    <section class="card my-prof-card">
+      <h3 data-i18n="me.attendance">Puantaj / Çalışma Bilgilerim</h3>
+      <div class="my-prof-grid" id="attendanceGrid"></div>
+      <p class="muted" data-i18n="me.attendancePlaceholder">Bu alan ileride puantaj modülü ile otomatik dolacaktır.</p>
+    </section>
+
+    <section class="card my-prof-card">
+      <h3 data-i18n="me.advance">Avans / Ödeme Bilgilerim</h3>
+      <div class="my-prof-grid" id="advanceGrid"></div>
+      <p class="muted" data-i18n="me.advancePlaceholder">Bu alan taslak olarak hazırlanmıştır.</p>
+    </section>
+
+    <section class="card my-prof-card">
+      <h3 data-i18n="me.notifications">Bildirimler</h3>
+      <p class="muted" data-i18n="me.noNotifications">Henüz bildiriminiz yok.</p>
+    </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-notify.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/my-profile.js" defer></script>
+</body>
+</html>
+

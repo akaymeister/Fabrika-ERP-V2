@@ -1,5 +1,6 @@
 const {
   listUsers,
+  listUnlinkedActiveEmployees,
   pickCreatePayload,
   pickUpdatePayload,
   createUser,
@@ -19,6 +20,7 @@ const {
 } = require('../services/permissionService');
 const { jsonOk, jsonError } = require('../utils/apiResponse');
 const { pool } = require('../config/database');
+const { scheduleNotifyEmployeeCreatedTelegram } = require('../services/employeeTelegramWelcomeService');
 
 async function getRolesList(req, res) {
   const [rows] = await pool.query('SELECT id, name, slug, created_at FROM roles ORDER BY name');
@@ -178,12 +180,24 @@ async function getUsersList(req, res) {
   return res.json(jsonOk({ users }));
 }
 
+async function getUnlinkedEmployees(req, res) {
+  const employees = await listUnlinkedActiveEmployees();
+  return res.json(jsonOk({ employees }));
+}
+
 async function postUser(req, res) {
   const input = pickCreatePayload(req.body);
   try {
     const result = await createUser(input);
     if (result.error) {
       return res.status(400).json(jsonError('VALIDATION', result.error, null, result.messageKey));
+    }
+    if (input.role_assignment_type === 'employee' && result.linkedEmployeeId) {
+      scheduleNotifyEmployeeCreatedTelegram(req, result.linkedEmployeeId, {
+        erpUserCreated: true,
+        newUsername: input.username,
+        plainPassword: input.password,
+      });
     }
     return res.status(201).json(jsonOk({ id: result.userId }));
   } catch (e) {
@@ -248,6 +262,7 @@ module.exports = {
   getUserExtraPerms,
   putUserExtraPerms,
   getUsersList,
+  getUnlinkedEmployees,
   postUser,
   patchUser,
   patchUserPermissionSubject,

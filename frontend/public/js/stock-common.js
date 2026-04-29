@@ -45,7 +45,7 @@ function stockNavHTML(active, opts = {}) {
     { href: '/goods-receipt.html', key: 'receipt', k: 'nav.stock.receipt' },
     { href: '/stock-movements.html', key: 'mov', k: 'nav.stock.mov' }
   );
-  return `<nav class="stock-nav" aria-label="Stock module">
+  return `<nav class="stock-nav app-sub-nav" aria-label="Stock module">
     ${items
       .map(
         (i) =>

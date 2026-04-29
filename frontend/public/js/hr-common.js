@@ -3,13 +3,14 @@
  * Anahtarlar: hub | employees | employee-form | structure | attendance-daily | attendance-monthly | attendance-locks
  */
 const HR_NAV_FALLBACK_TR = {
-  'nav.hr.hub': 'IK PANELI',
-  'nav.hr.employees': 'PERSONELLER',
-  'nav.hr.employeeForm': 'PERSONEL KARTI',
-  'nav.hr.structure': 'DEPARTMAN / POZISYON',
-  'nav.hr.attendanceDaily': 'GUNLUK PUANTAJ',
-  'nav.hr.attendanceMonthly': 'AYLIK PUANTAJ',
-  'nav.hr.attendanceLocks': 'PUANTAJ KILITLERI',
+  'nav.hr.hub': 'IK paneli',
+  'nav.hr.employees': 'Personeller',
+  'nav.hr.employeeForm': 'Personel kartı',
+  'nav.hr.structure': 'Departman / Pozisyon',
+  'nav.hr.attendanceDaily': 'Günlük puantaj',
+  'nav.hr.attendanceMonthly': 'Aylık puantaj',
+  'nav.hr.attendanceLocks': 'Ay kilitleri',
+  'nav.hr.settings': 'Ayarlar',
 };
 
 function tHrNav(k) {
@@ -29,8 +30,9 @@ function hrNavHTML(active) {
     { href: '/hr-attendance.html', key: 'attendance-daily', k: 'nav.hr.attendanceDaily' },
     { href: '/hr-attendance-monthly.html', key: 'attendance-monthly', k: 'nav.hr.attendanceMonthly' },
     { href: '/hr-attendance-locks.html', key: 'attendance-locks', k: 'nav.hr.attendanceLocks' },
+    { href: '/hr-settings.html', key: 'settings', k: 'nav.hr.settings' },
   ];
-  return `<nav class="stock-nav" aria-label="HR">
+  return `<nav class="stock-nav app-sub-nav" aria-label="HR">
     ${items
       .map((i) => `<a href="${i.href}" class="${i.key === active ? 'active' : ''}" data-i18n="${i.k}">${tHrNav(i.k)}</a>`)
       .join('')}
@@ -39,9 +41,18 @@ function hrNavHTML(active) {
 
 async function hrApi(path, options = {}) {
   try {
+    const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const headers = { ...(options.headers || {}) };
+    if (!isForm && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (isForm) {
+      delete headers['Content-Type'];
+      delete headers['content-type'];
+    }
     const res = await fetch(path, {
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers,
       ...options,
     });
     const ct = res.headers.get('content-type') || '';

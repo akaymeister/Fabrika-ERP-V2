@@ -45,7 +45,7 @@ function purchasingNavHTML(active) {
     { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'purch' },
     { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },
   ];
-  return `<nav class="stock-nav" aria-label="Purchasing">
+  return `<nav class="stock-nav app-sub-nav" aria-label="Purchasing">
     ${items
       .map((i) => {
         if (i.need === 'any' && !hasAnyPurchasingNav()) {
@@ -57,7 +57,7 @@ function purchasingNavHTML(active) {
         if (i.need === 'see' && !__purScope.canRequest && !__purScope.canApprove && !__purScope.canPurchasing) {
           return '';
         }
-        if (i.need === 'approve' && !__purScope.canApprove && !__purScope.canPurchasing) {
+        if (i.need === 'approve' && !__purScope.canApprove) {
           return '';
         }
         if (i.need === 'purch' && !__purScope.canPurchasing) {

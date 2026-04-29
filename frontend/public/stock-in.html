@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -230,9 +230,14 @@
     }
   </style>
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="stock.in.title">Stok giriş</h1>
         <p class="subtitle" data-i18n="stock.in.superOnlySub">Süper yönetici — manuel stok (başlangıç, düzeltme, sayım, acil giriş)</p>
@@ -244,13 +249,15 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
-        <a href="/" class="version-btn" data-i18n="nav.dashboard">Dashboard</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+</div>
     </div>
     <div id="globalNavSlot"></div>
-    <div id="navSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
     <p class="muted" style="font-size: 13px; margin: 0 0 10px" data-i18n="stock.in.purchaseGrHint">
       Satınalma siparişlerinden stok, yalnızca <strong>Mal kabul / depo girişi</strong> ekranından girilir. Bu sayfa açılış, sayım, iade ve manuel giriş içindir.
     </p>
@@ -315,7 +322,7 @@
         </div>
         <div class="form-stock-in-r3">
           <div class="form-field">
-            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / m²)</label>
+            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / mÂ²)</label>
             <input type="number" id="unitPriceSysM2" min="0" step="0.0001" required />
           </div>
           <div class="form-field">
@@ -402,6 +409,8 @@
           <tbody id="movTb"></tbody>
         </table>
       </div>
+    </div>
+      </main>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
@@ -548,7 +557,7 @@
         return;
       }
       if (mode === 'm2') {
-        el.textContent = 'M²';
+        el.textContent = 'MÂ²';
       } else {
         el.textContent = tLoc('stock.in.unitPiece', 'ADET');
       }
@@ -562,11 +571,11 @@
       const m2p = productM2p.get(pid) || 0;
       const mode = document.getElementById('qtyMode')?.value || 'pieces';
       if (!pid || pid < 1) {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / m²)');
+        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / mÂ²)');
         return;
       }
       if (mode === 'm2') {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / m²)');
+        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / mÂ²)');
       } else if (m2p > 0) {
         lbl.textContent = tLoc('stock.in.unitPriceSystemPiece', 'Birim fiyat (sistem para / adet)');
       } else {
@@ -597,11 +606,11 @@
       const m3s = m3 != null && Number.isFinite(m3) ? Number(m3).toFixed(4) : '—';
       el.innerHTML =
         '<span>' +
-        escMov(tLoc('stock.in.sysM2', 'Sistem m²')) +
+        escMov(tLoc('stock.in.sysM2', 'Sistem mÂ²')) +
         '</span>: ' +
         m2s +
         ' &nbsp;|&nbsp; <span>' +
-        escMov(tLoc('stock.in.sysM3', 'Sistem m³')) +
+        escMov(tLoc('stock.in.sysM3', 'Sistem mÂ³')) +
         '</span>: ' +
         m3s;
     }
@@ -902,7 +911,7 @@
       }
       const dm = Number(m.direct_m2_entry);
       if (dm === 1) {
-        return tLoc('stock.mov.birimM2', 'M²');
+        return tLoc('stock.mov.birimM2', 'MÂ²');
       }
       const u = (m.unit_code || m.p_unit || '').trim();
       return u ? u.toLocaleUpperCase('tr-TR') : '—';
@@ -1263,13 +1272,13 @@
       const lineUsd = !Number.isFinite(fx) || fx <= 0 ? 0 : lineUzs / fx;
       if (!Number.isFinite(m2) || m2 <= 0) {
         const m = document.getElementById('msg');
-        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem m²)');
+        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem mÂ²)');
         m.style.display = 'block';
         return;
       }
       if (!Number.isFinite(unitPx) || unitPx < 0 || !Number.isFinite(fx) || fx <= 0) {
         const m = document.getElementById('msg');
-        m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Sistem birim fiyatı (m²) ve geçerli kur girin');
+        m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Sistem birim fiyatı (mÂ²) ve geçerli kur girin');
         m.style.display = 'block';
         return;
       }
@@ -1324,7 +1333,7 @@
       pushFrequentId(productId);
       const o = document.getElementById('ok');
       o.textContent =
-        'Tamam. Yeni stok m²: ' + (data.newStockM2 != null ? data.newStockM2 : '') + ' / adet: ' + (data.newStockPieces || '');
+        'Tamam. Yeni stok mÂ²: ' + (data.newStockM2 != null ? data.newStockM2 : '') + ' / adet: ' + (data.newStockPieces || '');
       o.style.display = 'block';
       document.getElementById('qtyInput').value = '';
       document.getElementById('unitPriceSysM2').value = '';
@@ -1443,3 +1452,4 @@
   </script>
 </body>
 </html>
+

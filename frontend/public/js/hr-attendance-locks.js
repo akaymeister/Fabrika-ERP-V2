@@ -6,6 +6,10 @@
   const msgEl = document.getElementById('locksMsg');
   const bodyEl = document.getElementById('locksBody');
 
+  function t(k) {
+    return window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t(k) : k;
+  }
+
   function showMsg(text, isErr) {
     if (!msgEl) return;
     msgEl.textContent = text || '';
@@ -15,7 +19,10 @@
   async function loadLocks() {
     const { ok, data } = await window.hrApi('/api/hr/attendance-locks');
     if (!ok || !data?.ok) {
-      showMsg(data?.message || 'Yuklenemedi', true);
+      showMsg(
+        (window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || t('hr.att.locks.loadFailed'),
+        true
+      );
       return;
     }
     const rows = data.data?.locks || data.locks || [];
@@ -23,24 +30,27 @@
       ? rows
           .map(
             (r) =>
-              `<tr><td>${r.month_key}</td><td>${Number(r.is_locked) === 1 ? 'Kilitli' : 'Acik'}</td><td>${r.note || '-'}</td></tr>`
+              `<tr><td>${r.month_key}</td><td>${Number(r.is_locked) === 1 ? t('hr.att.locks.stateLocked') : t('hr.att.locks.stateUnlocked')}</td><td>${r.note || '-'}</td></tr>`
           )
           .join('')
-      : '<tr><td colspan="3">Kayit yok</td></tr>';
+      : `<tr><td colspan="3">${t('hr.att.noRows')}</td></tr>`;
   }
 
   async function postAction(url) {
     const month = monthEl && monthEl.value ? monthEl.value : '';
-    if (!month) return showMsg('Ay secin', true);
+    if (!month) return showMsg(t('hr.att.locks.pickMonth'), true);
     const { ok, data } = await window.hrApi(url, {
       method: 'POST',
       body: JSON.stringify({ month, note: noteEl?.value || null }),
     });
     if (!ok || !data?.ok) {
-      showMsg(data?.message || 'Islem basarisiz', true);
+      showMsg(
+        (window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || t('hr.att.locks.actionFailed'),
+        true
+      );
       return;
     }
-    showMsg('Kaydedildi', false);
+    showMsg(t('hr.att.locks.saveOk'), false);
     await loadLocks();
   }
 

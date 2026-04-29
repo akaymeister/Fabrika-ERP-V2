@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -6,9 +6,14 @@
   <title data-i18n="dashboard.pageTitle">Gösterge paneli — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="app-shell app-master-page">
   <div class="container">
     <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+
       <div class="topbar-left">
         <h1 data-i18n="dashboard.title">Fabrika ERP</h1>
         <p class="subtitle">
@@ -35,13 +40,16 @@
           </select>
         </div>
 
-        <a href="/admin.html" class="version-btn" id="adminLink" style="display: none" data-i18n="dashboard.adminLink"
+        <a data-topbar-persist="1" href="/admin.html" class="version-btn" id="adminLink" style="display: none" data-i18n="dashboard.adminLink"
           >Süper yönetim</a>
-        <a href="/" class="version-btn" id="versionSwitchBtn" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
+</div>
     </div>
     <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
 
     <section class="hero-panel premium-hero">
       <div class="hero-text">
@@ -53,6 +61,10 @@
       </div>
 
       <div class="hero-stats">
+        <div class="stat-box">
+          <span class="stat-label" data-i18n="dashboard.kpiStockValue">Toplam stok değeri</span>
+          <strong id="heroStockValue">—</strong>
+        </div>
         <div class="stat-box">
           <span class="stat-label" data-i18n="dashboard.kpiEnv">Ortam</span>
           <strong id="heroEnv" data-i18n="dashboard.kpiEnvVal">Çok kullanıcılı</strong>
@@ -93,7 +105,7 @@
         <div class="dashboard-card primary-card">
           <div class="card-head">
             <div class="card-title-wrap">
-              <div class="module-icon" aria-hidden="true">📦</div>
+              <div class="module-icon" aria-hidden="true">ST</div>
               <h2 data-i18n="dashboard.modStock">Stok yönetimi</h2>
             </div>
             <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
@@ -113,7 +125,7 @@
         <div class="dashboard-card primary-card">
           <div class="card-head">
             <div class="card-title-wrap">
-              <div class="module-icon" aria-hidden="true">🧾</div>
+              <div class="module-icon" aria-hidden="true">SA</div>
               <h2 data-i18n="dashboard.modPurch">Satınalma</h2>
             </div>
             <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
@@ -132,7 +144,7 @@
         <div class="dashboard-card">
           <div class="card-head">
             <div class="card-title-wrap">
-              <div class="module-icon" aria-hidden="true">📁</div>
+              <div class="module-icon" aria-hidden="true">PR</div>
               <h2 data-i18n="dashboard.modProject">Proje yönetimi</h2>
             </div>
             <span class="module-tag active-tag" data-i18n="dashboard.tagActive">Aktif</span>
@@ -150,38 +162,17 @@
         <div class="dashboard-card">
           <div class="card-head">
             <div class="card-title-wrap">
-              <div class="module-icon" aria-hidden="true">👥</div>
+              <div class="module-icon" aria-hidden="true">İK</div>
               <h2 data-i18n="dashboard.modHr">İK</h2>
             </div>
             <span class="module-tag plan-tag" data-i18n="dashboard.tagArch">Mimari</span>
           </div>
-          <p data-i18n="dashboard.modHrSub">Personel merkezli büyüme; kullanıcı–personel ilişkisi ileride.</p>
+          <p data-i18n="dashboard.modHrSub">Personel merkezli büyüme; kullanıcı-personel ilişkisi ileride.</p>
           <div class="sub-links muted-links"><span data-i18n="dashboard.cardPlan">Şimdilik plan</span></div>
           <div class="card-footer">
             <span class="module-button disabled-button" aria-disabled="true" data-i18n="dashboard.soon">Yakında</span>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="quick-section">
-      <div class="section-header">
-        <h3 data-i18n="dashboard.quick">Hızlı erişim</h3>
-        <p data-i18n="dashboard.quickSub">Modül paneline doğrudan geçiş</p>
-      </div>
-      <div class="quick-links quick-links-soft">
-        <a class="quick-link" href="/stock.html" data-i18n="nav.stock">Stok</a>
-        <a class="quick-link" href="/stock-brands.html" data-i18n="nav.stock.brands">Markalar</a>
-        <a class="quick-link" href="/stock-in.html" id="quickLinkStockIn" data-i18n="nav.stock.in">Stok giriş</a>
-        <a class="quick-link" href="/goods-receipt.html" data-i18n="nav.stock.receipt">Mal kabul</a>
-        <a class="quick-link" href="/stock-out.html" data-i18n="nav.stock.out">Stok çıkış</a>
-        <a class="quick-link" href="/projects.html" data-i18n="nav.project.hub">Özet</a>
-        <a class="quick-link" href="/project-list.html" data-i18n="nav.project.add">Proje ekle</a>
-        <a class="quick-link" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
-        <a class="quick-link" href="/purchase-requests.html" data-i18n="nav.purch.requests">Talepler</a>
-        <a class="quick-link" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
-        <a class="quick-link" href="/purchasing.html" data-i18n="nav.purch.hub">Satınalma</a>
-        <a class="quick-link" href="/suppliers.html" data-i18n="nav.purch.suppliers">Tedarikçiler</a>
       </div>
     </section>
 
@@ -208,6 +199,8 @@
         </table>
       </div>
     </section>
+      </main>
+    </div>
   </div>
 
   <script src="/js/i18n.js" defer></script>
@@ -221,3 +214,4 @@
   </footer>
 </body>
 </html>
+

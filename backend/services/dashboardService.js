@@ -20,12 +20,28 @@ async function hasColumn(tableName, columnName) {
 async function getKpis() {
   const hasStockM2 = await hasColumn('products', 'stock_m2');
   const stockQtyExpr = hasStockM2 ? 'COALESCE(p.stock_m2, p.stock_qty)' : 'p.stock_qty';
-  const [[totals]] = await pool.query(
+  const [[prodAgg]] = await pool.query(
     `SELECT
-       COALESCE(SUM((${stockQtyExpr}) * p.unit_price), 0) AS total_stock_value,
+       COALESCE(SUM((${stockQtyExpr}) * p.unit_price), 0) AS list_stock_value,
        COUNT(p.id) AS product_count
      FROM products p`
   );
+
+  let totalStockValue = 0;
+  const hasCostLayers = await hasColumn('stock_cost_layers', 'qty_m2_remaining');
+  if (hasCostLayers) {
+    const [[layerRow]] = await pool.query(
+      `SELECT COALESCE(SUM(qty_m2_remaining * cost_uzs_per_m2), 0) AS fifo_value
+       FROM stock_cost_layers`
+    );
+    const fifoVal = Number(layerRow && layerRow.fifo_value) || 0;
+    if (fifoVal > 0) {
+      totalStockValue = fifoVal;
+    }
+  }
+  if (totalStockValue <= 0) {
+    totalStockValue = Number(prodAgg.list_stock_value) || 0;
+  }
 
   const [[proj]] = await pool.query(
     `SELECT COUNT(*) AS active_project_count
@@ -46,8 +62,8 @@ async function getKpis() {
   }
 
   return {
-    totalStockValue: Number(totals.total_stock_value) || 0,
-    productCount: Number(totals.product_count) || 0,
+    totalStockValue,
+    productCount: Number(prodAgg.product_count) || 0,
     activeProjectCount: Number(proj.active_project_count) || 0,
     pendingPurchaseCount: Number(pendingPurchaseCount) || 0,
   };
