@@ -86,6 +86,7 @@
     renderField(identityFields, t('hr.emp.gender'), e.gender || '-');
     renderField(identityFields, t('hr.emp.email'), e.email || '-');
     renderField(identityFields, t('hr.emp.phone'), e.phone || '-');
+    renderField(identityFields, t('hr.emp.overtimeEligible'), Number(e.overtime_eligible || 0) === 1 ? t('hr.emp.yes') : t('hr.emp.no'));
     renderField(identityFields, t('hr.emp.identityNo'), e.identity_no || '-');
     renderField(identityFields, t('hr.emp.passportNo'), e.passport_no || '-');
     renderField(identityFields, t('hr.emp.marital'), e.marital_status || '-');

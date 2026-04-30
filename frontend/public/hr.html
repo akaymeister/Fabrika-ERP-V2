@@ -34,6 +34,28 @@
       </aside>
       <main class="app-master-main">
 
+    <div class="section-header" style="margin-bottom: 4px">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <h3 data-i18n="hr.hub.kpiSectionTitle" style="margin: 0">Bugünkü puantaj özeti</h3>
+        <span id="hrHubKpiLocked" class="module-tag plan-tag" style="display: none; vertical-align: middle" data-i18n="hr.hub.kpiMonthLocked">Ay kilitli</span>
+      </div>
+      <p id="hrHubKpiErr" class="subtitle" style="display: none; color: #b91c1c; margin-top: 6px" data-i18n="hr.hub.kpiLoadError">Özet yüklenemedi.</p>
+    </div>
+    <div class="summary-section" id="hrHubKpiRow" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px" aria-live="polite">
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="hr.hub.kpiTotal">Toplam çalışan</span>
+        <strong id="hrHubKpiTotal">—</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="hr.hub.kpiAbsent">Gelmeyen</span>
+        <strong id="hrHubKpiAbsent">—</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label" data-i18n="hr.hub.kpiLeave">İzinli</span>
+        <strong id="hrHubKpiLeave">—</strong>
+      </div>
+    </div>
+
     <div class="card">
       <h2 data-i18n="hr.hub.moduleTitle">İK Modülü</h2>
       <p data-i18n="hr.hub.moduleDesc">Bu sayfa Faz 1A iskeletidir. Tam ekran içeriği sonraki adımlarda doldurulacaktır.</p>
@@ -45,6 +67,8 @@
         <a class="dashboard-card" href="/hr-attendance-monthly.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
         <a class="dashboard-card" href="/hr-attendance-locks.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
         <a class="dashboard-card" href="/hr-settings.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
+        <a class="dashboard-card" href="/hr-compensation.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.compensation">Ücret değerlendirme</h3></a>
+        <a class="dashboard-card" href="/hr-payroll.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.payroll">Bordro yönetimi</h3></a>
       </div>
     </div>
       </main>
@@ -60,10 +84,37 @@
         window.location.href = '/login.html';
       });
     });
+    function todayIsoLocal() {
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    async function loadHrHubKpi() {
+      const today = todayIsoLocal();
+      const errEl = document.getElementById('hrHubKpiErr');
+      const lockEl = document.getElementById('hrHubKpiLocked');
+      const totalEl = document.getElementById('hrHubKpiTotal');
+      const absEl = document.getElementById('hrHubKpiAbsent');
+      const leaveEl = document.getElementById('hrHubKpiLeave');
+      if (errEl) errEl.style.display = 'none';
+      const { ok, data } = await window.hrApi(`/api/hr/attendance/daily-summary?date=${encodeURIComponent(today)}`);
+      const payload = data && (data.data || data);
+      if (!ok || !data || data.ok === false || (payload && payload.error)) {
+        if (errEl) errEl.style.display = 'block';
+        return;
+      }
+      if (lockEl) lockEl.style.display = payload.isLocked ? 'inline-block' : 'none';
+      if (totalEl) totalEl.textContent = String(payload.totalEmployees ?? '—');
+      if (absEl) absEl.textContent = String(payload.absent ?? '—');
+      if (leaveEl) leaveEl.textContent = String(payload.onLeave ?? '—');
+    }
+
     function startHrHubPage() {
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('hub');
+        await loadHrHubKpi();
       })();
     }
     if (document.readyState === 'loading') {

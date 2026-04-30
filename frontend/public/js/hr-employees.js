@@ -9,8 +9,10 @@
   const searchInput = document.getElementById('searchInput');
   const btnSearch = document.getElementById('btnSearch');
   const msgEl = document.getElementById('msg');
+  const empHeadRow = document.getElementById('empHeadRow');
 
   let employees = [];
+  let salaryColumns = [];
   let departments = [];
   let positions = [];
 
@@ -146,44 +148,80 @@
     if (positionFilter.value) qs.set('positionId', positionFilter.value);
     const { ok, data } = await window.hrApi(`/api/hr/employees?${qs.toString()}`);
     if (!ok || !data?.ok) {
-      empBody.innerHTML = `<tr><td colspan="9">${t('hr.att.loadFailed')}</td></tr>`;
+      empBody.innerHTML = `<tr><td colspan="${6 + salaryColumns.length}">${t('hr.att.loadFailed')}</td></tr>`;
       showMsg((window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || '—', false);
       return;
     }
     employees = data.data?.employees || data.employees || [];
+    salaryColumns = data.data?.salaryColumns || data.salaryColumns || [];
+    renderSalaryHeaders();
     renderEmployees();
     showMsg('', true);
   }
 
+  function salaryLabel(key) {
+    const map = {
+      total: 'hr.emp.salaryCol.total',
+      rgu_uzs: 'hr.emp.salaryCol.rgu_uzs',
+      grgu_uzs: 'hr.emp.salaryCol.grgu_uzs',
+      gu_usd: 'hr.emp.salaryCol.gu_usd',
+      rsu: 'hr.emp.salaryCol.rsu',
+      grsu: 'hr.emp.salaryCol.grsu',
+      su: 'hr.emp.salaryCol.su',
+    };
+    const k = map[key] || key;
+    return t(k) === k ? key.toUpperCase() : t(k);
+  }
+
+  function renderSalaryHeaders() {
+    if (!empHeadRow) return;
+    empHeadRow.querySelectorAll('th[data-col^="salary-"]').forEach((el) => el.remove());
+    const actionTh = empHeadRow.querySelector('th:last-child');
+    salaryColumns.forEach((k) => {
+      const th = document.createElement('th');
+      th.textContent = salaryLabel(k);
+      th.setAttribute('data-col', `salary-${k}`);
+      empHeadRow.insertBefore(th, actionTh);
+    });
+  }
+
   function renderEmployees() {
     if (!employees.length) {
-      empBody.innerHTML = `<tr><td colspan="9">${t('hr.att.noRows')}</td></tr>`;
+      empBody.innerHTML = `<tr><td colspan="${6 + salaryColumns.length}">${t('hr.att.noRows')}</td></tr>`;
       return;
     }
     empBody.innerHTML = employees
       .map(
         (e) => `<tr>
-        <td>${avatarHtml(e)}</td>
-        <td>${e.employee_no || '—'}</td>
+        <td><span class="emp-photo-cell">${avatarHtml(e)}<span class="emp-photo-code">${e.employee_no || '—'}</span></span></td>
         <td>${displayNameOnly(e)}</td>
-        <td>${natLabel(e.nationality)}</td>
         <td>${e.department_name || '—'}</td>
         <td>${e.position_name || '—'}</td>
         <td>${e.user_username || '—'}</td>
-        <td>${statusLabel(e.employment_status)}</td>
+        ${salaryColumns.map((k) => `<td>${e.salary_columns?.[k] || '-'}</td>`).join('')}
         <td class="table-actions">
-          <a class="version-btn emp-row-btn" href="/hr-employee-detail.html?id=${e.id}" data-i18n="hr.emp.view">Görüntüle</a>
-          <a class="version-btn emp-row-btn" href="/hr-employee-form.html?id=${e.id}" data-i18n="hr.emp.edit">Düzenle</a>
-          <label class="emp-mini-toggle" title="${statusLabel(e.employment_status)}">
-            <input type="checkbox" data-act="quick-toggle" data-id="${e.id}" ${e.employment_status === 'active' ? 'checked' : ''} />
-            <span class="emp-mini-slider"></span>
-          </label>
-          <button type="button" class="secondary-btn btn-danger emp-row-btn" data-act="status" data-id="${e.id}" data-next="terminated" data-i18n="hr.emp.status.terminated">İşten ayrıldı</button>
+          <a class="emp-icon-btn" href="/hr-employee-detail.html?id=${e.id}" title="${t('hr.emp.view')}" aria-label="${t('hr.emp.view')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </a>
+          <a class="emp-icon-btn" href="/hr-employee-form.html?id=${e.id}" title="${t('hr.emp.edit')}" aria-label="${t('hr.emp.edit')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path></svg>
+          </a>
+          <button type="button" class="emp-icon-btn emp-danger" data-act="status" data-id="${e.id}" data-next="terminated" title="${t(
+            'hr.emp.status.terminated'
+          )}" aria-label="${t('hr.emp.status.terminated')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 8.5l7 7"></path><path d="M15.5 8.5l-7 7"></path></svg>
+          </button>
+          <span class="emp-status-row">
+            <label class="emp-mini-toggle" title="${statusLabel(e.employment_status)}">
+              <input type="checkbox" data-act="quick-toggle" data-id="${e.id}" ${e.employment_status === 'active' ? 'checked' : ''} />
+              <span class="emp-mini-slider"></span>
+            </label>
+            <span class="emp-status-text">${statusLabel(e.employment_status)}</span>
+          </span>
         </td>
       </tr>`
       )
       .join('');
-    if (window.i18n && window.i18n.apply) window.i18n.apply(empBody);
   }
 
   async function onTableClick(e) {

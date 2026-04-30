@@ -199,11 +199,11 @@
       <td><input type="number" class="r-qty pur-inp" min="0" step="any" /></td>
       <td><select class="r-unit pur-inp"></select></td>
       <td>
-        <input type="file" accept="image/*" class="r-file-img" style="max-width:110px;font-size:11px" />
+        <input type="file" accept="image/*" class="r-file-img r-file-input" />
         <div class="r-imgbox"><img class="r-imgprev" alt="" style="display:none" /></div>
       </td>
-      <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf" style="max-width:110px;font-size:11px" /></td>
-      <td><input type="text" class="r-note pur-inp" style="min-width:140px" /></td>
+      <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf r-file-input" /></td>
+      <td><input type="text" class="r-note pur-inp r-note-input" /></td>
       <td><button type="button" class="copy-row-btn" data-i18n="purch.req.copyRow">Kopya</button></td>`;
     const tbody = document.getElementById('linesBody');
     if (anchorTr && anchorTr.parentNode === tbody) {
@@ -383,11 +383,11 @@
       <td><input type="number" class="r-qty pur-inp" min="0" step="any" /></td>
       <td><select class="r-unit pur-inp"></select></td>
       <td>
-        <input type="file" accept="image/*" class="r-file-img" style="max-width:110px;font-size:11px" />
+        <input type="file" accept="image/*" class="r-file-img r-file-input" />
         <div class="r-imgbox"><img class="r-imgprev" alt="" style="display:none" /></div>
       </td>
-      <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf" style="max-width:110px;font-size:11px" /></td>
-      <td><input type="text" class="r-note pur-inp" style="min-width:140px" /></td>
+      <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf r-file-input" /></td>
+      <td><input type="text" class="r-note pur-inp r-note-input" /></td>
       <td><button type="button" class="copy-row-btn" data-i18n="purch.req.copyRow">Kopya</button></td>`;
     const tbody = document.getElementById('linesBody');
     tbody.appendChild(tr);
@@ -411,7 +411,7 @@
     document.getElementById('submitReq').addEventListener('click', () => doSave('submit'));
     document.getElementById('saveDraft').addEventListener('click', () => doSave('draft'));
     document.getElementById('fProject').addEventListener('change', () => refreshCodePreview());
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
         location.href = '/login.html';

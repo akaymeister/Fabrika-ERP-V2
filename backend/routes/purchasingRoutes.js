@@ -14,6 +14,7 @@ const {
   getWarehouses,
   getSuppliers,
   postSupplier,
+  getHubCounters,
   getRequests,
   getRequestById,
   getRequestReceiptOrders,
@@ -42,11 +43,13 @@ const PUR_SEE_BASE = ['module.purchasing.request', 'module.purchasing.approve', 
 /** Depo (module.stock) talep listesini görebilsin — satınalma «gelen» ile aynı kaynak */
 const PUR_SEE = [...PUR_SEE_BASE, 'module.stock'];
 /** Depo kabul (mal kabul) sayfası stok modülüne taşındı: module.stock da bu uçlara erişir */
-const ANY = ['module.purchasing', 'module.purchasing.receipt', 'module.stock'];
+/** Sipariş listesi: satınalmacı + depo + onaycı (fiyatlar hidePrice ile maskelenir) */
+const ANY = ['module.purchasing', 'module.purchasing.receipt', 'module.stock', 'module.purchasing.approve'];
 
 router.use(requireAuth);
 
 router.get('/scope', getScope);
+router.get('/hub-counters', requireAnyPermission(PUR_SEE_BASE), getHubCounters);
 router.get('/warehouses', requireAnyPermission(ANY), getWarehouses);
 router.get('/orders', requireAnyPermission(ANY), getOrders);
 router.get('/orders/:id', requireAnyPermission(ANY), getOrder);

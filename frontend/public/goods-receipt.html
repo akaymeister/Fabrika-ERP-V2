@@ -16,7 +16,7 @@
       min-width: 720px;
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: var(--font-size-ui);
     }
     .gr-po-table th {
       background: #f8fafc;
@@ -46,7 +46,7 @@
       min-width: 1260px;
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: var(--font-size-ui);
     }
     .gr-line-table th {
       background: #f1f5f9;
@@ -67,6 +67,25 @@
       border-radius: 6px;
       border: 1px solid #e2e8f0;
       box-sizing: border-box;
+    }
+    .gr-action-row {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      width: 100%;
+    }
+    .gr-action-row .module-button,
+    .gr-action-row .version-btn {
+      width: auto;
+      min-width: 0;
+      flex: 0 0 auto;
+    }
+    .gr-meta-inline {
+      font-size: var(--font-size-meta);
+      color: #64748b;
     }
     .gr-line-table .gr-inp-wide {
       min-width: 120px;
@@ -113,7 +132,7 @@
 
     <section class="card">
       <h3 style="margin-top: 0" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
-      <p class="muted" style="font-size: 13px" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
+      <p class="muted text-meta" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
       <div class="gr-po-scroll">
         <table class="gr-po-table">
           <thead>
@@ -158,18 +177,15 @@
             <tbody id="grLineBody"></tbody>
           </table>
         </div>
-        <div style="margin-top: 16px">
-          <label for="grNote" data-i18n="purch.gr.headerNote">Genel not (isteğe bağlı)</label>
-          <textarea id="grNote" class="input-upper" rows="2" style="width: 100%; max-width: 900px; border-radius: 8px; padding: 8px"></textarea>
+        <div class="gr-action-row" role="group" aria-label="Mal kabul eylemleri">
+          <button type="button" class="version-btn" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
+          <button type="button" class="module-button" id="grBtnSave" data-i18n="common.save">Kaydet</button>
         </div>
-        <p class="pur-req-btns" style="margin-top: 16px">
-          <button type="button" class="module-button" id="grBtnSave" data-i18n="purch.gr.btnSubmit">Giriş yap</button>
-        </p>
       </div>
     </section>
     <section class="card" style="margin-top: 16px">
       <h3 style="margin-top: 0" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
-      <p class="muted" style="font-size: 13px" data-i18n="purch.gr.completedSub">Mal kabulü tamamlanan siparişler sadece inceleme amaçlı listelenir.</p>
+      <p class="muted text-meta" data-i18n="purch.gr.completedSub">Mal kabulü tamamlanan siparişler sadece inceleme amaçlı listelenir.</p>
       <div class="gr-po-scroll">
         <table class="gr-po-table">
           <thead>
@@ -204,13 +220,14 @@
       const detailBlock = document.getElementById('grDetailBlock');
       const lineBody = document.getElementById('grLineBody');
       const orderMeta = document.getElementById('grOrderMeta');
+      const editBtn = document.getElementById('grBtnEdit');
       const saveBtn = document.getElementById('grBtnSave');
-      const noteEl = document.getElementById('grNote');
       let selectedOrderId = null;
       let currentOrder = null;
       let ordersList = [];
       let completedOrdersList = [];
       let readonlyOrder = false;
+      let editMode = false;
       function tK(k) {
         return window.i18n && window.i18n.t ? window.i18n.t(k) : k;
       }
@@ -267,7 +284,7 @@
       }
       function helperLine(labelKey, value) {
         if (value == null) return '';
-        return '<div style="font-size:11px;color:#64748b">' + esc(tK(labelKey)) + ': ' + esc(fmtQ(value)) + '</div>';
+        return '<div class="gr-meta-inline">' + esc(tK(labelKey)) + ': ' + esc(fmtQ(value)) + '</div>';
       }
       function qtyCellHtml(it, qty, strong) {
         const unit = primaryUnit(it);
@@ -293,34 +310,38 @@
         if (!currentOrder || !currentOrder.items) {
           return;
         }
+        const canEdit = !readonlyOrder || editMode;
         const items = currentOrder.items || [];
         for (const it of items) {
           const rem = typeof it.qty_remaining !== 'undefined' ? it.qty_remaining : (Number(it.qty_ordered) - Number(it.qty_received || 0));
           if (!readonlyOrder && rem <= 0) continue;
+          if (readonlyOrder && !editMode && rem <= 0) {
+            // completed siparişte edit açılana kadar satırlar salt-okunur görünür
+          }
           const oi = it.id;
           const tr = document.createElement('tr');
           tr.setAttribute('data-oi', String(oi));
-          const kabInput = readonlyOrder
-            ? '<span>' + esc(fmtQ(0)) + '</span><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>'
-            : '<input type="number" class="gr-inp f-kab" min="0" step="0.0001" value=""/><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>';
-          const redInput = readonlyOrder
-            ? '<span>' + esc(fmtQ(0)) + '</span><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>'
-            : '<input type="number" class="gr-inp f-red" min="0" step="0.0001" value="0"/><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>';
-          const hsrInput = readonlyOrder
-            ? '<span>' + esc(fmtQ(0)) + '</span><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>'
-            : '<input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/><div style="font-size:11px;color:#64748b">' + esc(primaryUnit(it)) + '</div>';
-          const noteInput = readonlyOrder
+          const kabInput = !canEdit
+            ? '<span>' + esc(fmtQ(0)) + '</span><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>'
+            : '<input type="number" class="gr-inp f-kab" min="0" step="0.0001" value=""/><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>';
+          const redInput = !canEdit
+            ? '<span>' + esc(fmtQ(0)) + '</span><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>'
+            : '<input type="number" class="gr-inp f-red" min="0" step="0.0001" value="0"/><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>';
+          const hsrInput = !canEdit
+            ? '<span>' + esc(fmtQ(0)) + '</span><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>'
+            : '<input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>';
+          const noteInput = !canEdit
             ? '<span style="color:#64748b">—</span>'
             : '<input type="text" class="gr-inp gr-inp-wide f-nt input-upper" />';
           tr.innerHTML =
-            '<td><span style="font-size:11px;color:#64748b">' +
+            '<td><span class="gr-meta-inline">' +
             esc(it.product_code || '') +
             '</span><br/><span class="display-upper">' +
             esc(it.product_name || '') +
             '</td>' +
             '<td><span class="display-upper">' +
             esc(it.warehouse_name || '—') +
-            '</span><br/><span class="display-upper" style="font-size:11px;color:#64748b">' +
+            '</span><br/><span class="display-upper gr-meta-inline">' +
             esc(it.subcategory_name || '—') +
             '</span></td>' +
             '<td class="r-stock">' +
@@ -338,6 +359,17 @@
             '<td>' + noteInput + '</td>';
           lineBody.appendChild(tr);
         }
+      }
+
+      function updateActionButtons() {
+        const canEditCurrent = !!(readonlyOrder && currentOrder);
+        if (editBtn) {
+          editBtn.style.display = canEditCurrent ? 'inline-flex' : 'none';
+        }
+        if (!saveBtn) return;
+        const saveEnabled = !!currentOrder && (!readonlyOrder || editMode);
+        saveBtn.disabled = !saveEnabled;
+        saveBtn.style.opacity = saveEnabled ? '1' : '0.65';
       }
       async function loadPoList() {
         const { ok, data } = await stockApi('/api/purchasing/orders?openForReceipt=1');
@@ -418,6 +450,7 @@
         if (!oid) return;
         selectedOrderId = String(oid);
         readonlyOrder = !!fromCompleted;
+        editMode = false;
         clearPoSelection();
         const tr = poBody.querySelector('tr[data-oid="' + selectedOrderId + '"]');
         const trCompleted = completedPoBody.querySelector('tr[data-oid="' + selectedOrderId + '"]');
@@ -435,26 +468,38 @@
         const meta =
           (o.order_code || o.id) + ' — ' + (o.supplier_name || '—') + ' — ' + (o.project_code || tK('purch.gr.project'));
         orderMeta.textContent = meta;
-        noteEl.value = '';
-        noteEl.disabled = readonlyOrder;
-        saveBtn.disabled = readonlyOrder;
-        saveBtn.style.opacity = readonlyOrder ? '0.6' : '1';
         if (readonlyOrder) {
           showMsg(tK('purch.gr.readonlyInfo'), false);
         }
+        updateActionButtons();
         renderLineRows();
         if (window.i18n && window.i18n.apply) {
           window.i18n.apply(detailBlock);
         }
       }
+      editBtn?.addEventListener('click', () => {
+        if (!currentOrder || !readonlyOrder) return;
+        editMode = true;
+        updateActionButtons();
+        renderLineRows();
+        showMsg(tK('stock.out.editDlgHint'), false);
+      });
       saveBtn.addEventListener('click', async () => {
         if (!selectedOrderId || !currentOrder) {
           showMsg(tK('purch.gr.selectPoFirst'), true);
           return;
         }
-        if (readonlyOrder) {
+        if (readonlyOrder && !editMode) {
           showMsg(tK('purch.gr.readonlyBlocked'), true);
           return;
+        }
+        let editReason = '';
+        if (editMode) {
+          editReason = String(window.prompt(tK('stock.out.editReasonLabel'), '') || '').trim();
+          if (!editReason) {
+            showMsg(tK('stock.out.editReasonLabel'), true);
+            return;
+          }
         }
         const lines = [];
         lineBody.querySelectorAll('tr[data-oi]').forEach((row) => {
@@ -480,7 +525,7 @@
           method: 'POST',
           body: JSON.stringify({
             orderId: parseInt(selectedOrderId, 10),
-            note: noteEl.value,
+            note: editReason || undefined,
             lines,
           }),
         });
@@ -492,7 +537,7 @@
           tK('purch.gr.savedOk') +
             (data && (data.receiptStatus || data.orderStatus) ? ' — ' + statusLabel(data.receiptStatus || data.orderStatus) : '')
         );
-        noteEl.value = '';
+        editMode = false;
         await loadPoList();
         await loadCompletedPoList();
         if (selectedOrderId) {
@@ -503,12 +548,13 @@
             currentOrder = null;
             selectedOrderId = null;
             readonlyOrder = false;
+            editMode = false;
             detailBlock.hidden = true;
             detailEmpty.hidden = false;
           }
         }
       });
-      document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
         e.preventDefault();
         fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(function () {
           location.href = '/login.html';
@@ -519,19 +565,24 @@
           if (window.i18n && window.i18n.loadDict) {
             await window.i18n.loadDict(window.i18n.getLang());
           }
-          if (window.initStockPageNav) {
+        } catch {
+          /* i18n sözlüğü gelmese de sipariş listeleri yüklenmeye devam etsin */
+        }
+        if (window.initStockPageNav) {
+          try {
             await window.initStockPageNav('receipt');
+          } catch {
+            /* nav problemi mal kabul listesini bloklamasın */
           }
+        }
+        try {
           await loadPoList();
           await loadCompletedPoList();
-          if (window.i18n && window.i18n.apply) {
-            window.i18n.apply(document);
-          }
         } catch (e) {
-          showMsg(
-            (e && e.message) || (tK('api.error.unknown') + ''),
-            true
-          );
+          showMsg((e && e.message) || (tK('api.error.unknown') + ''), true);
+        }
+        if (window.i18n && window.i18n.apply) {
+          window.i18n.apply(document);
         }
       }
       boot();

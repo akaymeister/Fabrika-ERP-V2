@@ -10,6 +10,7 @@ const {
   createPosition,
   updatePosition,
   listEmployees,
+  listCompensationEmployees,
   createEmployee,
   getEmployeeById,
   updateEmployee,
@@ -20,6 +21,7 @@ const {
   updateAttendance,
   updateMonthlyAttendanceRow,
   listDailyAttendance,
+  summarizeDailyAttendance,
   saveDailyAttendanceBulk,
   listMonthlyAttendance,
   listAttendanceLocks,
@@ -38,6 +40,7 @@ const {
   deleteWorkStatus,
 } = require('../services/hrService');
 const { logActivity } = require('../services/activityLogService');
+const { toUpperTr } = require('../utils/textNormalize');
 const { scheduleNotifyEmployeeCreatedTelegram } = require('../services/employeeTelegramWelcomeService');
 
 function validationOut(out) {
@@ -160,7 +163,24 @@ async function getEmployees(req, res) {
     region_or_city: req.query?.region,
     department_id: req.query?.departmentId,
     position_id: req.query?.positionId,
-  });
+  }, req.session?.user || null);
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
+async function getCompensationEmployees(req, res) {
+  const out = await listCompensationEmployees(
+    {
+      status: req.query?.status,
+      search: req.query?.search,
+      nationality: req.query?.nationality,
+      country: req.query?.country,
+      region_or_city: req.query?.region,
+      department_id: req.query?.departmentId,
+      position_id: req.query?.positionId,
+    },
+    req.session?.user || null
+  );
   if (out.error) return res.status(400).json(validationOut(out));
   return res.json(jsonOk(out));
 }
@@ -339,6 +359,19 @@ async function patchAttendance(req, res) {
   }
 }
 
+async function getDailyAttendanceSummary(req, res) {
+  const out = await summarizeDailyAttendance(req.query?.date, {
+    nationality: req.query?.nationality,
+    country: req.query?.country,
+    region_or_city: req.query?.region,
+    department_id: req.query?.departmentId,
+    position_id: req.query?.positionId,
+    search: req.query?.search,
+  });
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
 async function getDailyAttendance(req, res) {
   const out = await listDailyAttendance(req.query?.date, {
     nationality: req.query?.nationality,
@@ -356,12 +389,17 @@ async function putDailyAttendanceBulk(req, res) {
   try {
     const out = await saveDailyAttendanceBulk(req.body || {}, req.session?.user?.id || null);
     if (out.error) return res.status(400).json(validationOut(out));
+    const body = req.body || {};
+    const editReasonRaw = String(body.editReason || '').trim();
+    const editReasonNorm = editReasonRaw ? toUpperTr(editReasonRaw) : '';
     await logActivity(req, {
       action_type: 'UPSERT',
       module_name: 'hr',
       table_name: 'employee_attendance',
-      new_data: req.body || {},
-      description: 'Gunluk toplu puantaj kaydi',
+      new_data: { ...body, editReason: editReasonNorm || undefined },
+      description: editReasonNorm
+        ? `Gunluk toplu puantaj kaydi | Duzenleme aciklamasi: ${editReasonNorm.slice(0, 500)}`
+        : 'Gunluk toplu puantaj kaydi',
     });
     return res.json(jsonOk(out));
   } catch (e) {
@@ -383,7 +421,7 @@ async function getMonthlyAttendance(req, res) {
     department_id: req.query?.departmentId,
     position_id: req.query?.positionId,
     search: req.query?.search,
-  });
+  }, req.session?.user || null);
   if (out.error) return res.status(400).json(validationOut(out));
   return res.json(jsonOk(out));
 }
@@ -510,6 +548,7 @@ module.exports = {
   postPosition,
   patchPosition,
   getEmployees,
+  getCompensationEmployees,
   getEmployee,
   postEmployee,
   patchEmployee,
@@ -518,6 +557,7 @@ module.exports = {
   getAttendance,
   postAttendance,
   patchAttendance,
+  getDailyAttendanceSummary,
   getDailyAttendance,
   putDailyAttendanceBulk,
   getMonthlyAttendance,

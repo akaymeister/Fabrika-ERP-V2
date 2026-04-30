@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.compensation.title">Ücret artışı ve performans değerlendirme</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .comp-filters { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 10px; max-width: 100%; }
+    .comp-filters > * { min-width: 0; }
+    .comp-section-card { min-width: 0; }
+    .comp-table-wrap {
+      margin-top: 10px;
+      width: 100%;
+      min-width: 0;
+      overflow-x: visible;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .comp-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 10px;
+      line-height: 1.25;
+    }
+    .comp-table th, .comp-table td {
+      border: 1px solid #e2e8f0;
+      padding: 4px 4px;
+      vertical-align: middle;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+    .comp-table thead th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .comp-table tbody tr:nth-child(even) { background: #fafbfc; }
+    .comp-table .comp-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .comp-table .comp-col-photo { width: 3.25rem; text-align: center; }
+    .comp-table .comp-col-name { width: 9%; }
+    .comp-table .comp-col-raise { width: 6.75rem; min-width: 5rem; }
+    .comp-photo {
+      width: 32px; height: 32px; border-radius: 6px; object-fit: cover;
+      border: 1px solid #e2e8f0; background: #f1f5f9; display: block; margin: 0 auto;
+    }
+    .comp-photo-ph {
+      width: 32px; height: 32px; border-radius: 6px; background: #e2e8f0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #64748b; margin: 0 auto;
+    }
+    .comp-raise {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      min-height: 26px;
+      padding: 2px 4px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 10px;
+      text-align: right;
+    }
+    .comp-raise[readonly] { background: #f8fafc; color: #64748b; cursor: default; }
+    .comp-disclaimer { margin-top: 8px; padding: 8px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 11px; color: #1e3a8a; line-height: 1.35; }
+    /* style.css .card table kurallarını geç: kompakt tek ekran */
+    body.app-master-page .app-master-main .comp-section-card .comp-table thead th {
+      font-size: 10px;
+      text-transform: none;
+      letter-spacing: normal;
+      padding: 4px 4px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    body.app-master-page .app-master-main .comp-section-card .comp-table tbody td {
+      font-size: 10px;
+      padding: 4px 4px;
+    }
+    @media (max-width: 768px) { .comp-filters { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body class="app-shell app-master-page">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <div class="topbar-left">
+        <h1 data-i18n="hr.compensation.title">Ücret artışı ve performans değerlendirme</h1>
+        <p class="subtitle" data-i18n="hr.compensation.sub">Taslak zam önerileri</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+        <section class="card comp-section-card">
+          <p class="muted" data-i18n="hr.compensation.filters">Filtreler</p>
+          <div class="comp-filters">
+            <div>
+              <label for="compSearch" data-i18n="hr.emp.search">İsim ara</label>
+              <input id="compSearch" type="text" data-i18n-placeholder="hr.emp.search" />
+            </div>
+            <div>
+              <label for="compDep" data-i18n="hr.emp.filterDept">Departman</label>
+              <select id="compDep"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+            </div>
+            <button type="button" id="btnCompLoad" class="version-btn" data-i18n="hr.compensation.load">Yenile</button>
+          </div>
+          <p class="comp-disclaimer" data-i18n="hr.compensation.disclaimer"></p>
+          <p id="compMsg" class="api-msg" style="min-height:1.2em;margin-top:10px"></p>
+          <div class="comp-table-wrap">
+            <table class="comp-table">
+              <thead id="compHead"></thead>
+              <tbody id="compBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-compensation.js" defer></script>
+  <script>
+    function start() {
+      (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
+        const ok = await window.hrAssertPermission?.('hr.compensation.view');
+        if (!ok) return;
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('compensation');
+        await window.initHrCompensationPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  </script>
+</body>
+</html>

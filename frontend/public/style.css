@@ -12,6 +12,42 @@ body {
   color: #111827;
 }
 
+:root {
+  --font-size-ui: 14px;
+  --font-size-dense: 13px;
+  --font-size-meta: 12px;
+  --font-size-micro: 11px;
+}
+
+.text-ui {
+  font-size: var(--font-size-ui);
+}
+
+.text-dense {
+  font-size: var(--font-size-dense);
+}
+
+.text-meta,
+.erp-hint,
+.erp-meta,
+.erp-badge {
+  font-size: var(--font-size-meta);
+}
+
+.text-micro {
+  font-size: var(--font-size-micro);
+}
+
+.erp-table th,
+.erp-table td {
+  font-size: var(--font-size-ui);
+}
+
+.erp-table-dense th,
+.erp-table-dense td {
+  font-size: var(--font-size-dense);
+}
+
 .container {
   max-width: 1380px;
   margin: 30px auto;
@@ -71,7 +107,7 @@ button {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
-  font-size: 14px;
+  font-size: var(--font-size-ui);
   box-sizing: border-box;
 }
 

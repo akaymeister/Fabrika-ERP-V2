@@ -5,6 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="hr.emp.list.title">Personeller</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    .emp-table-wrap {
+      width: 100%;
+      overflow-x: hidden;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .emp-table-wrap table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    .emp-table-wrap th,
+    .emp-table-wrap td {
+      font-size: 12px;
+      line-height: 1.15;
+      padding: 6px 6px;
+      vertical-align: middle;
+      border: 1px solid #eef2f7;
+    }
+    .emp-table-wrap th {
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      text-align: left;
+      background: #fafcff;
+      font-weight: 700;
+    }
+    .emp-table-wrap td {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .emp-photo-cell {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .emp-photo-code {
+      font-size: 10px;
+      color: #94a3b8;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .table-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 28px);
+      grid-auto-rows: 28px;
+      gap: 5px;
+      justify-content: center;
+      align-items: center;
+    }
+    .table-actions .emp-status-row {
+      grid-column: 1 / -1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .table-actions .emp-status-text {
+      font-size: 10px;
+      color: #475569;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .emp-icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid #dbe4f0;
+      background: #1d4ed8;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      font-size: 0;
+      line-height: 1;
+    }
+    .emp-icon-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .emp-icon-btn.emp-danger {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+    .table-actions .emp-mini-toggle {
+      transform: scale(0.78);
+      transform-origin: center;
+    }
+    .emp-table-wrap th:last-child,
+    .emp-table-wrap td:last-child {
+      width: 118px;
+      min-width: 118px;
+    }
+  </style>
 </head>
 <body class="app-shell app-master-page">
   <div class="container">
@@ -70,22 +179,21 @@
       </div>
       <div id="msg" class="muted" style="margin-top:10px"></div>
       <div class="card" style="padding:12px;margin-top:12px">
+        <div class="emp-table-wrap">
         <table>
           <thead>
-            <tr>
+            <tr id="empHeadRow">
               <th data-i18n="hr.emp.colPhoto">Foto</th>
-              <th data-i18n="hr.emp.colNo">No</th>
               <th data-i18n="hr.emp.colName">Ad soyad</th>
-              <th data-i18n="hr.emp.colNat">Uyruk</th>
               <th data-i18n="hr.emp.colDept">Departman</th>
               <th data-i18n="hr.emp.colPos">Pozisyon</th>
               <th data-i18n="hr.emp.colUser">Kullanıcı</th>
-              <th data-i18n="hr.emp.colStatus">Durum</th>
               <th data-i18n="hr.emp.colAction">İşlem</th>
             </tr>
           </thead>
-          <tbody id="empBody"><tr><td colspan="9" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
+          <tbody id="empBody"><tr><td colspan="6" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
         </table>
+        </div>
       </div>
     </div>
       </main>

@@ -1,6 +1,6 @@
 /**
  * IK modulu hizli menu standardi: <div id="navSlot"></div> + initHrPageNav(activeKey)
- * Anahtarlar: hub | employees | employee-form | structure | attendance-daily | attendance-monthly | attendance-locks
+ * Anahtarlar: hub | employees | employee-form | structure | attendance-daily | attendance-monthly | attendance-locks | compensation | payroll
  */
 const HR_NAV_FALLBACK_TR = {
   'nav.hr.hub': 'IK paneli',
@@ -10,6 +10,8 @@ const HR_NAV_FALLBACK_TR = {
   'nav.hr.attendanceDaily': 'Günlük puantaj',
   'nav.hr.attendanceMonthly': 'Aylık puantaj',
   'nav.hr.attendanceLocks': 'Ay kilitleri',
+  'nav.hr.compensation': 'Ücret değerlendirme',
+  'nav.hr.payroll': 'Bordro yönetimi',
   'nav.hr.settings': 'Ayarlar',
 };
 
@@ -30,6 +32,8 @@ function hrNavHTML(active) {
     { href: '/hr-attendance.html', key: 'attendance-daily', k: 'nav.hr.attendanceDaily' },
     { href: '/hr-attendance-monthly.html', key: 'attendance-monthly', k: 'nav.hr.attendanceMonthly' },
     { href: '/hr-attendance-locks.html', key: 'attendance-locks', k: 'nav.hr.attendanceLocks' },
+    { href: '/hr-compensation.html', key: 'compensation', k: 'nav.hr.compensation' },
+    { href: '/hr-payroll.html', key: 'payroll', k: 'nav.hr.payroll' },
     { href: '/hr-settings.html', key: 'settings', k: 'nav.hr.settings' },
   ];
   return `<nav class="stock-nav app-sub-nav" aria-label="HR">
@@ -88,6 +92,36 @@ async function initHrPageNav(active) {
   }
 }
 
+/**
+ * İK sayfalarında sayfa bazlı yetki kontrolü (statik HTML için).
+ * @param {string} permKey permissions.perm_key
+ * @returns {Promise<boolean>}
+ */
+async function hrAssertPermission(permKey) {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (!res.ok) {
+      window.location.href = '/login.html';
+      return false;
+    }
+    const data = await res.json().catch(() => ({}));
+    const u = data && data.user;
+    if (!u) {
+      window.location.href = '/login.html';
+      return false;
+    }
+    if (u.isSuperAdmin === true) return true;
+    const list = Array.isArray(u.permissions) ? u.permissions : [];
+    if (list.includes(permKey)) return true;
+    window.location.href = '/?err=forbidden';
+    return false;
+  } catch {
+    window.location.href = '/?err=forbidden';
+    return false;
+  }
+}
+
 window.hrNavHTML = hrNavHTML;
 window.hrApi = hrApi;
 window.initHrPageNav = initHrPageNav;
+window.hrAssertPermission = hrAssertPermission;

@@ -20,6 +20,8 @@
     "db:patch-19": "node database/patch-019-employee-marital.js",
     "db:patch-20": "node database/patch-020-hr-settings.js",
     "db:patch-21": "node database/patch-021-employee-telegram.js",
+    "db:patch-25": "node database/patch-025-hr-attendance-edit.js",
+    "db:patch-26": "node database/patch-026-hr-compensation-payroll.js",
     "db:cleanup-ops": "node database/cleanup-operational-data.js",
     "db:patch-4": "node database/patch-004.js",
     "db:patch-5": "node database/patch-005.js",

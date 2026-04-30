@@ -4,11 +4,17 @@
   const btnLoad = document.getElementById('btnLoadMonthly');
   const msgEl = document.getElementById('monthlyMsg');
   const summaryBody = document.getElementById('summaryBody');
+  const summaryHeadRow = document.getElementById('summaryHeadRow');
   const monthlyBody = document.getElementById('monthlyBody');
   const mNatFilter = document.getElementById('mNatFilter');
   const mNameFilter = document.getElementById('mNameFilter');
   const mDepFilter = document.getElementById('mDepFilter');
   const mPosFilter = document.getElementById('mPosFilter');
+  const attmEditModal = document.getElementById('attmEditModal');
+  const attmEditReasonInput = document.getElementById('attmEditReasonInput');
+  const attmEditReasonErr = document.getElementById('attmEditReasonErr');
+  const attmEditCancel = document.getElementById('attmEditCancel');
+  const attmEditGo = document.getElementById('attmEditGo');
 
   let departments = [];
   let positions = [];
@@ -17,9 +23,31 @@
   let workStatuses = [];
   let isLocked = false;
   let monthlyRowsAll = [];
+  let salaryVisibility = { group: false, rsu: false, grsu: false, su: false };
+  let canEditAttendance = false;
+  let pendingWorkDateForEdit = '';
+  const liveCards = document.getElementById('liveCards');
+  const kpiTotalNormal = document.getElementById('kpiTotalNormal');
+  const kpiTotalOvertime = document.getElementById('kpiTotalOvertime');
+  const kpiNormalUsd = document.getElementById('kpiNormalUsd');
+  const kpiFmUsd = document.getElementById('kpiFmUsd');
+  const kpiOfficialUzs = document.getElementById('kpiOfficialUzs');
+  const kpiNonOfficialUzs = document.getElementById('kpiNonOfficialUzs');
+  const kpiUnofficialUsd = document.getElementById('kpiUnofficialUsd');
+
+  const ICON_EDIT_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 
   function t(k) {
     return window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t(k) : k;
+  }
+
+  function escHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function showMsg(text, isErr) {
@@ -71,6 +99,90 @@
     return p > -1 ? s.slice(p + 3).trim() : s;
   }
 
+  function fmtHours(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '0';
+    return String(Math.round(n * 100) / 100).replace('.', ',');
+  }
+
+  function fmtMoney(v, cc) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '-';
+    const c = String(cc || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
+    return `${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${c}`;
+  }
+
+  async function loadMePerms() {
+    canEditAttendance = false;
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      const u = data && data.user;
+      if (!u) return;
+      if (u.isSuperAdmin === true) {
+        canEditAttendance = true;
+        return;
+      }
+      const list = Array.isArray(u.permissions) ? u.permissions : [];
+      canEditAttendance = list.includes('hr.attendance.edit');
+    } catch (_) {
+      canEditAttendance = false;
+    }
+  }
+
+  function projectLabel(id) {
+    const p = projects.find((x) => String(x.id) === String(id || ''));
+    if (!id || !p) return '-';
+    return String(p.project_code || p.name || p.id);
+  }
+
+  function statusLabel(code) {
+    const s = workStatuses.find((x) => String(x.code) === String(code || ''));
+    return s ? String(s.name || code) : String(code || '-');
+  }
+
+  function typeLabel(code) {
+    const s = workTypes.find((x) => String(x.code) === String(code || ''));
+    return s ? String(s.name || code) : String(code || '-');
+  }
+
+  function renderSummaryHead() {
+    if (!summaryHeadRow) return;
+    const cols = [
+      ['hr.att.colEmployee', t('hr.att.colEmployee')],
+      ['hr.att.colTotalHours', t('hr.att.colTotalHours')],
+      ['hr.att.colOvertimeHours', t('hr.att.colOvertimeHours')],
+    ];
+    if (salaryVisibility.group && salaryVisibility.rsu) cols.push(['hr.att.monthly.col.ru_uzs_nm', t('hr.att.monthly.col.ru_uzs_nm')]);
+    if (salaryVisibility.group && salaryVisibility.grsu) cols.push(['hr.att.monthly.col.gr_uzs_nm', t('hr.att.monthly.col.gr_uzs_nm')]);
+    if (salaryVisibility.group && salaryVisibility.su) cols.push(['hr.att.monthly.col.gr_usd_nm', t('hr.att.monthly.col.gr_usd_nm')]);
+    if (salaryVisibility.group && salaryVisibility.rsu && salaryVisibility.grsu) cols.push(['hr.att.monthly.col.fm_uzs', t('hr.att.monthly.col.fm_uzs')]);
+    if (salaryVisibility.group && salaryVisibility.su) cols.push(['hr.att.monthly.col.fm_usd', t('hr.att.monthly.col.fm_usd')]);
+    summaryHeadRow.innerHTML = cols.map(([k, label]) => `<th data-i18n="${k}">${label}</th>`).join('');
+  }
+
+  function renderKpis(totals) {
+    if (!liveCards) return;
+    const hasFinance = !!salaryVisibility.group;
+    liveCards.classList.toggle('hidden', !hasFinance);
+    if (!kpiTotalNormal || !kpiTotalOvertime) return;
+    kpiTotalNormal.textContent = fmtHours(totals?.total_normal_hours || 0);
+    kpiTotalOvertime.textContent = fmtHours(totals?.total_overtime_hours || 0);
+    if (!hasFinance) return;
+    if (kpiNormalUsd) kpiNormalUsd.textContent = totals?.total_gr_usd_nm == null ? '-' : fmtMoney(totals.total_gr_usd_nm, 'USD');
+    if (kpiFmUsd) kpiFmUsd.textContent = totals?.total_fm_usd == null ? '-' : fmtMoney(totals.total_fm_usd, 'USD');
+    if (kpiOfficialUzs) kpiOfficialUzs.textContent = totals?.total_ru_uzs_nm == null ? '-' : fmtMoney(totals.total_ru_uzs_nm, 'UZS');
+    if (kpiNonOfficialUzs) {
+      kpiNonOfficialUzs.textContent =
+        totals?.total_non_official_uzs == null ? '-' : fmtMoney(totals.total_non_official_uzs, 'UZS');
+    }
+    if (kpiUnofficialUsd) {
+      kpiUnofficialUsd.textContent =
+        totals?.total_unofficial_usd == null ? '-' : fmtMoney(totals.total_unofficial_usd, 'USD');
+    }
+  }
+
   function syncMPosFilter() {
     if (!mDepFilter || !mPosFilter) return;
     const dep = mDepFilter.value ? String(mDepFilter.value) : '';
@@ -117,52 +229,31 @@
     }
   }
 
-  function projectOptions(cur) {
-    let html = '<option value="">-</option>';
-    projects.forEach((p) => {
-      const v = String(p.id);
-      html += `<option value="${v}"${String(cur || '') === v ? ' selected' : ''}>${p.project_code || p.name || p.id}</option>`;
-    });
-    return html;
-  }
-  function statusOptions(cur) {
-    return (workStatuses || [])
-      .map((s) => `<option value="${s.code}"${String(cur || '') === String(s.code) ? ' selected' : ''}>${s.name || s.code}</option>`)
-      .join('');
-  }
-  function typeOptions(cur) {
-    return (workTypes || [])
-      .map((s) => `<option value="${s.code}"${String(cur || '') === String(s.code) ? ' selected' : ''}>${s.name || s.code}</option>`)
-      .join('');
-  }
-
   function renderMonthlyRowsTable(rows) {
     const filtered = rowsForDayFilter(rows);
+    const editLabel = t('hr.att.monthly.editDailyRow');
     monthlyBody.innerHTML = filtered.length
       ? filtered
-          .map(
-            (r) =>
-              `<tr data-id="${r.id}" data-locked="${isLocked ? '1' : '0'}" data-orig='${encodeURIComponent(
-                JSON.stringify({
-                  project_id: r.project_id || null,
-                  work_status: r.work_status || '',
-                  work_type: r.work_type || '',
-                  total_hours: Number(r.total_hours || 0),
-                  overtime_hours: Number(r.overtime_hours || 0),
-                  note: String(r.note || ''),
-                })
-              )}'>
-                <td>${String(r.work_date || '').slice(0, 10)}</td>
-                <td>${displayNameOnly(r.employee_name) || '-'}</td>
-                <td><select class="x-project" ${isLocked ? 'disabled' : ''}>${projectOptions(r.project_id)}</select></td>
-                <td><select class="x-status" ${isLocked ? 'disabled' : ''}>${statusOptions(r.work_status)}</select></td>
-                <td><select class="x-type" ${isLocked ? 'disabled' : ''}>${typeOptions(r.work_type)}</select></td>
-                <td><input class="x-total" type="number" min="0" step="0.25" value="${Number(r.total_hours || 0)}" ${isLocked ? 'disabled' : ''}/></td>
-                <td><input class="x-ot" type="number" min="0" step="0.25" value="${Number(r.overtime_hours || 0)}" ${isLocked ? 'disabled' : ''}/></td>
-                <td><input class="x-note" type="text" value="${String(r.note || '').replace(/"/g, '&quot;')}" ${isLocked ? 'disabled' : ''}/></td>
-                <td><button type="button" class="version-btn attm-row-btn x-save" ${isLocked ? 'disabled' : ''}>${t('common.save')}</button></td>
-              </tr>`
-          )
+          .map((r) => {
+            const dateStr = String(r.work_date || '').slice(0, 10);
+            const showEdit = canEditAttendance;
+            const actionTd = showEdit
+              ? `<td><button type="button" class="attm-icon-btn attm-edit-row" data-work-date="${escHtml(
+                  dateStr
+                )}" title="${escHtml(editLabel)}" aria-label="${escHtml(editLabel)}">${ICON_EDIT_SVG}</button></td>`
+              : '<td></td>';
+            return `<tr>
+                <td>${escHtml(dateStr)}</td>
+                <td>${escHtml(displayNameOnly(r.employee_name) || '-')}</td>
+                <td>${escHtml(projectLabel(r.project_id))}</td>
+                <td>${escHtml(statusLabel(r.work_status))}</td>
+                <td>${escHtml(typeLabel(r.work_type))}</td>
+                <td>${escHtml(fmtHours(r.total_hours))}</td>
+                <td>${escHtml(fmtHours(r.overtime_hours))}</td>
+                <td>${escHtml(String(r.note || ''))}</td>
+                ${actionTd}
+              </tr>`;
+          })
           .join('')
       : `<tr><td colspan="9">${t('hr.att.noRows')}</td></tr>`;
   }
@@ -185,66 +276,48 @@
     }
     const payload = data.data || data;
     isLocked = !!payload.isLocked;
+    salaryVisibility = payload.salaryVisibility || { group: false, rsu: false, grsu: false, su: false };
     const summary = payload.summary || [];
+    renderSummaryHead();
     monthlyRowsAll = payload.rows || [];
     summaryBody.innerHTML = summary.length
       ? summary
-          .map(
-            (x) =>
-              `<tr><td>${displayNameOnly(x.employee_name) || '-'}</td><td>${Number(x.total_hours || 0).toFixed(2)}</td><td>${Number(x.overtime_hours || 0).toFixed(2)}</td></tr>`
-          )
+          .map((x) => {
+            const cells = [
+              `<td>${displayNameOnly(x.employee_name) || '-'}</td>`,
+              `<td>${fmtHours(x.total_normal_hours || x.total_hours || 0)}</td>`,
+              `<td>${fmtHours(x.total_overtime_hours || x.overtime_hours || 0)}</td>`,
+            ];
+            if (salaryVisibility.group && salaryVisibility.rsu) cells.push(`<td>${x.ru_uzs_nm == null ? '-' : fmtMoney(x.ru_uzs_nm, 'UZS')}</td>`);
+            if (salaryVisibility.group && salaryVisibility.grsu) cells.push(`<td>${x.gr_uzs_nm == null ? '-' : fmtMoney(x.gr_uzs_nm, 'UZS')}</td>`);
+            if (salaryVisibility.group && salaryVisibility.su) cells.push(`<td>${x.gr_usd_nm == null ? '-' : fmtMoney(x.gr_usd_nm, 'USD')}</td>`);
+            if (salaryVisibility.group && salaryVisibility.rsu && salaryVisibility.grsu) {
+              cells.push(`<td>${x.fm_uzs == null ? '-' : fmtMoney(x.fm_uzs, 'UZS')}</td>`);
+            }
+            if (salaryVisibility.group && salaryVisibility.su) cells.push(`<td>${x.fm_usd == null ? '-' : fmtMoney(x.fm_usd, 'USD')}</td>`);
+            return `<tr>${cells.join('')}</tr>`;
+          })
           .join('')
-      : `<tr><td colspan="3">${t('hr.att.noRows')}</td></tr>`;
+      : `<tr><td colspan="${summaryHeadRow?.children?.length || 3}">${t('hr.att.noRows')}</td></tr>`;
+    renderKpis(payload.summaryTotals || {});
     syncDayOptions();
     renderMonthlyRowsTable(monthlyRowsAll);
     showMsg(payload.isLocked ? t('hr.att.monthly.lockedHint') : '', false);
   }
 
-  async function onMonthlyBodyClick(e) {
-    const btn = e.target.closest('.x-save');
-    if (!btn) return;
-    const tr = e.target.closest('tr[data-id]');
-    if (!tr) return;
-    if (tr.getAttribute('data-locked') === '1') {
-      showMsg(t('hr.att.monthly.lockedHint'), true);
-      return;
-    }
-    const id = tr.getAttribute('data-id');
-    const orig = JSON.parse(decodeURIComponent(tr.getAttribute('data-orig') || ''));
-    const next = {
-      project_id: tr.querySelector('.x-project')?.value || null,
-      work_status: tr.querySelector('.x-status')?.value || '',
-      work_type: tr.querySelector('.x-type')?.value || '',
-      total_hours: Number(tr.querySelector('.x-total')?.value || 0),
-      overtime_hours: Number(tr.querySelector('.x-ot')?.value || 0),
-      note: String(tr.querySelector('.x-note')?.value || '').trim(),
-    };
-    const changed =
-      String(next.project_id || '') !== String(orig.project_id || '') ||
-      String(next.work_status || '') !== String(orig.work_status || '') ||
-      String(next.work_type || '') !== String(orig.work_type || '') ||
-      Number(next.total_hours || 0) !== Number(orig.total_hours || 0) ||
-      Number(next.overtime_hours || 0) !== Number(orig.overtime_hours || 0) ||
-      String(next.note || '') !== String(orig.note || '');
-    if (!changed) {
-      showMsg(t('api.hr.nothing_to_update'), true);
-      return;
-    }
-    if (!next.note) {
-      showMsg(t('hr.att.monthly.noteRequired'), true);
-      tr.querySelector('.x-note')?.focus();
-      return;
-    }
-    const { ok, data } = await window.hrApi(`/api/hr/attendance/monthly/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(next),
-    });
-    if (!ok || !data?.ok) {
-      showMsg((window.i18n?.apiErrorText && window.i18n.apiErrorText(data)) || data?.message || t('api.error.unknown'), true);
-      return;
-    }
-    showMsg(t('hr.att.monthly.rowSaved'), false);
-    await loadMonthly();
+  function closeAttmEditModal() {
+    if (attmEditModal) attmEditModal.classList.remove('attm-modal-open');
+    pendingWorkDateForEdit = '';
+    if (attmEditReasonInput) attmEditReasonInput.value = '';
+    if (attmEditReasonErr) attmEditReasonErr.textContent = '';
+  }
+
+  function openAttmEditModal(workDate) {
+    pendingWorkDateForEdit = String(workDate || '').slice(0, 10);
+    if (attmEditReasonInput) attmEditReasonInput.value = '';
+    if (attmEditReasonErr) attmEditReasonErr.textContent = '';
+    if (attmEditModal) attmEditModal.classList.add('attm-modal-open');
+    attmEditReasonInput?.focus();
   }
 
   async function initHrAttendanceMonthlyPage() {
@@ -259,10 +332,39 @@
       renderMonthlyRowsTable(monthlyRowsAll);
     });
     mDepFilter?.addEventListener('change', syncMPosFilter);
+
+    monthlyBody?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.attm-edit-row');
+      if (!btn) return;
+      const d = btn.getAttribute('data-work-date');
+      if (!d) return;
+      openAttmEditModal(d);
+    });
+
+    attmEditCancel?.addEventListener('click', closeAttmEditModal);
+    attmEditGo?.addEventListener('click', () => {
+      const raw = String(attmEditReasonInput?.value || '').trim();
+      if (!raw) {
+        if (attmEditReasonErr) attmEditReasonErr.textContent = t('hr.att.monthly.editReasonRequired');
+        attmEditReasonInput?.focus();
+        return;
+      }
+      const d = pendingWorkDateForEdit;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        closeAttmEditModal();
+        return;
+      }
+      window.location.href = `/hr-attendance.html?date=${encodeURIComponent(d)}&editReason=${encodeURIComponent(raw)}`;
+    });
+
+    attmEditModal?.addEventListener('click', (e) => {
+      if (e.target === attmEditModal) closeAttmEditModal();
+    });
+
+    await loadMePerms();
     await loadMDeptPos();
     await loadProjectsAndOptions();
     btnLoad?.addEventListener('click', loadMonthly);
-    monthlyBody?.addEventListener('click', onMonthlyBodyClick);
     await loadMonthly();
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
   }

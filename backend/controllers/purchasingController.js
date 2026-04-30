@@ -33,6 +33,7 @@ const {
   setProcurementStateForOrderStart,
   runOrderBuyerAction,
   runRequestBuyerAction,
+  getPurchasingHubCounters,
 } = require('../services/purchasingService');
 const { logActivity } = require('../services/activityLogService');
 
@@ -466,6 +467,11 @@ async function getOrders(req, res) {
   return res.json(jsonOk(out));
 }
 
+async function getHubCounters(_req, res) {
+  const out = await getPurchasingHubCounters();
+  return res.json(jsonOk(out));
+}
+
 async function getOrder(req, res) {
   const id = parseId(req.params.id);
   if (id == null) {
@@ -714,6 +720,7 @@ module.exports = {
   getWarehouses,
   getSuppliers,
   postSupplier,
+  getHubCounters,
   getRequests,
   getRequestById,
   getRequestReceiptOrders,

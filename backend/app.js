@@ -133,7 +133,13 @@ app.get(
   requirePageAnyPermission(['module.purchasing.request', 'module.purchasing.approve', 'module.purchasing']),
   sendPage('purchase-requests.html')
 );
-app.get('/purchase-approvals.html', requirePageAuth, (req, res) => res.redirect(302, '/purchase-requests.html'));
+/** Eski URL: onay UX tek ekranda — talep listesi + satır seçince altta detay / onay-red */
+app.get(
+  '/purchase-approvals.html',
+  requirePageAuth,
+  requirePageAnyPermission(['module.purchasing.request', 'module.purchasing.approve', 'module.purchasing']),
+  (req, res) => res.redirect(302, '/purchase-requests.html?pending')
+);
 app.get(
   '/purchase-processing.html',
   requirePageAuth,

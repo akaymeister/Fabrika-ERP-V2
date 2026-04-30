@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="hr.payroll.title">Bordro yönetimi</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .payroll-placeholder-card {
+      margin-top: 16px;
+      padding: 28px 24px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      text-align: center;
+      max-width: 560px;
+    }
+    .payroll-placeholder-card p { margin: 0; font-size: var(--font-size-ui); color: #475569; line-height: 1.5; }
+  </style>
+</head>
+<body class="app-shell app-master-page">
+  <div class="container">
+    <div class="topbar dashboard-topbar">
+      <div class="app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <div class="topbar-left">
+        <h1 data-i18n="hr.payroll.title">Bordro yönetimi</h1>
+        <p class="subtitle" data-i18n="hr.payroll.sub">Bordro modülü</p>
+      </div>
+      <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+          <option value="tr">Türkçe</option>
+          <option value="uz">O‘zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
+      </div>
+    </div>
+    <div id="globalNavSlot"></div>
+    <div class="app-master-body">
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+      <main class="app-master-main">
+        <section class="card">
+          <div class="payroll-placeholder-card">
+            <p data-i18n="hr.payroll.placeholder">Bordro modülü hazırlık aşamasındadır.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/hr-common.js" defer></script>
+  <script src="/js/hr-payroll.js" defer></script>
+  <script>
+    function startPayroll() {
+      (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
+        const ok = await window.hrAssertPermission?.('hr.payroll.view');
+        if (!ok) return;
+        await window.initGlobalNavigation?.('hr');
+        await window.initHrPageNav?.('payroll');
+        await window.initHrPayrollPage?.();
+      })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startPayroll); else startPayroll();
+  </script>
+</body>
+</html>

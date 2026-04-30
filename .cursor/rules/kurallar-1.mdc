@@ -31,3 +31,9 @@ Named Placeholders: SQL sorgularında :param formatını kullanırken mysql2 kon
 Negatif Stok: Hiçbir işlem stoğu negatife düşürmemeli; Math.max(0, ...) kullanımının ötesinde, işlem öncesi miktar kontrolü yap.
 
 Senden Beklentim: Sana yeni bir modül veya sayfa yap dediğimde, yukarıdaki stil ve dil kurallarını ben hatırlatmadan, projenin mevcut dokusuna (context) bakarak otomatik uygula."
+
+"5. Dil ve Yazım Standardı (Genel)
+Sistem Ana Dili: Projenin ana dili Türkçedir.
+Türkçe Karakter Zorunluluğu: Türkçe metinlerde ç, ğ, ı, İ, ö, ş, ü karakterleri doğru kullanılmalıdır.
+Yazım Kuralı: 'Calisma' yerine 'Çalışma', 'Aylik' yerine 'Aylık' gibi doğru Türkçe yazım kullanılmalıdır.
+Süreklilik: Yeni eklenen başlık, buton, açıklama ve i18n metinlerinde bu kural zorunlu olarak uygulanır."

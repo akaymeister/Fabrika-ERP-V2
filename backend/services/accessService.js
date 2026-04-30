@@ -49,4 +49,39 @@ async function userHasAnyPermission(userId, roleSlug, permKeys) {
   return false;
 }
 
-module.exports = { userHasPermission, userHasAnyPermission };
+/**
+ * Oturum kullanıcısının sahip olduğu tüm perm_key değerleri (rol + pozisyon + kullanıcı ek izinleri).
+ * Süper yönetici: permissions tablosundaki tüm anahtarlar.
+ * @param {number} userId
+ * @param {string} [roleSlug]
+ * @returns {Promise<string[]>}
+ */
+async function listUserPermissionKeys(userId, roleSlug) {
+  if (!userId) return [];
+  if (roleSlug === 'super_admin') {
+    const [rows] = await pool.query('SELECT perm_key FROM permissions ORDER BY perm_key');
+    return rows.map((r) => r.perm_key);
+  }
+  const [rows] = await pool.query(
+    `SELECT DISTINCT p.perm_key
+     FROM permissions p
+     INNER JOIN (
+       SELECT rp.permission_id AS pid
+       FROM users u
+       INNER JOIN role_permissions rp ON rp.role_id = u.role_id
+       WHERE u.id = :uid
+       UNION
+       SELECT pp.permission_id
+       FROM employees e
+       INNER JOIN position_permissions pp ON pp.position_id = e.position_id
+       WHERE e.user_id = :uid
+       UNION
+       SELECT permission_id AS pid FROM user_permissions WHERE user_id = :uid
+     ) src ON src.pid = p.id
+     ORDER BY p.perm_key`,
+    { uid: userId }
+  );
+  return rows.map((r) => r.perm_key);
+}
+
+module.exports = { userHasPermission, userHasAnyPermission, listUserPermissionKeys };

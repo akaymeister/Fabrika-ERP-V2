@@ -3,8 +3,63 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-i18n="hr.settings.title">IK Ayarlar</title>
+  <title data-i18n="hr.settings.title">İK Ayarlar</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    .hr-layout-grid { display:grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr) 220px; gap: 12px; align-items:start; }
+    .hr-table-wrap { border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#fff; }
+    .hr-program-table { width:100%; border-collapse: collapse; table-layout: fixed; }
+    .hr-program-table th, .hr-program-table td { border:1px solid #dbe1ea; padding:4px 8px; font-size:var(--font-size-ui); vertical-align:middle; }
+    .hr-program-table thead th { background:#f8fafc; font-weight:700; }
+    .hr-program-table td:first-child { background:#f8fafc; font-weight:600; width: 32%; }
+    .hr-program-table .x-time { width:100%; min-width:0; min-height:22px; }
+    .hr-program-table .x-total { width:100%; background:#f8fafc; color:#0f172a; min-height:22px; }
+    .hr-total-cell { display:flex; align-items:center; gap:6px; }
+    .hr-formula { display:none; }
+    .hr-formula-btn {
+      width:20px;
+      height:20px;
+      border-radius:999px;
+      border:1px solid #cbd5e1;
+      background:#f8fafc;
+      color:#475569;
+      font-size:12px;
+      line-height:1;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .hr-days-card { border:1px solid #cbd5e1; border-radius:8px; padding:10px; background:#f8fafc; }
+    .hr-days-list { display:grid; gap:6px; margin-top:6px; }
+    .hr-days-list label { display:flex; align-items:center; gap:8px; font-size:var(--font-size-ui); }
+    .hr-month-block { max-width:100%; }
+    .hr-month-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    .hr-month-table th, .hr-month-table td { border:1px solid #dbe1ea; padding:4px 8px; font-size:var(--font-size-ui); }
+    .hr-month-table td:first-child { width:50%; background:#f8fafc; font-weight:600; }
+    .hr-month-table .x-total { background:#f8fafc; }
+    .hr-def-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .hr-settings-row .version-btn,
+    .hr-settings-row .logout-btn,
+    .hr-settings-head .version-btn {
+      min-width: 74px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .hr-settings-row .x-save,
+    #btnSaveSettings {
+      background: #1d4ed8;
+      color: #fff;
+    }
+    .hr-settings-row.type-row { grid-template-columns: 1.6fr auto auto auto; }
+    .hr-settings-row.status-row { grid-template-columns: 1.4fr 0.9fr auto auto auto; }
+    .hr-settings-row .x-name,
+    .hr-settings-row .x-mult { min-height: 30px; }
+    @media (max-width: 980px) { .hr-def-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1200px) { .hr-layout-grid { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body class="app-shell app-master-page">
   <div class="container">
@@ -15,8 +70,8 @@
       </div>
 
       <div class="topbar-left">
-        <h1 data-i18n="hr.settings.title">IK Ayarlar</h1>
-        <p class="subtitle" data-i18n="hr.settings.sub">Puantaj parametreleri ve tanimlar</p>
+        <h1 data-i18n="hr.settings.title">İK Ayarlar</h1>
+        <p class="subtitle" data-i18n="hr.settings.sub">Puantaj parametreleri ve tanımlar</p>
       </div>
       <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
@@ -25,7 +80,7 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
 </div>
     </div>
     <div id="globalNavSlot"></div>
@@ -36,20 +91,125 @@
       <main class="app-master-main">
 
     <section class="card hr-settings-card">
-      <h3 data-i18n="hr.settings.workSchedule">Calisma Programi</h3>
-      <div class="hr-settings-grid">
-        <div><label data-i18n="hr.settings.dailyStart">Gunluk giris</label><input id="daily_start_time" type="time" /></div>
-        <div><label data-i18n="hr.settings.dailyEnd">Gunluk cikis</label><input id="daily_end_time" type="time" /></div>
-        <div><label data-i18n="hr.settings.break1">Mola 1 (dk)</label><input id="break_1_minutes" type="number" min="0" step="1" /></div>
-        <div><label data-i18n="hr.settings.break2">Mola 2 (dk)</label><input id="break_2_minutes" type="number" min="0" step="1" /></div>
-        <div><label data-i18n="hr.settings.break3">Mola 3 (dk)</label><input id="break_3_minutes" type="number" min="0" step="1" /></div>
-        <div><label data-i18n="hr.settings.lunch">Ogle yemegi (dk)</label><input id="lunch_minutes" type="number" min="0" step="1" /></div>
-        <div><label data-i18n="hr.settings.holidays">Tatil gunleri</label><input id="holiday_days" type="text" /></div>
-        <div><label data-i18n="hr.settings.weeklyHours">Haftalik saat</label><input id="weekly_work_hours" type="number" min="0" step="0.25" /></div>
-        <div><label data-i18n="hr.settings.dailyHours">Gunluk saat</label><input id="daily_work_hours" type="number" min="0" step="0.25" /></div>
-        <div><label data-i18n="hr.settings.ot1">Fazla mesai 1</label><input id="overtime_multiplier_1" type="number" min="0" step="0.01" /></div>
-        <div><label data-i18n="hr.settings.ot2">Fazla mesai 2</label><input id="overtime_multiplier_2" type="number" min="0" step="0.01" /></div>
-        <div><label data-i18n="hr.settings.ot3">Fazla mesai 3</label><input id="overtime_multiplier_3" type="number" min="0" step="0.01" /></div>
+      <h3 data-i18n="hr.settings.workSchedule">Çalışma Programı</h3>
+      <div class="hr-layout-grid">
+        <div class="hr-table-wrap">
+          <table class="hr-program-table">
+            <thead>
+              <tr>
+                <th data-i18n="hr.settings.colItem">Kalem</th>
+                <th data-i18n="hr.settings.colStart">Giris</th>
+                <th data-i18n="hr.settings.colEnd">Cikis</th>
+                <th data-i18n="hr.settings.colTotal">Toplam saat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-i18n="hr.settings.row.standard">Standart çalışma saatleri</td>
+                <td><input id="standard_start_time" class="x-time" type="time" /></td>
+                <td><input id="standard_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="standard_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="standart_toplam = cikis - giris - mola1 - mola2 - yemek - zaman_sekmesi" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.standard">standart_toplam = cikis - giris - mola1 - mola2 - yemek - zaman_sekmesi</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.break1">Mola 1</td>
+                <td><input id="break_1_start_time" class="x-time" type="time" /></td>
+                <td><input id="break_1_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="break_1_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="mola1_toplam = mola1_cikis - mola1_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.break1">mola1_toplam = mola1_cikis - mola1_giris</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.break2">Mola 2</td>
+                <td><input id="break_2_start_time" class="x-time" type="time" /></td>
+                <td><input id="break_2_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="break_2_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="mola2_toplam = mola2_cikis - mola2_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.break2">mola2_toplam = mola2_cikis - mola2_giris</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.break3">Mola 3</td>
+                <td><input id="break_3_start_time" class="x-time" type="time" /></td>
+                <td><input id="break_3_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="break_3_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="mola3_toplam = mola3_cikis - mola3_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.break3">mola3_toplam = mola3_cikis - mola3_giris</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.break4">Mola 4</td>
+                <td><input id="break_4_start_time" class="x-time" type="time" /></td>
+                <td><input id="break_4_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="break_4_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="mola4_toplam = mola4_cikis - mola4_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.break4">mola4_toplam = mola4_cikis - mola4_giris</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.lunch">Yemek paydosu</td>
+                <td><input id="lunch_start_time" class="x-time" type="time" /></td>
+                <td><input id="lunch_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="lunch_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="yemek_toplam = yemek_cikis - yemek_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.lunch">yemek_toplam = yemek_cikis - yemek_giris</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.row.overtime">Fazla mesai</td>
+                <td><input id="overtime_start_time" class="x-time" type="time" /></td>
+                <td><input id="overtime_end_time" class="x-time" type="time" /></td>
+                <td><div class="hr-total-cell"><input id="overtime_total_hours" class="x-total" type="text" readonly /><button type="button" class="hr-formula-btn" title="fazla_mesai_toplam = fazla_mesai_cikis - fazla_mesai_giris" aria-label="Formul bilgisi">i</button></div><span class="hr-formula" data-i18n="hr.settings.formula.overtime">fazla_mesai_toplam = fazla_mesai_cikis - fazla_mesai_giris</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hr-month-block">
+          <div class="hr-table-wrap">
+          <table class="hr-month-table">
+            <tbody>
+              <tr>
+                <td data-i18n="hr.settings.monthlyDays">Aylık çalışma günü</td>
+                <td><input id="monthly_work_days" type="number" min="0" step="1" /></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.monthlyHours">Aylık çalışma saati</td>
+                <td><input id="monthly_work_hours" class="x-total" type="text" readonly /><span class="hr-formula" data-i18n="hr.settings.formula.monthly">aylık_çalışma_saati = aylık_çalışma_günü x standart_günlük_çalışma_saati</span></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.timeDeduction">Zaman sekmesi</td>
+                <td><input id="time_deduction_hours" type="text" inputmode="decimal" placeholder="0,00" /></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.ot1">Fazla mesai 1</td>
+                <td><input id="overtime_multiplier_1" type="number" min="0" step="0.01" /></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.ot2">Fazla mesai 2</td>
+                <td><input id="overtime_multiplier_2" type="number" min="0" step="0.01" /></td>
+              </tr>
+              <tr>
+                <td data-i18n="hr.settings.ot3">Fazla mesai 3</td>
+                <td><input id="overtime_multiplier_3" type="number" min="0" step="0.01" /></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+          <div style="display:none">
+            <input id="daily_start_time" type="time" />
+            <input id="daily_end_time" type="time" />
+            <input id="break_1_minutes" type="number" />
+            <input id="break_2_minutes" type="number" />
+            <input id="break_3_minutes" type="number" />
+            <input id="lunch_minutes" type="number" />
+            <input id="weekly_work_hours" type="number" />
+            <input id="daily_work_hours" type="number" />
+            <input id="holiday_days" type="text" />
+          </div>
+        </div>
+
+        <aside class="hr-days-card">
+          <h4 style="margin:0" data-i18n="hr.settings.weeklyDays">Haftalık çalışma günleri</h4>
+          <div class="hr-days-list">
+            <label><input id="wd_mon" type="checkbox" /><span data-i18n="hr.settings.day.mon">Pazartesi</span></label>
+            <label><input id="wd_tue" type="checkbox" /><span data-i18n="hr.settings.day.tue">Salı</span></label>
+            <label><input id="wd_wed" type="checkbox" /><span data-i18n="hr.settings.day.wed">Çarşamba</span></label>
+            <label><input id="wd_thu" type="checkbox" /><span data-i18n="hr.settings.day.thu">Perşembe</span></label>
+            <label><input id="wd_fri" type="checkbox" /><span data-i18n="hr.settings.day.fri">Cuma</span></label>
+            <label><input id="wd_sat" type="checkbox" /><span data-i18n="hr.settings.day.sat">Cumartesi</span></label>
+            <label><input id="wd_sun" type="checkbox" /><span data-i18n="hr.settings.day.sun">Pazar</span></label>
+          </div>
+          <div class="hr-days-list" style="margin-top:8px">
+            <label><input id="sunday_workable" type="checkbox" /><span data-i18n="hr.settings.sundayWorkable">Pazar günü çalışılabilir</span></label>
+            <label><input id="sunday_paid" type="checkbox" /><span data-i18n="hr.settings.sundayPaid">Pazar günü ücretli</span></label>
+          </div>
+        </aside>
       </div>
       <div class="hr-settings-actions">
         <button id="btnSaveSettings" class="version-btn" data-i18n="common.save">Kaydet</button>
@@ -57,21 +217,23 @@
       <p id="settingsMsg" class="api-msg"></p>
     </section>
 
-    <section class="card hr-settings-card">
-      <div class="hr-settings-head">
-        <h3 data-i18n="hr.settings.workTypes">Is Tipleri</h3>
-        <button id="btnAddWorkType" class="version-btn" data-i18n="common.add">Ekle</button>
-      </div>
-      <div id="workTypesList"></div>
-    </section>
+    <div class="hr-def-grid">
+      <section class="card hr-settings-card">
+        <div class="hr-settings-head">
+          <h3 data-i18n="hr.settings.workTypes">Is Tipleri</h3>
+          <button id="btnAddWorkType" class="version-btn" data-i18n="common.add">Ekle</button>
+        </div>
+        <div id="workTypesList"></div>
+      </section>
 
-    <section class="card hr-settings-card">
-      <div class="hr-settings-head">
-        <h3 data-i18n="hr.settings.workStatuses">Calisma Durumlari</h3>
-        <button id="btnAddWorkStatus" class="version-btn" data-i18n="common.add">Ekle</button>
-      </div>
-      <div id="workStatusesList"></div>
-    </section>
+      <section class="card hr-settings-card">
+        <div class="hr-settings-head">
+          <h3 data-i18n="hr.settings.workStatuses">Çalışma Durumları</h3>
+          <button id="btnAddWorkStatus" class="version-btn" data-i18n="common.add">Ekle</button>
+        </div>
+        <div id="workStatusesList"></div>
+      </section>
+    </div>
       </main>
     </div>
   </div>

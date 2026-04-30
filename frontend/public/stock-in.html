@@ -311,18 +311,20 @@
             <div class="qty-inline">
               <input type="number" id="qtyInput" min="0.0001" step="any" required />
               <span id="qtyUnitBadge" class="unit-badge">—</span>
-              <button type="button" class="btn-unit-toggle" id="btnQtyUnitToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
             </div>
             <input type="hidden" id="qtyMode" value="pieces" />
           </div>
         </div>
         <div class="stock-in-qty-meta" aria-live="polite">
           <p id="m2m3Readout" class="m2m3-readout">—</p>
+          <p class="product-unit-hint muted" style="margin: 4px 0 0; font-size: 12px" data-i18n="stock.in.auxDimsNote">
+            m² / m³ yalnızca referans amaçlıdır; maliyet ürün kartı birimi üzerinden girilir.
+          </p>
           <p id="productUnitHint" class="product-unit-hint" data-i18n="stock.in.productUnitHint">—</p>
         </div>
         <div class="form-stock-in-r3">
           <div class="form-field">
-            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPriceSystemM2">Birim fiyat (sistem / mÂ²)</label>
+            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPricePerProductUnit">Birim fiyat (sistem para / ürün birimi)</label>
             <input type="number" id="unitPriceSysM2" min="0" step="0.0001" required />
           </div>
           <div class="form-field">
@@ -427,7 +429,6 @@
         window.location.href = '/login.html';
       });
     });
-    const productM2p = new Map();
     let whData = [];
     let inProducts = [];
     let activeDdIndex = -1;
@@ -550,37 +551,45 @@
       const d = s ? new Date(s) : null;
       return d && !Number.isNaN(d.getTime()) ? d.toLocaleString() : String(s ?? '—');
     }
+    function primaryUnitIsM2(p) {
+      const u = String((p && (p.unit_code || p.unit_legacy || p.p_unit)) || '')
+        .trim()
+        .toLowerCase();
+      return u === 'm2' || u === 'm²' || u === 'sqm' || u === 'mt2';
+    }
     function updateQtyBadge() {
-      const mode = document.getElementById('qtyMode')?.value || 'pieces';
       const el = document.getElementById('qtyUnitBadge');
       if (!el) {
         return;
       }
-      if (mode === 'm2') {
-        el.textContent = 'MÂ²';
-      } else {
-        el.textContent = tLoc('stock.in.unitPiece', 'ADET');
+      if (!selectedProduct) {
+        el.textContent = '—';
+        return;
       }
+      const u = String(selectedProduct.unit_code || selectedProduct.unit_legacy || '').trim();
+      el.textContent = u ? u.toLocaleUpperCase('tr-TR') : '—';
     }
     function updateUnitPriceCaption() {
       const lbl = document.getElementById('unitPriceLabel');
       if (!lbl) {
         return;
       }
-      const pid = +document.getElementById('pid').value;
-      const m2p = productM2p.get(pid) || 0;
-      const mode = document.getElementById('qtyMode')?.value || 'pieces';
-      if (!pid || pid < 1) {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / mÂ²)');
+      const qm = document.getElementById('qtyMode')?.value || 'pieces';
+      const puM2 = selectedProduct && primaryUnitIsM2(selectedProduct);
+      const legacyDirectM2 = qm === 'm2' && selectedProduct && !puM2;
+      if (!selectedProduct || !document.getElementById('pid') || +document.getElementById('pid').value < 1) {
+        lbl.textContent = tLoc('stock.in.unitPricePickProduct', 'Önce ürün seçin');
         return;
       }
-      if (mode === 'm2') {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemM2', 'Birim fiyat (sistem para / mÂ²)');
-      } else if (m2p > 0) {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemPiece', 'Birim fiyat (sistem para / adet)');
-      } else {
-        lbl.textContent = tLoc('stock.in.unitPriceSystemQtyUnit', 'Birim fiyat (sistem para / miktar birimi)');
+      if (legacyDirectM2) {
+        lbl.textContent = tLoc('stock.in.unitPriceLegacyM2', 'Birim fiyat (sistem para / m²) — eski kayıt');
+        return;
       }
+      const u = String(selectedProduct.unit_code || selectedProduct.unit_legacy || '').trim() || '—';
+      lbl.textContent = tLoc('stock.in.unitPricePerProductUnit', 'Birim fiyat (sistem para / {u})').replace(
+        /\{u\}/g,
+        u.toLocaleUpperCase('tr-TR')
+      );
     }
     function updateProductHint(p) {
       const hint = document.getElementById('productUnitHint');
@@ -599,7 +608,7 @@
       if (!el) {
         return;
       }
-      const m2 = getM2In();
+      const m2 = getAuxSystemM2();
       const d = selectedProduct != null && selectedProduct.depth_mm != null ? Number(selectedProduct.depth_mm) : 0;
       const m3 = d > 0 && Number.isFinite(m2) && m2 > 0 ? m2 * (d / 1000) : null;
       const m2s = Number.isFinite(m2) && m2 > 0 ? Number(m2).toFixed(4) : '—';
@@ -636,9 +645,6 @@
       el.textContent = s;
     }
     function recalcLineTotals() {
-      const mode = document.getElementById('qtyMode')?.value || 'pieces';
-      const pid = +document.getElementById('pid').value;
-      const m2p = productM2p.get(pid) || 0;
       const q = +document.getElementById('qtyInput')?.value;
       const unitPx = +document.getElementById('unitPriceSysM2')?.value;
       const fx = +document.getElementById('fxUzsInput')?.value;
@@ -648,14 +654,9 @@
       }
       let lineUzs = NaN;
       if (Number.isFinite(unitPx) && unitPx >= 0) {
-        if (mode === 'm2') {
-          const m2 = Number.isFinite(q) && q > 0 ? q : 0;
-          lineUzs = m2 > 0 ? unitPx * m2 : NaN;
-        } else {
-          const qp = Number.isFinite(q) && q > 0 ? q : 0;
-          if (qp > 0) {
-            lineUzs = unitPx * qp;
-          }
+        const qp = Number.isFinite(q) && q > 0 ? q : 0;
+        if (qp > 0) {
+          lineUzs = unitPx * qp;
         }
       }
       if (!Number.isFinite(lineUzs) || lineUzs <= 0) {
@@ -676,46 +677,60 @@
       selectedProduct = p;
       document.getElementById('pid').value = String(p.id);
       document.getElementById('productQ').value = labelProduct(p);
-      const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
-      productM2p.set(p.id, m2p);
       document.getElementById('productDd').hidden = true;
       const qm = document.getElementById('qtyMode');
       if (qm) {
-        qm.value = m2p > 0 ? 'pieces' : 'm2';
+        qm.value = primaryUnitIsM2(p) ? 'm2' : 'pieces';
       }
       updateQtyBadge();
       updateUnitPriceCaption();
       updateProductHint(p);
       recalcLineTotals();
     }
-    function getM2In() {
-      const pid = +document.getElementById('pid').value;
-      const m2p = productM2p.get(pid) || 0;
-      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+    /** Sadece okuma: stok katmanı m²; fiyatlandırmada kullanılmaz. */
+    function getAuxSystemM2() {
+      if (!selectedProduct) {
+        return 0;
+      }
       const q = +document.getElementById('qtyInput')?.value;
-      if (mode === 'm2') {
-        return Number.isFinite(q) && q > 0 ? q : 0;
+      if (!Number.isFinite(q) || q <= 0) {
+        return 0;
       }
-      if (Number.isFinite(q) && q > 0 && m2p > 0) {
-        return q * m2p;
-      }
-      if (Number.isFinite(q) && q > 0 && m2p <= 0) {
+      const qm = document.getElementById('qtyMode')?.value || 'pieces';
+      const puM2 = primaryUnitIsM2(selectedProduct);
+      if (qm === 'm2') {
         return q;
       }
-      return 0;
+      const m2p = selectedProduct.m2_per_piece != null ? Number(selectedProduct.m2_per_piece) : 0;
+      if (m2p > 0) {
+        return q * m2p;
+      }
+      return q;
+    }
+    function deriveStockM2FromForm() {
+      if (!selectedProduct) {
+        return 0;
+      }
+      const qv = +document.getElementById('qtyInput').value;
+      if (!Number.isFinite(qv) || qv <= 0) {
+        return 0;
+      }
+      const qm = document.getElementById('qtyMode')?.value || 'pieces';
+      const puM2 = primaryUnitIsM2(selectedProduct);
+      if (puM2) {
+        return qv;
+      }
+      if (qm === 'm2') {
+        return qv;
+      }
+      const m2p = selectedProduct.m2_per_piece != null ? Number(selectedProduct.m2_per_piece) : 0;
+      if (m2p > 0) {
+        return qv * m2p;
+      }
+      return qv;
     }
     ['qtyInput', 'unitPriceSysM2', 'fxUzsInput'].forEach((id) => {
       document.getElementById(id)?.addEventListener('input', recalcLineTotals);
-    });
-    document.getElementById('btnQtyUnitToggle')?.addEventListener('click', () => {
-      const qm = document.getElementById('qtyMode');
-      if (!qm) {
-        return;
-      }
-      qm.value = qm.value === 'm2' ? 'pieces' : 'm2';
-      updateQtyBadge();
-      updateUnitPriceCaption();
-      recalcLineTotals();
     });
     function fillWh() {
       const wid = document.getElementById('wid');
@@ -758,7 +773,6 @@
       if (!wid || !scid) {
         return;
       }
-      productM2p.clear();
       const { data, ok } = await stockApi(
         '/api/stock/products?warehouseId=' + wid + '&warehouseSubcategoryId=' + scid
       );
@@ -766,10 +780,6 @@
         return;
       }
       inProducts = data.products || [];
-      inProducts.forEach((p) => {
-        const m2p = p.m2_per_piece != null ? Number(p.m2_per_piece) : 0;
-        productM2p.set(p.id, m2p);
-      });
     }
     const productQ = document.getElementById('productQ');
     const productDd = document.getElementById('productDd');
@@ -940,29 +950,46 @@
       }
       return Number(x);
     }
-    function fmtMovPerM2Sys(uzsLine, qtyM2) {
+    /** Birim fiyat: önce hareket birimi (primary_qty), yoksa eski kayıtlar için m². */
+    function fmtMovUnitPriceSys(uzsLine, m) {
       const u = movNum(uzsLine);
-      const q = movNum(qtyM2);
-      if (!Number.isFinite(u) || u <= 0 || !Number.isFinite(q) || q <= 0) {
-        return '—';
+      const pq = movNum(m.primary_qty);
+      if (Number.isFinite(u) && u > 0 && Number.isFinite(pq) && pq > 0) {
+        const v = u / pq;
+        if (typeof window.fmtMoney === 'function') {
+          return window.fmtMoney(v);
+        }
+        return String(v.toFixed(4));
       }
-      const v = u / q;
-      if (typeof window.fmtMoney === 'function') {
-        return window.fmtMoney(v);
+      const qM2 = movNum(m.qty);
+      if (Number.isFinite(u) && u > 0 && Number.isFinite(qM2) && qM2 > 0) {
+        const v = u / qM2;
+        if (typeof window.fmtMoney === 'function') {
+          return window.fmtMoney(v);
+        }
+        return String(v.toFixed(4));
       }
-      return String(v.toFixed(4));
+      return '—';
     }
-    function fmtMovPerM2Usd(usdLine, qtyM2) {
+    function fmtMovUnitPriceUsd(usdLine, m) {
       const usd = movNum(usdLine);
-      const q = movNum(qtyM2);
-      if (!Number.isFinite(usd) || usd <= 0 || !Number.isFinite(q) || q <= 0) {
-        return '—';
+      const pq = movNum(m.primary_qty);
+      if (Number.isFinite(usd) && usd > 0 && Number.isFinite(pq) && pq > 0) {
+        const v = usd / pq;
+        if (typeof window.fmtUsd === 'function') {
+          return window.fmtUsd(v);
+        }
+        return String(v.toFixed(4)) + ' USD';
       }
-      const v = usd / q;
-      if (typeof window.fmtUsd === 'function') {
-        return window.fmtUsd(v);
+      const qM2 = movNum(m.qty);
+      if (Number.isFinite(usd) && usd > 0 && Number.isFinite(qM2) && qM2 > 0) {
+        const v = usd / qM2;
+        if (typeof window.fmtUsd === 'function') {
+          return window.fmtUsd(v);
+        }
+        return String(v.toFixed(4)) + ' USD';
       }
-      return String(v.toFixed(4)) + ' USD';
+      return '—';
     }
     async function loadMovementsList() {
       const tb = document.getElementById('movTb');
@@ -1001,15 +1028,14 @@
           movById.set(+m.id, m);
           const lineUzs = m.line_total_uzs != null ? m.line_total_uzs : m.lineTotalUzs;
           const lineUsd = m.line_total_usd != null ? m.line_total_usd : m.lineTotalUsd;
-          const qM2 = m.qty;
           const codeRaw = (m.project_code || '').trim();
           const proj = escMov(codeRaw || '—');
           const qtyC = escMov(movQtyDisplay(m));
           const brC = escMov(movBirimDisplay(m));
-          const upSys = escMov(fmtMovPerM2Sys(lineUzs, qM2));
+          const upSys = escMov(fmtMovUnitPriceSys(lineUzs, m));
           const totSys = escMov(fmtMovUzs(lineUzs));
           const fxC = escMov(fmtMovFx(m.fx_uzs_per_usd != null ? m.fx_uzs_per_usd : m.fxUzsPerUsd));
-          const upUsd = escMov(fmtMovPerM2Usd(lineUsd, qM2));
+          const upUsd = escMov(fmtMovUnitPriceUsd(lineUsd, m));
           const totUsd = escMov(fmtMovUsdCol(lineUsd));
           const mid = +m.id;
           const btnEditL = tLoc('stock.in.btnMovEdit', 'Düzenle');
@@ -1160,21 +1186,31 @@
       selectProductById(m.product_id);
       const dm = Number(m.direct_m2_entry) === 1;
       const qm = document.getElementById('qtyMode');
+      const puM2 = selectedProduct && primaryUnitIsM2(selectedProduct);
+      const qi = document.getElementById('qtyInput');
       if (dm) {
         if (qm) {
           qm.value = 'm2';
         }
-        const qi = document.getElementById('qtyInput');
         if (qi) {
           const qvM = movNum(m.qty);
           qi.value = Number.isFinite(qvM) && qvM > 0 ? String(qvM) : '';
+        }
+      } else if (puM2) {
+        if (qm) {
+          qm.value = 'm2';
+        }
+        if (qi) {
+          const qvP = movNum(m.primary_qty);
+          const qvM = movNum(m.qty);
+          const qUse = Number.isFinite(qvP) && qvP > 0 ? qvP : qvM;
+          qi.value = Number.isFinite(qUse) && qUse > 0 ? String(qUse) : '';
         }
       } else {
         if (qm) {
           qm.value = 'pieces';
         }
         const qp = m.qty_pieces != null && m.qty_pieces !== '' ? movNum(m.qty_pieces) : null;
-        const qi = document.getElementById('qtyInput');
         if (qi) {
           if (qp != null && Number.isFinite(qp) && qp > 0) {
             qi.value = String(qp);
@@ -1187,18 +1223,13 @@
       updateQtyBadge();
       updateUnitPriceCaption();
       const lineUzsV = movNum(m.line_total_uzs != null ? m.line_total_uzs : m.lineTotalUzs);
-      const m2p = productM2p.get(m.product_id) || 0;
-      const qmVal = document.getElementById('qtyMode')?.value || 'pieces';
+      const pqR = movNum(m.primary_qty);
+      const qIn = movNum(document.getElementById('qtyInput')?.value);
       let ups = 0;
-      if (qmVal === 'm2') {
-        const m2i = getM2In();
-        ups = m2i > 0 && Number.isFinite(lineUzsV) ? lineUzsV / m2i : 0;
-      } else if (m2p > 0) {
-        const qp = movNum(document.getElementById('qtyInput')?.value);
-        ups = qp > 0 && Number.isFinite(lineUzsV) ? lineUzsV / qp : 0;
-      } else {
-        const qp = movNum(document.getElementById('qtyInput')?.value);
-        ups = qp > 0 && Number.isFinite(lineUzsV) ? lineUzsV / qp : 0;
+      if (Number.isFinite(pqR) && pqR > 0 && Number.isFinite(lineUzsV) && lineUzsV > 0) {
+        ups = lineUzsV / pqR;
+      } else if (Number.isFinite(qIn) && qIn > 0 && Number.isFinite(lineUzsV) && lineUzsV > 0) {
+        ups = lineUzsV / qIn;
       }
       const fxR = movNum(m.fx_uzs_per_usd != null ? m.fx_uzs_per_usd : m.fxUzsPerUsd);
       const upEl = document.getElementById('unitPriceSysM2');
@@ -1252,33 +1283,28 @@
         m.style.display = 'block';
         return;
       }
-      const mode = document.getElementById('qtyMode')?.value || 'pieces';
+      const qm = document.getElementById('qtyMode')?.value || 'pieces';
       const qv = +document.getElementById('qtyInput').value;
-      const m2 = getM2In();
+      const puM2 = selectedProduct && primaryUnitIsM2(selectedProduct);
+      const legacyDirectM2 = qm === 'm2' && selectedProduct && !puM2;
+      const m2Stock = deriveStockM2FromForm();
       const unitPx = +document.getElementById('unitPriceSysM2').value;
       const fx = +document.getElementById('fxUzsInput').value;
       let lineUzs = NaN;
       if (Number.isFinite(unitPx) && unitPx >= 0) {
-        if (mode === 'm2') {
-          const m2d = Number.isFinite(qv) && qv > 0 ? qv : NaN;
-          lineUzs = Number.isFinite(m2d) ? unitPx * m2d : NaN;
-        } else {
-          const pid = +document.getElementById('pid').value;
-          const m2p = productM2p.get(pid) || 0;
-          const qp = Number.isFinite(qv) && qv > 0 ? qv : NaN;
-          lineUzs = Number.isFinite(qp) ? unitPx * qp : NaN;
-        }
+        const qp = Number.isFinite(qv) && qv > 0 ? qv : NaN;
+        lineUzs = Number.isFinite(qp) ? unitPx * qp : NaN;
       }
       const lineUsd = !Number.isFinite(fx) || fx <= 0 ? 0 : lineUzs / fx;
-      if (!Number.isFinite(m2) || m2 <= 0) {
+      if (!Number.isFinite(m2Stock) || m2Stock <= 0) {
         const m = document.getElementById('msg');
-        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin (sistem mÂ²)');
+        m.textContent = tLoc('stock.in.qtyInvalid', 'Geçerli miktar girin');
         m.style.display = 'block';
         return;
       }
       if (!Number.isFinite(unitPx) || unitPx < 0 || !Number.isFinite(fx) || fx <= 0) {
         const m = document.getElementById('msg');
-        m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Sistem birim fiyatı (mÂ²) ve geçerli kur girin');
+        m.textContent = tLoc('stock.in.systemFxRequiredMsg', 'Ürün birim fiyatı ve geçerli kur girin');
         m.style.display = 'block';
         return;
       }
@@ -1294,8 +1320,8 @@
         projectId,
         movementType: 'in',
         movementSource: msv,
-        qtyPieces: mode === 'pieces' ? qv : null,
-        qtyM2: mode === 'm2' ? qv : null,
+        qtyPieces: !puM2 && !legacyDirectM2 ? qv : null,
+        qtyM2: puM2 || legacyDirectM2 ? qv : null,
         inputCurrency: 'USD',
         lineTotalUzs: null,
         lineTotalUsd: lineUsd,

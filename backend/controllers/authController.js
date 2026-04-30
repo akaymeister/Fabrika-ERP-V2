@@ -7,6 +7,7 @@ const {
 const { jsonOk, jsonError } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityLogService');
 const { pool } = require('../config/database');
+const { listUserPermissionKeys } = require('../services/accessService');
 
 async function postLogin(req, res) {
   const username = String(req.body?.username || '').trim();
@@ -75,6 +76,11 @@ async function getMe(req, res) {
     return res.status(401).json(jsonError('UNAUTHORIZED', 'Oturum yok', null, 'api.session.required'));
   }
   const user = { ...req.session.user };
+  try {
+    user.permissions = await listUserPermissionKeys(user.id, user.role?.slug);
+  } catch (_) {
+    user.permissions = [];
+  }
   try {
     const [rows] = await pool.query(
       `SELECT u.must_change_password,

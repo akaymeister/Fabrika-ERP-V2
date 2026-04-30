@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { pool } = require('../config/database');
+const { userHasPermission } = require('./accessService');
 const { err } = require('../utils/serviceError');
 const { toUpperTr, optionalNoteUpperTr } = require('../utils/textNormalize');
 const { normalizeCountryCode, isValidRegionForCountry } = require('../constants/locationData');
@@ -8,6 +9,23 @@ const { UPLOADS_ROOT } = require('../utils/paths');
 
 const NATIONALITY_SET = new Set(['TR', 'UZ', 'RU', 'EN', 'OTHER']);
 const HR_SETTING_KEYS = new Set([
+  'standard_start_time',
+  'standard_end_time',
+  'break_1_start_time',
+  'break_1_end_time',
+  'break_2_start_time',
+  'break_2_end_time',
+  'break_3_start_time',
+  'break_3_end_time',
+  'break_4_start_time',
+  'break_4_end_time',
+  'lunch_start_time',
+  'lunch_end_time',
+  'overtime_start_time',
+  'overtime_end_time',
+  'monthly_work_days',
+  'monthly_work_hours',
+  'time_deduction_hours',
   'daily_start_time',
   'daily_end_time',
   'break_1_minutes',
@@ -20,6 +38,9 @@ const HR_SETTING_KEYS = new Set([
   'overtime_multiplier_1',
   'overtime_multiplier_2',
   'overtime_multiplier_3',
+  'working_days',
+  'sunday_workable',
+  'sunday_paid',
 ]);
 
 function normalizeNationality(v) {
@@ -169,6 +190,16 @@ function normalizeTelegramNotifyEnabled(v) {
   return 1;
 }
 
+function normalizeOvertimeEligible(v) {
+  if (v === 1 || v === '1' || v === true || v === 'true') return 1;
+  return 0;
+}
+
+function isOvertimeEligible(v) {
+  if (v === null || v === undefined || v === '') return true;
+  return Number(v) === 1;
+}
+
 function normalizeStatus(v) {
   const s = String(v || '').trim().toLowerCase();
   return ['active', 'passive', 'terminated'].includes(s) ? s : null;
@@ -212,9 +243,135 @@ function parseIntSafe(v) {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
+function parseTimeMinutes(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!m) return null;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+function diffMinutes(start, end) {
+  const s = parseTimeMinutes(start);
+  const eRaw = parseTimeMinutes(end);
+  if (s == null || eRaw == null) return 0;
+  let e = eRaw;
+  if (e < s) e += 24 * 60;
+  return Math.max(0, e - s);
+}
+
+function parseDecimalLoose(v) {
+  if (v == null) return 0;
+  const n = Number(String(v).replace(',', '.').trim());
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return n;
+}
+
+function computeStandardDailyHours(settings = {}) {
+  const start = settings.standard_start_time || settings.daily_start_time || '';
+  const end = settings.standard_end_time || settings.daily_end_time || '';
+  const gross = diffMinutes(start, end);
+  if (gross <= 0) return null;
+  const break1 = diffMinutes(settings.break_1_start_time, settings.break_1_end_time);
+  const break2 = diffMinutes(settings.break_2_start_time, settings.break_2_end_time);
+  const lunch = diffMinutes(settings.lunch_start_time, settings.lunch_end_time);
+  const timeDeduction = Math.round(parseDecimalLoose(settings.time_deduction_hours) * 60);
+  const netMinutes = Math.max(0, gross - break1 - break2 - lunch - timeDeduction);
+  return Math.round((netMinutes / 60) * 100) / 100;
+}
+
+const MONEY_INTERNAL_PREC = 1e6;
+
+function roundInternal6(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return null;
+  return Math.round(x * MONEY_INTERNAL_PREC) / MONEY_INTERNAL_PREC;
+}
+
+function divSafe6(a, b) {
+  const x = Number(a);
+  const y = Number(b);
+  if (!Number.isFinite(x) || !Number.isFinite(y) || y <= 0) return null;
+  return roundInternal6(x / y);
+}
+
+function mulSafe6(a, b) {
+  const x = Number(a);
+  const y = Number(b);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return Math.max(0, roundInternal6(x * y));
+}
+
+/** Aylık puantaj normal ücret: maaş × (toplam_normal_saat / monthly_work_hours) */
+function monthlyNormalPayProportional(baseAmount, totalNormalHours, monthlyWorkHours) {
+  const amt = Number(baseAmount);
+  const nh = Number(totalNormalHours);
+  const mw = Number(monthlyWorkHours);
+  if (!Number.isFinite(mw) || mw <= 0) return null;
+  if (!Number.isFinite(amt) || !Number.isFinite(nh)) return null;
+  return roundInternal6((amt * nh) / mw);
+}
+
+function formatMoneyWithCurrency(amount, currency) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return '-';
+  const cc = String(currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
+  return `${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cc}`;
+}
+
+function parseMultiplier(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+const SCHEMA_COL_CACHE = new Map();
+async function hasColumnCached(tableName, columnName) {
+  const key = `${tableName}.${columnName}`;
+  if (SCHEMA_COL_CACHE.has(key)) return SCHEMA_COL_CACHE.get(key);
+  const [r] = await pool.query(
+    'SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c',
+    { t: tableName, c: columnName }
+  );
+  const yes = Number(r[0] && r[0].c) > 0;
+  SCHEMA_COL_CACHE.set(key, yes);
+  return yes;
+}
+
 function validateHrSettingValue(key, value) {
   const s = value == null ? '' : String(value).trim();
-  if (key === 'daily_start_time' || key === 'daily_end_time') {
+  const TIME_KEYS = new Set([
+    'standard_start_time',
+    'standard_end_time',
+    'break_1_start_time',
+    'break_1_end_time',
+    'break_2_start_time',
+    'break_2_end_time',
+    'break_3_start_time',
+    'break_3_end_time',
+    'break_4_start_time',
+    'break_4_end_time',
+    'lunch_start_time',
+    'lunch_end_time',
+    'overtime_start_time',
+    'overtime_end_time',
+    'daily_start_time',
+    'daily_end_time',
+  ]);
+  if (key === 'working_days') {
+    const allowed = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+    const arr = s
+      .split(',')
+      .map((x) => x.trim().toLowerCase())
+      .filter((x) => allowed.has(x));
+    if (!arr.length) return 'mon,tue,wed,thu,fri,sat';
+    return [...new Set(arr)].join(',');
+  }
+  if (key === 'sunday_workable' || key === 'sunday_paid') {
+    if (s === '1' || s.toLowerCase() === 'true') return '1';
+    return '0';
+  }
+  if (TIME_KEYS.has(key)) {
+    if (!s) return '';
     return normalizeTime(`${s}:00`.slice(0, 8)) ? s.slice(0, 5) : null;
   }
   if (key === 'holiday_days') {
@@ -280,7 +437,11 @@ async function isAttendanceMonthLocked(monthKey) {
   const mk = normalizeMonthKey(monthKey);
   if (!mk) return false;
   const [rows] = await pool.query('SELECT is_locked FROM attendance_month_locks WHERE month_key = ? LIMIT 1', [mk]);
-  return !!(rows.length && Number(rows[0].is_locked) === 1);
+  if (!rows.length) return false;
+  const v = rows[0].is_locked;
+  if (v === true || v === 1 || v === '1') return true;
+  const n = Number(v);
+  return n === 1;
 }
 
 async function getScope() {
@@ -389,7 +550,7 @@ async function updatePosition(id, input) {
   return { ok: true };
 }
 
-async function listEmployees(filters = {}) {
+async function listEmployees(filters = {}, viewer = null) {
   const where = [];
   const p = {};
   const fErr = applyEmployeeListFilters(filters, where, p);
@@ -398,7 +559,7 @@ async function listEmployees(filters = {}) {
                       COALESCE(NULLIF(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')), ' '), e.full_name) AS person_name,
                       e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
                       e.country, e.region_or_city, e.address_line,
-                      e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status,
+                      e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status, e.overtime_eligible,
                       e.department_id, d.name AS department_name, e.position_id, pz.name AS position_name,
                       e.user_id, u.username AS user_username,
                       e.telegram_username, e.telegram_chat_id, e.telegram_notify_enabled,
@@ -411,7 +572,134 @@ async function listEmployees(filters = {}) {
                ORDER BY e.id DESC`;
   const [rows] = await pool.query(sql, p);
   rows.forEach(enrichEmployeeRow);
-  return { employees: rows };
+  const canViewGroup = await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_group');
+  if (!canViewGroup) {
+    rows.forEach((r) => {
+      delete r.salary_currency;
+      delete r.salary_amount;
+      delete r.official_salary_amount;
+      delete r.unofficial_salary_amount;
+    });
+    return { employees: rows, salaryColumns: [] };
+  }
+
+  const [settingRows] = await pool.query(
+    `SELECT setting_key, setting_value
+     FROM hr_settings
+     WHERE setting_key IN ('monthly_work_days', 'monthly_work_hours', 'standard_start_time', 'standard_end_time', 'daily_start_time', 'daily_end_time',
+                           'break_1_start_time', 'break_1_end_time', 'break_2_start_time', 'break_2_end_time', 'lunch_start_time', 'lunch_end_time',
+                           'time_deduction_hours')`
+  );
+  const settings = {};
+  settingRows.forEach((r) => {
+    settings[String(r.setting_key)] = r.setting_value;
+  });
+  const monthlyWorkDays = Number(settings.monthly_work_days || 0);
+  const monthlyWorkHours = Number(settings.monthly_work_hours || 0);
+  const standardDailyHours = computeStandardDailyHours(settings) || (monthlyWorkDays > 0 ? Math.round((monthlyWorkHours / monthlyWorkDays) * 100) / 100 : null);
+
+  const columnPerms = [
+    ['total', 'hr.salary.view_total'],
+    ['rgu_uzs', 'hr.salary.view_rgu_uzs'],
+    ['grgu_uzs', 'hr.salary.view_grgu_uzs'],
+    ['gu_usd', 'hr.salary.view_gu_usd'],
+    ['rsu', 'hr.salary.view_rsu'],
+    ['grsu', 'hr.salary.view_grsu'],
+    ['su', 'hr.salary.view_su'],
+  ];
+  const visible = {};
+  for (const [k, perm] of columnPerms) {
+    // eslint-disable-next-line no-await-in-loop
+    visible[k] = await userHasPermission(viewer?.id, viewer?.role?.slug, perm);
+  }
+  const visibleColumns = columnPerms.filter(([k]) => visible[k]).map(([k]) => k);
+
+  function divSafe(a, b) {
+    const x = Number(a);
+    const y = Number(b);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || y <= 0) return null;
+    return Math.round((x / y) * 100) / 100;
+  }
+
+  rows.forEach((r) => {
+    const currency = String(r.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
+    const totalSalaryAmount = Number(r.salary_amount || 0);
+    const officialSalaryUzs = Number(r.official_salary_amount || 0);
+    const unofficialSalaryAmount = Number(r.unofficial_salary_amount || 0);
+    const unofficialSalaryUzs = currency === 'UZS' ? unofficialSalaryAmount : null;
+    const unofficialSalaryUsd = currency === 'USD' ? unofficialSalaryAmount : null;
+
+    const rgu = divSafe(officialSalaryUzs, monthlyWorkDays);
+    const grgu = divSafe(unofficialSalaryUzs, monthlyWorkDays);
+    const gu = divSafe(unofficialSalaryUsd, monthlyWorkDays);
+    const rsu = divSafe(rgu, standardDailyHours);
+    const grsu = divSafe(grgu, standardDailyHours);
+    const su = divSafe(gu, standardDailyHours);
+
+    const salaryCols = {};
+    if (visible.total) salaryCols.total = formatMoneyWithCurrency(totalSalaryAmount, currency);
+    if (visible.rgu_uzs) salaryCols.rgu_uzs = rgu == null ? '-' : formatMoneyWithCurrency(rgu, 'UZS');
+    if (visible.grgu_uzs) salaryCols.grgu_uzs = grgu == null ? '-' : formatMoneyWithCurrency(grgu, 'UZS');
+    if (visible.gu_usd) salaryCols.gu_usd = gu == null ? '-' : formatMoneyWithCurrency(gu, 'USD');
+    if (visible.rsu) salaryCols.rsu = rsu == null ? '-' : formatMoneyWithCurrency(rsu, 'UZS');
+    if (visible.grsu) salaryCols.grsu = grsu == null ? '-' : formatMoneyWithCurrency(grsu, 'UZS');
+    if (visible.su) salaryCols.su = su == null ? '-' : formatMoneyWithCurrency(su, 'USD');
+    r.salary_columns = salaryCols;
+
+    r.total_salary_amount = totalSalaryAmount;
+    r.total_salary_currency = currency;
+    r.official_salary_uzs = officialSalaryUzs;
+    r.unofficial_salary_uzs = unofficialSalaryUzs;
+    r.unofficial_salary_usd = unofficialSalaryUsd;
+
+    // API güvenliği: group açık olsa bile alt izin yoksa ham maaş alanlarını göndermeyelim.
+    delete r.salary_currency;
+    delete r.salary_amount;
+    delete r.official_salary_amount;
+    delete r.unofficial_salary_amount;
+  });
+  return { employees: rows, salaryColumns: visibleColumns };
+}
+
+/**
+ * Ücret değerlendirme ekranı: maaş alanları (kişi kartı ile uyumlu, USD/UZS dönüşümü yok).
+ */
+async function listCompensationEmployees(filters = {}, _viewer = null) {
+  const where = [];
+  const p = {};
+  const fErr = applyEmployeeListFilters(filters, where, p);
+  if (fErr) return fErr;
+
+  const sql = `SELECT e.id, e.employee_no, e.photo_path,
+      COALESCE(NULLIF(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')), ' '), e.full_name) AS person_name,
+      e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount
+      FROM employees e
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ORDER BY e.full_name ASC, e.id ASC`;
+  const [rows] = await pool.query(sql, p);
+
+  const out = rows.map((r) => {
+    const currency = String(r.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
+    const totalSalaryAmount = Number(r.salary_amount || 0);
+    const officialSalaryUzs = Number(r.official_salary_amount || 0);
+    const unofficialAmt = Number(r.unofficial_salary_amount || 0);
+    const unofficialSalaryUzs = currency === 'UZS' ? unofficialAmt : null;
+    const unofficialSalaryUsd = currency === 'USD' ? unofficialAmt : null;
+
+    return {
+      id: r.id,
+      employee_no: r.employee_no,
+      photo_path: r.photo_path || null,
+      person_name: r.person_name,
+      official_salary_uzs: officialSalaryUzs,
+      unofficial_salary_uzs: unofficialSalaryUzs,
+      unofficial_salary_usd: unofficialSalaryUsd,
+      total_salary_amount: totalSalaryAmount,
+      total_salary_currency: currency,
+    };
+  });
+
+  return { rows: out };
 }
 
 async function createEmployee(input) {
@@ -505,13 +793,13 @@ async function createEmployee(input) {
         (employee_no, full_name, first_name, last_name, nationality, birth_date, gender, marital_status, photo_path, salary_currency,
          salary_amount, official_salary_amount, unofficial_salary_amount,
          country, region_or_city, address_line,
-         phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, department_id, position_id, user_id,
+         phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, overtime_eligible, department_id, position_id, user_id,
          telegram_username, telegram_chat_id, telegram_notify_enabled, note)
        VALUES
         (:employee_no, :full_name, :first_name, :last_name, :nationality, :birth_date, :gender, :marital_status, NULL, :salary_currency,
          :salary_amount, :official_salary_amount, :unofficial_salary_amount,
          :country, :region_or_city, :address_line,
-         :phone, :phone_secondary, :identity_no, :passport_no, :email, :hire_date, :employment_status, :department_id, :position_id, :user_id,
+         :phone, :phone_secondary, :identity_no, :passport_no, :email, :hire_date, :employment_status, :overtime_eligible, :department_id, :position_id, :user_id,
          :telegram_username, :telegram_chat_id, :telegram_notify_enabled, :note)`,
       {
         employee_no: employeeNo,
@@ -536,6 +824,7 @@ async function createEmployee(input) {
         email,
         hire_date: hireDate,
         employment_status: status,
+        overtime_eligible: normalizeOvertimeEligible(input?.overtime_eligible),
         department_id: departmentId,
         position_id: positionId,
         user_id: userId,
@@ -562,7 +851,7 @@ async function getEmployeeById(id) {
     `SELECT e.id, e.employee_no, e.full_name, e.first_name, e.last_name, e.nationality, e.birth_date, e.gender, e.marital_status, e.photo_path,
             e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
             e.country, e.region_or_city, e.address_line,
-            e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status,
+            e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status, e.overtime_eligible,
             e.department_id, e.position_id, e.user_id,
             e.telegram_username, e.telegram_chat_id, e.telegram_notify_enabled, e.note
      FROM employees e
@@ -582,7 +871,7 @@ async function updateEmployee(id, input) {
   const [curRows] = await pool.query(
     `SELECT id, employee_no, full_name, first_name, last_name, nationality, birth_date, gender, marital_status, photo_path, salary_currency,
             salary_amount, official_salary_amount, unofficial_salary_amount, country, region_or_city, address_line,
-            phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, department_id, position_id, user_id,
+            phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, overtime_eligible, department_id, position_id, user_id,
             telegram_username, telegram_chat_id, telegram_notify_enabled, note
      FROM employees WHERE id = :id LIMIT 1`,
     { id: empId }
@@ -763,6 +1052,10 @@ async function updateEmployee(id, input) {
     fields.push('employment_status = :employment_status');
     p.employment_status = status;
   }
+  if (input?.overtime_eligible !== undefined) {
+    fields.push('overtime_eligible = :overtime_eligible');
+    p.overtime_eligible = normalizeOvertimeEligible(input.overtime_eligible);
+  }
   if (input?.department_id !== undefined) {
     p.department_id = parseId(input.department_id);
     fields.push('department_id = :department_id');
@@ -863,12 +1156,15 @@ async function listAttendance(filters = {}) {
 async function createAttendance(input, actorId) {
   const employeeId = parseId(input?.employee_id);
   if (!employeeId) return err('Personel secin', 'api.hr.employee_required');
-  const workDate = String(input?.work_date || '').trim();
-  if (!workDate) return err('Tarih gerekli', 'api.hr.work_date_required');
+  const workDate = String(input?.work_date || '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate)) return err('Tarih gecersiz', 'api.hr.work_date_required');
+  if (await isAttendanceMonthLocked(monthKeyFromDate(workDate))) {
+    return err('Ay kilitli, puantaj degistirilemez', 'api.hr.attendance_month_locked');
+  }
   const wsCheck = await ensureAllowedCode(
     'hr_work_statuses',
     input?.work_status,
-    'Calisma durumu gecersiz',
+    'Çalışma durumu geçersiz',
     'api.hr.work_status_invalid'
   );
   if (wsCheck && wsCheck.error) return wsCheck;
@@ -879,14 +1175,19 @@ async function createAttendance(input, actorId) {
   const vErr = validateAttendanceRule(workStatus, checkIn, checkOut);
   if (vErr) return vErr;
   const overtime = Number(input?.overtime_hours);
-  const overtimeHours = Number.isFinite(overtime) && overtime >= 0 ? overtime : 0;
+  const rawOvertimeHours = Number.isFinite(overtime) && overtime >= 0 ? overtime : 0;
+  const rawOvertimeMinutes = Math.max(0, Math.round(rawOvertimeHours * 60));
+  const [empRows] = await pool.query('SELECT overtime_eligible FROM employees WHERE id = :id LIMIT 1', { id: employeeId });
+  const overtimeEligible = isOvertimeEligible(empRows[0]?.overtime_eligible);
+  const payableOvertimeMinutes = overtimeEligible ? rawOvertimeMinutes : 0;
+  const overtimeHours = Math.round((payableOvertimeMinutes / 60) * 100) / 100;
   const note = optionalNoteUpperTr(input?.note);
 
   const [r] = await pool.query(
     `INSERT INTO employee_attendance
-      (employee_id, work_date, check_in_time, check_out_time, work_status, overtime_hours, note, created_by, updated_by)
+      (employee_id, work_date, check_in_time, check_out_time, work_status, overtime_hours, raw_overtime_minutes, payable_overtime_minutes, note, created_by, updated_by)
      VALUES
-      (:employee_id, :work_date, :check_in_time, :check_out_time, :work_status, :overtime_hours, :note, :created_by, :updated_by)`,
+      (:employee_id, :work_date, :check_in_time, :check_out_time, :work_status, :overtime_hours, :raw_overtime_minutes, :payable_overtime_minutes, :note, :created_by, :updated_by)`,
     {
       employee_id: employeeId,
       work_date: workDate,
@@ -894,6 +1195,8 @@ async function createAttendance(input, actorId) {
       check_out_time: checkOut,
       work_status: workStatus,
       overtime_hours: overtimeHours,
+      raw_overtime_minutes: rawOvertimeMinutes,
+      payable_overtime_minutes: payableOvertimeMinutes,
       note,
       created_by: actorId || null,
       updated_by: actorId || null,
@@ -907,7 +1210,7 @@ async function updateAttendance(id, input, actorId) {
   if (!attId) return err('Gecersiz puantaj kaydi', 'api.hr.attendance_invalid');
 
   const [rows] = await pool.query(
-    `SELECT id, employee_id, work_date, check_in_time, check_out_time, work_status, overtime_hours, note
+    `SELECT id, employee_id, work_date, check_in_time, check_out_time, work_status, overtime_hours, raw_overtime_minutes, payable_overtime_minutes, note
      FROM employee_attendance
      WHERE id = :id
      LIMIT 1`,
@@ -918,7 +1221,7 @@ async function updateAttendance(id, input, actorId) {
 
   const nextWorkStatus =
     input?.work_status !== undefined
-      ? await ensureAllowedCode('hr_work_statuses', input.work_status, 'Calisma durumu gecersiz', 'api.hr.work_status_invalid')
+      ? await ensureAllowedCode('hr_work_statuses', input.work_status, 'Çalışma durumu geçersiz', 'api.hr.work_status_invalid')
       : current.work_status;
   if (nextWorkStatus && nextWorkStatus.error) return nextWorkStatus;
 
@@ -945,12 +1248,27 @@ async function updateAttendance(id, input, actorId) {
   };
 
   if (!next.employee_id) return err('Personel secin', 'api.hr.employee_required');
-  if (!next.work_date) return err('Tarih gerekli', 'api.hr.work_date_required');
-  if (!next.work_status) return err('Calisma durumu gecersiz', 'api.hr.work_status_invalid');
+  const nextWd = String(next.work_date || '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nextWd)) return err('Tarih gecersiz', 'api.hr.work_date_required');
+  next.work_date = nextWd;
+  const curWd = String(current.work_date || '').slice(0, 10);
+  if (await isAttendanceMonthLocked(monthKeyFromDate(curWd))) {
+    return err('Ay kilitli, puantaj degistirilemez', 'api.hr.attendance_month_locked');
+  }
+  if (await isAttendanceMonthLocked(monthKeyFromDate(nextWd))) {
+    return err('Ay kilitli, puantaj degistirilemez', 'api.hr.attendance_month_locked');
+  }
+  if (!next.work_status) return err('Çalışma durumu geçersiz', 'api.hr.work_status_invalid');
   if (next.overtime_hours == null) return err('Fazla mesai saati gecersiz', 'api.hr.overtime_invalid');
 
   const vErr = validateAttendanceRule(next.work_status, next.check_in_time, next.check_out_time);
   if (vErr) return vErr;
+
+  const rawOvertimeMinutes = Math.max(0, Math.round((Number(next.overtime_hours || 0)) * 60));
+  const [empRows] = await pool.query('SELECT overtime_eligible FROM employees WHERE id = :id LIMIT 1', { id: next.employee_id });
+  const overtimeEligible = isOvertimeEligible(empRows[0]?.overtime_eligible);
+  const payableOvertimeMinutes = overtimeEligible ? rawOvertimeMinutes : 0;
+  const payableOvertimeHours = Math.round((payableOvertimeMinutes / 60) * 100) / 100;
 
   const [r] = await pool.query(
     `UPDATE employee_attendance
@@ -959,7 +1277,9 @@ async function updateAttendance(id, input, actorId) {
          check_in_time = :check_in_time,
          check_out_time = :check_out_time,
          work_status = :work_status,
-         overtime_hours = :overtime_hours,
+        overtime_hours = :overtime_hours,
+        raw_overtime_minutes = :raw_overtime_minutes,
+        payable_overtime_minutes = :payable_overtime_minutes,
          note = :note,
          updated_by = :updated_by
      WHERE id = :id`,
@@ -970,7 +1290,9 @@ async function updateAttendance(id, input, actorId) {
       check_in_time: next.check_in_time,
       check_out_time: next.check_out_time,
       work_status: next.work_status,
-      overtime_hours: next.overtime_hours,
+      overtime_hours: payableOvertimeHours,
+      raw_overtime_minutes: rawOvertimeMinutes,
+      payable_overtime_minutes: payableOvertimeMinutes,
       note: next.note,
       updated_by: actorId || null,
     }
@@ -982,8 +1304,15 @@ async function updateAttendance(id, input, actorId) {
 async function updateMonthlyAttendanceRow(id, input, actorId) {
   const attId = parseId(id);
   if (!attId) return err('Gecersiz puantaj kaydi', 'api.hr.attendance_invalid');
-  const [rows] = await pool.query('SELECT id FROM employee_attendance WHERE id = :id LIMIT 1', { id: attId });
+  const [rows] = await pool.query(
+    'SELECT id, employee_id, work_date, overtime_hours FROM employee_attendance WHERE id = :id LIMIT 1',
+    { id: attId }
+  );
   if (!rows.length) return err('Puantaj kaydi bulunamadi', 'api.hr.attendance_not_found');
+  const rowWd = String(rows[0].work_date || '').slice(0, 10);
+  if (await isAttendanceMonthLocked(monthKeyFromDate(rowWd))) {
+    return err('Ay kilitli, puantaj degistirilemez', 'api.hr.attendance_month_locked');
+  }
 
   const fields = [];
   const p = { id: attId, updated_by: actorId || null };
@@ -994,7 +1323,7 @@ async function updateMonthlyAttendanceRow(id, input, actorId) {
     p.project_id = pid || null;
   }
   if (input?.work_status !== undefined) {
-    const ws = await ensureAllowedCode('hr_work_statuses', input.work_status, 'Calisma durumu gecersiz', 'api.hr.work_status_invalid');
+    const ws = await ensureAllowedCode('hr_work_statuses', input.work_status, 'Çalışma durumu geçersiz', 'api.hr.work_status_invalid');
     if (ws && ws.error) return ws;
     fields.push('work_status = :work_status');
     p.work_status = ws;
@@ -1015,13 +1344,25 @@ async function updateMonthlyAttendanceRow(id, input, actorId) {
     const oh = Number(input.overtime_hours);
     if (!Number.isFinite(oh) || oh < 0) return err('Fazla mesai saati gecersiz', 'api.hr.overtime_invalid');
     fields.push('overtime_hours = :overtime_hours');
-    p.overtime_hours = oh;
+    p._raw_overtime_minutes = Math.max(0, Math.round(oh * 60));
+  } else {
+    p._raw_overtime_minutes = Math.max(0, Math.round((Number(rows[0].overtime_hours || 0)) * 60));
   }
   if (input?.note !== undefined) {
     fields.push('note = :note');
     p.note = optionalNoteUpperTr(input.note);
   }
   if (!fields.length) return err('Guncellenecek alan yok', 'api.hr.nothing_to_update');
+  if (fields.includes('overtime_hours = :overtime_hours')) {
+    const [empRows] = await pool.query('SELECT overtime_eligible FROM employees WHERE id = :id LIMIT 1', { id: rows[0].employee_id });
+    const overtimeEligible = isOvertimeEligible(empRows[0]?.overtime_eligible);
+    const payableOvertimeMinutes = overtimeEligible ? p._raw_overtime_minutes : 0;
+    p.overtime_hours = Math.round((payableOvertimeMinutes / 60) * 100) / 100;
+    fields.push('raw_overtime_minutes = :raw_overtime_minutes');
+    fields.push('payable_overtime_minutes = :payable_overtime_minutes');
+    p.raw_overtime_minutes = p._raw_overtime_minutes;
+    p.payable_overtime_minutes = payableOvertimeMinutes;
+  }
 
   fields.push('updated_by = :updated_by');
   await pool.query(`UPDATE employee_attendance SET ${fields.join(', ')} WHERE id = :id`, p);
@@ -1045,6 +1386,7 @@ async function listDailyAttendance(dateRaw, empFilters = {}) {
             d.name AS department_name,
             e.position_id,
             pz.name AS position_name,
+            e.overtime_eligible,
             a.id AS attendance_id,
             a.project_id,
             prj.project_code,
@@ -1054,6 +1396,8 @@ async function listDailyAttendance(dateRaw, empFilters = {}) {
             a.check_out_time,
             a.total_hours,
             a.overtime_hours,
+            a.raw_overtime_minutes,
+            a.payable_overtime_minutes,
             a.note
      FROM employees e
      LEFT JOIN departments d ON d.id = e.department_id
@@ -1068,6 +1412,32 @@ async function listDailyAttendance(dateRaw, empFilters = {}) {
     r.employee_display = formatEmployeeLabel(r);
   });
   return { date: workDate, rows, isLocked: await isAttendanceMonthLocked(monthKeyFromDate(workDate)) };
+}
+
+async function summarizeDailyAttendance(dateRaw, empFilters = {}) {
+  const workDate = String(dateRaw || '').trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate)) return err('Tarih gecersiz', 'api.hr.work_date_required');
+  const where = ['e.employment_status = \'active\''];
+  const p = { work_date: workDate };
+  const fErr = applyEmployeeAttendanceFilters(empFilters, where, p);
+  if (fErr) return fErr;
+  const [rows] = await pool.query(
+    `SELECT COUNT(*) AS total_active,
+            SUM(CASE WHEN a.work_status = 'absent' THEN 1 ELSE 0 END) AS absent,
+            SUM(CASE WHEN a.work_status IN ('paid_leave','unpaid_leave','leave','sick_leave','half_day') THEN 1 ELSE 0 END) AS on_leave
+     FROM employees e
+     LEFT JOIN employee_attendance a ON a.employee_id = e.id AND a.work_date = :work_date
+     WHERE ${where.join(' AND ')}`,
+    p
+  );
+  const r = rows[0] || {};
+  return {
+    date: workDate,
+    totalEmployees: Number(r.total_active) || 0,
+    absent: Number(r.absent) || 0,
+    onLeave: Number(r.on_leave) || 0,
+    isLocked: await isAttendanceMonthLocked(monthKeyFromDate(workDate)),
+  };
 }
 
 async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
@@ -1090,7 +1460,7 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
       const workStatus = normalizeWorkStatus(row?.work_status);
       if (!workStatus || !allowedStatuses.has(workStatus)) {
         await conn.rollback();
-        return err('Calisma durumu gecersiz', 'api.hr.work_status_invalid');
+        return err('Çalışma durumu geçersiz', 'api.hr.work_status_invalid');
       }
       const wtCandidate = normalizeWorkType(row?.work_type) || 'normal';
       if (!allowedTypes.has(wtCandidate)) {
@@ -1108,14 +1478,19 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
       const totalHoursRaw = Number(row?.total_hours);
       const totalHours = Number.isFinite(totalHoursRaw) && totalHoursRaw >= 0 ? totalHoursRaw : computeTotalHours(checkIn, checkOut);
       const overtimeRaw = Number(row?.overtime_hours);
-      const overtimeHours = Number.isFinite(overtimeRaw) && overtimeRaw >= 0 ? overtimeRaw : 0;
+      const rawOvertimeHours = Number.isFinite(overtimeRaw) && overtimeRaw >= 0 ? overtimeRaw : 0;
+      const rawOvertimeMinutes = Math.max(0, Math.round(rawOvertimeHours * 60));
+      const [empRows] = await conn.query('SELECT overtime_eligible FROM employees WHERE id = :id LIMIT 1', { id: employeeId });
+      const overtimeEligible = isOvertimeEligible(empRows[0]?.overtime_eligible);
+      const payableOvertimeMinutes = overtimeEligible ? rawOvertimeMinutes : 0;
+      const overtimeHours = Math.round((payableOvertimeMinutes / 60) * 100) / 100;
       const note = optionalNoteUpperTr(row?.note);
       const projectId = parseId(row?.project_id);
       await conn.query(
         `INSERT INTO employee_attendance
-          (employee_id, work_date, project_id, work_type, check_in_time, check_out_time, work_status, total_hours, overtime_hours, note, created_by, updated_by)
+          (employee_id, work_date, project_id, work_type, check_in_time, check_out_time, work_status, total_hours, overtime_hours, raw_overtime_minutes, payable_overtime_minutes, note, created_by, updated_by)
          VALUES
-          (:employee_id, :work_date, :project_id, :work_type, :check_in_time, :check_out_time, :work_status, :total_hours, :overtime_hours, :note, :created_by, :updated_by)
+          (:employee_id, :work_date, :project_id, :work_type, :check_in_time, :check_out_time, :work_status, :total_hours, :overtime_hours, :raw_overtime_minutes, :payable_overtime_minutes, :note, :created_by, :updated_by)
          ON DUPLICATE KEY UPDATE
            project_id = VALUES(project_id),
            work_type = VALUES(work_type),
@@ -1123,7 +1498,9 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
            check_out_time = VALUES(check_out_time),
            work_status = VALUES(work_status),
            total_hours = VALUES(total_hours),
-           overtime_hours = VALUES(overtime_hours),
+          overtime_hours = VALUES(overtime_hours),
+          raw_overtime_minutes = VALUES(raw_overtime_minutes),
+          payable_overtime_minutes = VALUES(payable_overtime_minutes),
            note = VALUES(note),
            updated_by = VALUES(updated_by)`,
         {
@@ -1136,6 +1513,8 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
           work_status: workStatus,
           total_hours: totalHours,
           overtime_hours: overtimeHours,
+          raw_overtime_minutes: rawOvertimeMinutes,
+          payable_overtime_minutes: payableOvertimeMinutes,
           note,
           created_by: actorId || null,
           updated_by: actorId || null,
@@ -1163,7 +1542,7 @@ async function listMonthlyAttendance({
   department_id,
   position_id,
   search,
-} = {}) {
+} = {}, viewer = null) {
   const mk = normalizeMonthKey(month);
   if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
   const where = ["DATE_FORMAT(a.work_date, '%Y-%m') = :month_key"];
@@ -1220,7 +1599,154 @@ async function listMonthlyAttendance({
   summary.forEach((row) => {
     row.employee_name = formatEmployeeLabel(row);
   });
-  return { month: mk, rows, summary, isLocked: await isAttendanceMonthLocked(mk) };
+  const canViewSalaryGroup = await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_group');
+  const salaryPerms = {
+    rsu: canViewSalaryGroup && (await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_rsu')),
+    grsu: canViewSalaryGroup && (await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_grsu')),
+    su: canViewSalaryGroup && (await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_su')),
+  };
+
+  const summaryTotals = {
+    total_normal_hours: 0,
+    total_overtime_hours: 0,
+    total_gr_usd_nm: null,
+    total_fm_usd: null,
+    total_ru_uzs_nm: null,
+    total_non_official_uzs: null,
+    total_unofficial_usd: null,
+  };
+
+  summary.forEach((s) => {
+    summaryTotals.total_normal_hours += Number(s.total_hours || 0);
+    summaryTotals.total_overtime_hours += Number(s.overtime_hours || 0);
+  });
+  summaryTotals.total_normal_hours = Math.round(summaryTotals.total_normal_hours * 100) / 100;
+  summaryTotals.total_overtime_hours = Math.round(summaryTotals.total_overtime_hours * 100) / 100;
+
+  if (canViewSalaryGroup && summary.length) {
+    const empIds = summary.map((x) => Number(x.employee_id)).filter((x) => Number.isFinite(x) && x > 0);
+    const [salaryRows] = empIds.length
+      ? await pool.query(
+          `SELECT id, salary_currency, official_salary_amount, unofficial_salary_amount
+           FROM employees
+           WHERE id IN (${empIds.map(() => '?').join(',')})`,
+          empIds
+        )
+      : [[]];
+    const salaryByEmp = new Map(salaryRows.map((r) => [Number(r.id), r]));
+    const [settingRows] = await pool.query(
+      `SELECT setting_key, setting_value
+       FROM hr_settings
+       WHERE setting_key IN ('monthly_work_days', 'monthly_work_hours', 'standard_start_time', 'standard_end_time', 'daily_start_time', 'daily_end_time',
+                             'break_1_start_time', 'break_1_end_time', 'break_2_start_time', 'break_2_end_time', 'lunch_start_time', 'lunch_end_time',
+                             'time_deduction_hours')`
+    );
+    const settingMap = {};
+    settingRows.forEach((r) => {
+      settingMap[String(r.setting_key)] = r.setting_value;
+    });
+    const monthlyWorkDays = Number(settingMap.monthly_work_days || 0);
+    const monthlyWorkHours = Number(settingMap.monthly_work_hours || 0);
+    const standardDailyHours =
+      computeStandardDailyHours(settingMap) ||
+      (monthlyWorkDays > 0 ? Math.round((monthlyWorkHours / monthlyWorkDays) * 100) / 100 : null);
+    const canPropNormalPay = Number.isFinite(monthlyWorkHours) && monthlyWorkHours > 0;
+
+    summaryTotals.total_gr_usd_nm = 0;
+    summaryTotals.total_fm_usd = 0;
+    summaryTotals.total_ru_uzs_nm = 0;
+    summaryTotals.total_non_official_uzs = 0;
+    summaryTotals.total_unofficial_usd = 0;
+
+    summary.forEach((s) => {
+      const sal = salaryByEmp.get(Number(s.employee_id)) || {};
+      const currency = String(sal.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
+      const officialSalaryUzs = Number(sal.official_salary_amount || 0);
+      const unofficialSalaryAmount = Number(sal.unofficial_salary_amount || 0);
+      const unofficialSalaryUzs = currency === 'UZS' ? unofficialSalaryAmount : null;
+      const unofficialSalaryUsd = currency === 'USD' ? unofficialSalaryAmount : null;
+
+      const rguUzs = monthlyWorkDays > 0 ? divSafe6(officialSalaryUzs, monthlyWorkDays) : null;
+      const grguUzs =
+        unofficialSalaryUzs != null && monthlyWorkDays > 0 ? divSafe6(unofficialSalaryUzs, monthlyWorkDays) : null;
+      const guUsd =
+        unofficialSalaryUsd != null && monthlyWorkDays > 0 ? divSafe6(unofficialSalaryUsd, monthlyWorkDays) : null;
+
+      const rsu =
+        salaryPerms.rsu && rguUzs != null && standardDailyHours != null && standardDailyHours > 0
+          ? divSafe6(rguUzs, standardDailyHours)
+          : null;
+      const grsu =
+        salaryPerms.grsu && grguUzs != null && standardDailyHours != null && standardDailyHours > 0
+          ? divSafe6(grguUzs, standardDailyHours)
+          : null;
+      const su =
+        salaryPerms.su && guUsd != null && standardDailyHours != null && standardDailyHours > 0
+          ? divSafe6(guUsd, standardDailyHours)
+          : null;
+
+      const totalNormalHours = Number(s.total_hours || 0);
+      const totalOvertimeHours = Number(s.overtime_hours || 0);
+
+      s.total_normal_hours = totalNormalHours;
+      s.total_overtime_hours = totalOvertimeHours;
+      s.rsu = rsu;
+      s.grsu = grsu;
+      s.su = su;
+      s.ru_uzs_nm =
+        !salaryPerms.rsu || !canPropNormalPay ? null : monthlyNormalPayProportional(officialSalaryUzs, totalNormalHours, monthlyWorkHours);
+      s.gr_uzs_nm =
+        !salaryPerms.grsu || !canPropNormalPay || unofficialSalaryUzs == null
+          ? null
+          : monthlyNormalPayProportional(unofficialSalaryUzs, totalNormalHours, monthlyWorkHours);
+      s.gr_usd_nm =
+        !salaryPerms.su || !canPropNormalPay || unofficialSalaryUsd == null
+          ? null
+          : monthlyNormalPayProportional(unofficialSalaryUsd, totalNormalHours, monthlyWorkHours);
+      s.fm_uzs =
+        rsu == null || grsu == null ? null : mulSafe6(totalOvertimeHours, Number(rsu) + Number(grsu));
+      s.fm_usd = su == null ? null : mulSafe6(totalOvertimeHours, su);
+
+      if (s.gr_usd_nm != null) summaryTotals.total_gr_usd_nm += Number(s.gr_usd_nm || 0);
+      if (s.fm_usd != null) summaryTotals.total_fm_usd += Number(s.fm_usd || 0);
+      if (s.ru_uzs_nm != null) summaryTotals.total_ru_uzs_nm += Number(s.ru_uzs_nm || 0);
+      if (s.gr_uzs_nm != null) summaryTotals.total_non_official_uzs += Number(s.gr_uzs_nm || 0);
+      if (s.fm_uzs != null) summaryTotals.total_non_official_uzs += Number(s.fm_uzs || 0);
+    });
+
+    summaryTotals.total_gr_usd_nm = roundInternal6(summaryTotals.total_gr_usd_nm);
+    summaryTotals.total_fm_usd = roundInternal6(summaryTotals.total_fm_usd);
+    summaryTotals.total_ru_uzs_nm = roundInternal6(summaryTotals.total_ru_uzs_nm);
+    summaryTotals.total_non_official_uzs = roundInternal6(summaryTotals.total_non_official_uzs);
+    summaryTotals.total_unofficial_usd = roundInternal6(
+      (summaryTotals.total_gr_usd_nm || 0) + (summaryTotals.total_fm_usd || 0)
+    );
+  } else {
+    summary.forEach((s) => {
+      s.total_normal_hours = Number(s.total_hours || 0);
+      s.total_overtime_hours = Number(s.overtime_hours || 0);
+      s.rsu = null;
+      s.grsu = null;
+      s.su = null;
+      s.ru_uzs_nm = null;
+      s.gr_uzs_nm = null;
+      s.gr_usd_nm = null;
+      s.fm_uzs = null;
+      s.fm_usd = null;
+    });
+  }
+
+  return {
+    month: mk,
+    rows,
+    summary,
+    summaryTotals,
+    salaryVisibility: {
+      group: canViewSalaryGroup,
+      ...salaryPerms,
+    },
+    isLocked: await isAttendanceMonthLocked(mk),
+  };
 }
 
 async function listAttendanceLocks() {
@@ -1283,8 +1809,9 @@ async function getHrSettingsBundle({ includeInactive = false } = {}) {
      ${includeInactive ? '' : 'WHERE is_active = 1'}
      ORDER BY sort_order ASC, id ASC`
   );
+  const hasMultiplier = await hasColumnCached('hr_work_statuses', 'multiplier');
   const [workStatuses] = await pool.query(
-    `SELECT id, code, name, is_active, sort_order
+    `SELECT id, code, name, is_active, sort_order${hasMultiplier ? ', multiplier' : ', 1 AS multiplier'}
      FROM hr_work_statuses
      ${includeInactive ? '' : 'WHERE is_active = 1'}
      ORDER BY sort_order ASC, id ASC`
@@ -1380,8 +1907,9 @@ async function deleteWorkType(id) {
 }
 
 async function listWorkStatuses({ includeInactive = false } = {}) {
+  const hasMultiplier = await hasColumnCached('hr_work_statuses', 'multiplier');
   const [rows] = await pool.query(
-    `SELECT id, code, name, is_active, sort_order
+    `SELECT id, code, name, is_active, sort_order${hasMultiplier ? ', multiplier' : ', 1 AS multiplier'}
      FROM hr_work_statuses
      ${includeInactive ? '' : 'WHERE is_active = 1'}
      ORDER BY sort_order ASC, id ASC`
@@ -1393,11 +1921,17 @@ async function createWorkStatus(input = {}) {
   const code = normalizeCode(input?.code);
   const name = toUpperTr(input?.name);
   const sortOrder = parseIntSafe(input?.sort_order) ?? 100;
-  if (!code) return err('Calisma durumu kodu gerekli', 'api.hr.work_status_code_required');
-  if (!name) return err('Calisma durumu adi gerekli', 'api.hr.work_status_name_required');
+  const hasMultiplier = await hasColumnCached('hr_work_statuses', 'multiplier');
+  const multiplier = parseMultiplier(input?.multiplier);
+  if (!code) return err('Çalışma durumu kodu gerekli', 'api.hr.work_status_code_required');
+  if (!name) return err('Çalışma durumu adı gerekli', 'api.hr.work_status_name_required');
+  if (hasMultiplier && multiplier == null && input?.multiplier !== undefined) {
+    return err('Çarpan değeri geçersiz', 'api.hr.settings_value_invalid');
+  }
   const [r] = await pool.query(
-    'INSERT INTO hr_work_statuses (code, name, is_active, sort_order) VALUES (:code, :name, :is_active, :sort_order)',
-    { code, name, is_active: input?.is_active === 0 ? 0 : 1, sort_order: sortOrder }
+    `INSERT INTO hr_work_statuses (code, name, is_active, sort_order${hasMultiplier ? ', multiplier' : ''})
+     VALUES (:code, :name, :is_active, :sort_order${hasMultiplier ? ', :multiplier' : ''})`,
+    { code, name, is_active: input?.is_active === 0 ? 0 : 1, sort_order: sortOrder, multiplier: multiplier ?? 1 }
   );
   return { id: r.insertId };
 }
@@ -1405,17 +1939,18 @@ async function createWorkStatus(input = {}) {
 async function updateWorkStatus(id, input = {}) {
   const itemId = parseId(id);
   if (!itemId) return err('Gecersiz calisma durumu', 'api.hr.work_status_invalid');
+  const hasMultiplier = await hasColumnCached('hr_work_statuses', 'multiplier');
   const fields = [];
   const p = { id: itemId };
   if (input?.code !== undefined) {
     const code = normalizeCode(input.code);
-    if (!code) return err('Calisma durumu kodu gerekli', 'api.hr.work_status_code_required');
+    if (!code) return err('Çalışma durumu kodu gerekli', 'api.hr.work_status_code_required');
     fields.push('code = :code');
     p.code = code;
   }
   if (input?.name !== undefined) {
     const name = toUpperTr(input.name);
-    if (!name) return err('Calisma durumu adi gerekli', 'api.hr.work_status_name_required');
+    if (!name) return err('Çalışma durumu adı gerekli', 'api.hr.work_status_name_required');
     fields.push('name = :name');
     p.name = name;
   }
@@ -1429,9 +1964,15 @@ async function updateWorkStatus(id, input = {}) {
     fields.push('sort_order = :sort_order');
     p.sort_order = sortOrder;
   }
+  if (hasMultiplier && input?.multiplier !== undefined) {
+    const multiplier = parseMultiplier(input.multiplier);
+    if (multiplier == null) return err('Çarpan değeri geçersiz', 'api.hr.settings_value_invalid');
+    fields.push('multiplier = :multiplier');
+    p.multiplier = multiplier;
+  }
   if (!fields.length) return err('Guncellenecek alan yok', 'api.hr.nothing_to_update');
   const [r] = await pool.query(`UPDATE hr_work_statuses SET ${fields.join(', ')} WHERE id = :id`, p);
-  if (!r.affectedRows) return err('Calisma durumu bulunamadi', 'api.hr.work_status_not_found');
+  if (!r.affectedRows) return err('Çalışma durumu bulunamadı', 'api.hr.work_status_not_found');
   return { ok: true };
 }
 
@@ -1439,7 +1980,7 @@ async function deleteWorkStatus(id) {
   const itemId = parseId(id);
   if (!itemId) return err('Gecersiz calisma durumu', 'api.hr.work_status_invalid');
   const [rows] = await pool.query('SELECT code FROM hr_work_statuses WHERE id = :id LIMIT 1', { id: itemId });
-  if (!rows.length) return err('Calisma durumu bulunamadi', 'api.hr.work_status_not_found');
+  if (!rows.length) return err('Çalışma durumu bulunamadı', 'api.hr.work_status_not_found');
   const code = String(rows[0].code || '').trim().toLowerCase();
   const [usage] = await pool.query('SELECT COUNT(*) AS c FROM employee_attendance WHERE work_status = :code', { code });
   if (Number(usage[0]?.c || 0) > 0) {
@@ -1458,6 +1999,7 @@ module.exports = {
   createPosition,
   updatePosition,
   listEmployees,
+  listCompensationEmployees,
   createEmployee,
   getEmployeeById,
   updateEmployee,
@@ -1468,6 +2010,7 @@ module.exports = {
   updateAttendance,
   updateMonthlyAttendanceRow,
   listDailyAttendance,
+  summarizeDailyAttendance,
   saveDailyAttendanceBulk,
   listMonthlyAttendance,
   listAttendanceLocks,

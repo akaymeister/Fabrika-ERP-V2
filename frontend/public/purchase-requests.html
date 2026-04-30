@@ -8,8 +8,31 @@
   <style>
     .pr-layout { display: flex; flex-direction: column; gap: 16px; }
     .pr-row-sel { background: #e0f2fe !important; }
-    .pr-det-table th, .pr-det-table td { font-size: 13px; padding: 6px 8px; }
+    .pr-det-table th, .pr-det-table td { font-size: var(--font-size-ui); padding: 6px 8px; }
     .pur-list-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
+    /* Global button { width:100% } — detayda eylem butonları tek satır, sağa yaslı */
+    .pr-act-buttons {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 12px;
+      box-sizing: border-box;
+    }
+    .pr-act-buttons > .version-btn {
+      width: auto;
+      min-width: 0;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 520px) {
+      .pr-act-buttons {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+    }
   </style>
 </head>
 <body class="app-shell app-master-page">

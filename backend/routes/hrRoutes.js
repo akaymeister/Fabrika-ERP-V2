@@ -16,6 +16,7 @@ const {
   postPosition,
   patchPosition,
   getEmployees,
+  getCompensationEmployees,
   getEmployee,
   postEmployee,
   patchEmployee,
@@ -24,6 +25,7 @@ const {
   getAttendance,
   postAttendance,
   patchAttendance,
+  getDailyAttendanceSummary,
   getDailyAttendance,
   putDailyAttendanceBulk,
   getMonthlyAttendance,
@@ -89,18 +91,20 @@ router.get('/positions', getPositions);
 router.post('/positions', postPosition);
 router.patch('/positions/:id', patchPosition);
 router.get('/employees', getEmployees);
+router.get('/compensation/employees', requirePermission('hr.compensation.view'), getCompensationEmployees);
 router.get('/employees/:id', getEmployee);
 router.post('/employees', postEmployee);
 router.post('/employees/:id/photo', uploadEmployeePhotoMw, postEmployeePhoto);
 router.patch('/employees/:id', patchEmployee);
 router.get('/users', getAssignableUsers);
 router.get('/attendance', getAttendance);
-router.post('/attendance', postAttendance);
-router.patch('/attendance/:id', patchAttendance);
+router.post('/attendance', requirePermission('hr.attendance.edit'), postAttendance);
+router.patch('/attendance/:id', requirePermission('hr.attendance.edit'), patchAttendance);
+router.get('/attendance/daily-summary', getDailyAttendanceSummary);
 router.get('/attendance/daily', getDailyAttendance);
-router.put('/attendance/daily-bulk', putDailyAttendanceBulk);
+router.put('/attendance/daily-bulk', requirePermission('hr.attendance.edit'), putDailyAttendanceBulk);
 router.get('/attendance/monthly', getMonthlyAttendance);
-router.patch('/attendance/monthly/:id', patchMonthlyAttendanceRow);
+router.patch('/attendance/monthly/:id', requirePermission('hr.attendance.edit'), patchMonthlyAttendanceRow);
 router.get('/attendance-locks', getAttendanceLocks);
 router.get('/attendance-projects', getAttendanceProjects);
 router.post('/attendance-locks/lock', requirePermission('hr.attendance.unlock'), postAttendanceLock);

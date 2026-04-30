@@ -62,9 +62,23 @@ async function main() {
     );
     await addCol(conn, 'employee_attendance', 'total_hours', 'total_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00 AFTER work_status', added);
 
+    // ENUM dönüşümünden önce mevcut serbest metin değerleri normalize edilir.
+    await conn.query(
+      `UPDATE employee_attendance
+       SET work_status = CASE
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('worked', 'calisti', 'çalıştı', 'work', 'normal') THEN 'worked'
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('absent', 'gelmedi', 'devamsiz', 'devamsız') THEN 'absent'
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('paid_leave', 'leave', 'izin', 'ucretli_izin', 'ücretli_izin') THEN 'paid_leave'
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('unpaid_leave', 'sick_leave', 'raporlu', 'ucretsiz_izin', 'ücretsiz_izin') THEN 'unpaid_leave'
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('half_day', 'yarim_gun', 'yarım_gun') THEN 'half_day'
+         WHEN LOWER(TRIM(COALESCE(work_status, ''))) IN ('overtime', 'fazla_mesai') THEN 'overtime'
+         ELSE 'worked'
+       END`
+    );
+
     await conn.query(
       `ALTER TABLE employee_attendance
-       MODIFY COLUMN work_status ENUM('worked', 'absent', 'leave', 'sick_leave', 'half_day', 'overtime') NOT NULL DEFAULT 'worked'`
+       MODIFY COLUMN work_status ENUM('worked', 'absent', 'paid_leave', 'unpaid_leave', 'leave', 'sick_leave', 'half_day', 'overtime') NOT NULL DEFAULT 'worked'`
     );
 
     if (!(await hasTable(conn, 'attendance_month_locks'))) {

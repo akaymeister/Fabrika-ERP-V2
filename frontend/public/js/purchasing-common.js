@@ -40,7 +40,7 @@ function purchasingNavHTML(active) {
   const items = [
     { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', need: 'request' },
     { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'see' },
-    { href: '/purchase-approvals.html', key: 'appr', k: 'nav.purch.approvals', need: 'approve' },
+    { href: '/purchase-requests.html?pending', key: 'appr', k: 'nav.purch.approvals', need: 'approve' },
     { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'purch' },
     { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'purch' },
     { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },

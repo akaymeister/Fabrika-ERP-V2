@@ -94,7 +94,7 @@
         ? `<p><a class="version-btn" href="/purchase-requisition-open.html?id=${r.id}" style="text-decoration:none">${tKey('purch.wf.editReq')}</a></p>`
         : '';
     const procExtra = r.procurement_state
-      ? `<p style="color:#0369a1;font-size:14px"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
+      ? `<p class="text-ui" style="color:#0369a1"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
       : '';
     det.innerHTML = `
       <h4>${esc(r.request_code || r.id)}</h4>
@@ -118,13 +118,13 @@
         </table>
       </div>
       <div class="pr-act" style="margin-top:12px;${canAct ? '' : 'display:none'}">
-        <label>${tKey('purch.wf.actionNote')}</label>
-        <textarea id="actNote" rows="2" style="width:100%;max-width:480px;border-radius:8px;padding:8px"></textarea>
-        <p>
+        <label for="actNote">${tKey('purch.wf.actionNote')}</label>
+        <textarea id="actNote" rows="2" style="width:100%;max-width:480px;border-radius:8px;padding:8px;box-sizing:border-box;display:block"></textarea>
+        <div class="pr-act-buttons" role="group" aria-label="${esc(tKey('purch.req.lColAction'))}">
           <button type="button" class="version-btn" id="btnAp">${tKey('purch.req.approve')}</button>
-          <button type="button" class="version-btn" style="background:#b91c1c" id="btnRj">${tKey('purch.req.reject')}</button>
-          <button type="button" class="version-btn" style="background:#b45309" id="btnRv">${tKey('purch.wf.requestRevision')}</button>
-        </p>
+          <button type="button" class="version-btn" style="background:#b91c1c;border:none" id="btnRj">${tKey('purch.req.reject')}</button>
+          <button type="button" class="version-btn" style="background:#b45309;border:none" id="btnRv">${tKey('purch.wf.requestRevision')}</button>
+        </div>
       </div>
     `;
     if (canAct) {
@@ -197,7 +197,7 @@
   }
 
   function start() {
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
         location.href = '/login.html';
@@ -207,14 +207,15 @@
       flt.addEventListener('change', () => load());
     }
     (async function () {
+      const approvalsQueue = window.location.search.includes('pending');
       if (window.initPurchasingPageNav) {
-        await window.initPurchasingPageNav('listreq');
+        await window.initPurchasingPageNav(approvalsQueue ? 'appr' : 'listreq');
       }
       const s = window.getPurchasingScope && window.getPurchasingScope();
       if (s) {
         scope = s;
       }
-      if (window.location.search.includes('pending')) {
+      if (approvalsQueue) {
         if (flt) {
           flt.value = 'pending';
         }

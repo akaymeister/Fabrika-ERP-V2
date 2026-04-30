@@ -122,10 +122,12 @@ async function seedDefaults(conn) {
   const statusDefaults = [
     ['worked', 'CALISTI', 10],
     ['absent', 'GELMEDI', 20],
-    ['leave', 'IZINLI', 30],
-    ['sick_leave', 'RAPORLU', 40],
-    ['half_day', 'YARIM GUN', 50],
-    ['overtime', 'FAZLA_MESAI', 60],
+    ['paid_leave', 'UCRETLI IZIN', 30],
+    ['unpaid_leave', 'UCRETSIZ IZIN', 40],
+    ['leave', 'IZINLI', 50],
+    ['sick_leave', 'RAPORLU', 60],
+    ['half_day', 'YARIM GUN', 70],
+    ['overtime', 'FAZLA_MESAI', 80],
   ];
   for (const [code, name, sortOrder] of statusDefaults) {
     await conn.query(

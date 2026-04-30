@@ -5,6 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.hub.title">Satınalma yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
+  <style>
+    .purch-hub-cards h3 {
+      text-transform: capitalize;
+    }
+    .purch-hub-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+      max-width: 860px;
+    }
+    .purch-hub-kpi {
+      border: 1px solid #dbe6f5;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .purch-hub-kpi span {
+      font-size: 12px;
+      color: #475569;
+      font-weight: 600;
+    }
+    .purch-hub-kpi strong {
+      font-size: 18px;
+      color: #0f172a;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 900px) {
+      .purch-hub-kpis {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body class="app-shell app-master-page">
   <div class="container">
@@ -39,10 +77,24 @@
         <span class="hero-mini-badge" data-i18n="purch.hub.badge">Modül</span>
         <h2 data-i18n="nav.purch.hub">Satınalma</h2>
         <p data-i18n="purch.hub.subLong">1) Talep aç 2) Talepler & onay 3) Satınalma işleme (fiyat) 4) Mal kabul ayrıca Stok modülünde. Stok sadece kabulle artar.</p>
+        <div class="purch-hub-kpis">
+          <div class="purch-hub-kpi">
+            <span data-i18n="purch.hub.kpiPendingReq">Onay bekleyen talepler</span>
+            <strong id="hubPendingReqCount">0</strong>
+          </div>
+          <div class="purch-hub-kpi">
+            <span data-i18n="purch.hub.kpiActiveOrders">Aktif siparişler</span>
+            <strong id="hubActiveOrdersCount">0</strong>
+          </div>
+          <div class="purch-hub-kpi">
+            <span data-i18n="purch.hub.kpiOpenOrders">Tamamlanmamış siparişler</span>
+            <strong id="hubOpenOrdersCount">0</strong>
+          </div>
+        </div>
       </div>
     </section>
 
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))">
+    <div class="dashboard-grid purch-hub-cards" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))">
       <a class="dashboard-card primary-card" href="/purchase-requisition-open.html" style="text-decoration: none; color: inherit" id="linkOpenReq">
         <h3 data-i18n="purch.hub.step1">Talep aç</h3>
         <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak; fiyat yok</p>
@@ -92,6 +144,17 @@
         a('linkOpenReq', s.canRequest || s.canPurchasing);
         a('linkReq', s.canRequest || s.canApprove || s.canPurchasing);
         a('linkProc', !!s.canPurchasing);
+
+        const setCount = (id, n) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = String(Number.isFinite(n) ? n : 0);
+        };
+        const statRes = await window.purApi('/api/purchasing/hub-counters');
+        if (statRes.ok && statRes.data && statRes.data.ok) {
+          setCount('hubPendingReqCount', Number(statRes.data.pendingRequests) || 0);
+          setCount('hubActiveOrdersCount', Number(statRes.data.activeOrders) || 0);
+          setCount('hubOpenOrdersCount', Number(statRes.data.openOrders) || 0);
+        }
       })();
     }
     if (document.readyState === 'loading') {

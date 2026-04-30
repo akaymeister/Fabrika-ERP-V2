@@ -188,7 +188,7 @@
 
   function helperLineHtml(labelKey, value) {
     if (value == null) return '';
-    return `<div style="font-size:11px;color:#64748b">${esc(tK(labelKey))}: ${esc(fmtQty(value))}</div>`;
+    return `<div class="text-meta" style="color:#64748b">${esc(tK(labelKey))}: ${esc(fmtQty(value))}</div>`;
   }
 
   function qtyCellHtml(item, qty) {
@@ -556,15 +556,15 @@
         const rowCls = cancelled ? ' class="po-line-cancelled"' : '';
         const cancelReasonHtml =
           cancelled && it.cancel_reason
-            ? `<div class="proc-cancel-badge">${esc(tK('purch.proc.lineCancelledBadge'))}</div><div style="font-size:11px;color:#991b1b;margin-top:6px;max-width:220px"><strong>${esc(tK('purch.proc.cancelReasonPrefix'))}</strong> ${esc(it.cancel_reason)}</div>`
+            ? `<div class="proc-cancel-badge">${esc(tK('purch.proc.lineCancelledBadge'))}</div><div class="text-meta" style="color:#991b1b;margin-top:6px;max-width:220px"><strong>${esc(tK('purch.proc.cancelReasonPrefix'))}</strong> ${esc(it.cancel_reason)}</div>`
             : '';
         const recv = Number(it.qty_received) || 0;
         const canCancel = !cancelled && recv <= 0.0001;
         const cancelBtn = cancelled
           ? '—'
-          : `<button type="button" class="logout-btn po-line-cancel" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'} style="font-size:12px;padding:6px 10px">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+          : `<button type="button" class="logout-btn po-line-cancel text-ui" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'} style="padding:6px 10px">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
         return `<tr${rowCls}>
-          <td><span style="font-size:11px;color:#64748b">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
+          <td><span class="text-meta" style="color:#64748b">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
@@ -779,7 +779,9 @@
       method: 'PUT',
       body: JSON.stringify({ lines: collected.lines }),
     });
-    if (!saveOk) {
+    const pricingReadonly =
+      !saveOk && saveData && typeof saveData === 'object' && String(saveData.messageKey || '') === 'api.pur.order_readonly';
+    if (!saveOk && !pricingReadonly) {
       const errText = apiMsg(saveData) || `HTTP ${saveStatus}`;
       showMsg(errText, true);
       if (window.appNotify && typeof window.appNotify.modalError === 'function') {

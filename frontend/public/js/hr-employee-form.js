@@ -25,6 +25,7 @@
   const email = document.getElementById('email');
   const hireDate = document.getElementById('hireDate');
   const employmentStatus = document.getElementById('employmentStatus');
+  const overtimeEligible = document.getElementById('overtimeEligible');
   const departmentId = document.getElementById('departmentId');
   const positionId = document.getElementById('positionId');
   const userId = document.getElementById('userId');
@@ -204,6 +205,7 @@
     email.value = e.email || '';
     hireDate.value = e.hire_date ? String(e.hire_date).slice(0, 10) : '';
     employmentStatus.value = e.employment_status || 'active';
+    if (overtimeEligible) overtimeEligible.value = Number(e.overtime_eligible) === 1 ? '1' : '0';
     departmentId.value = e.department_id ? String(e.department_id) : '';
     syncPositions();
     positionId.value = e.position_id ? String(e.position_id) : '';
@@ -240,6 +242,7 @@
       email: email.value || null,
       hire_date: hireDate.value,
       employment_status: employmentStatus.value,
+      overtime_eligible: overtimeEligible?.value === '1' ? 1 : 0,
       department_id: departmentId.value || null,
       position_id: positionId.value || null,
       user_id: userId.value || null,

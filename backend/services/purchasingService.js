@@ -953,6 +953,7 @@ async function createPurchaseOrder({
     if (await hasCol('purchase_order_items', 'supplier_id')) {
       await conn.query('UPDATE purchase_order_items SET supplier_id = ? WHERE order_id = ?', [sid, oid]);
     }
+    await recalculatePricingStatusesForOrder(conn, oid);
     const rids = oiIns.map((r) => r.pri.request_id).filter((x) => x != null);
     await recomputeRequestStatusAfterPoLines(conn, rids);
     if (ownConn) {
@@ -1203,8 +1204,21 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
   const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
   const hasPoiLineStatus = await hasCol('purchase_order_items', 'line_status');
   if (openForReceipt) {
+    where += " AND po.status NOT IN ('cancelled', 'completed')";
     if (hasReceiptStatus) {
-      where += " AND po.receipt_status IN ('pending', 'partial', 'awaiting_receipt', 'partially_received')";
+      where += ` AND (
+        po.receipt_status IS NULL
+        OR TRIM(COALESCE(po.receipt_status, '')) = ''
+        OR po.receipt_status IN (
+          'pending',
+          'partial',
+          'awaiting_receipt',
+          'partially_received',
+          'partial_received',
+          'awaiting_goods_receipt'
+        )
+      )`;
+      where += ` AND (po.receipt_status IS NULL OR po.receipt_status NOT IN ('completed', 'received_completed'))`;
     } else {
       where += " AND po.status IN ('awaiting_goods_receipt', 'partial_received', 'partial')";
     }
@@ -1218,9 +1232,34 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
     }
   } else if (forPricing) {
     if (hasPricingStatus) {
-      where += " AND po.pricing_status IN ('unpriced', 'partially_priced')";
-    } else {
-      where += ' AND 1=1';
+      where += ` AND (
+        po.pricing_status IS NULL
+        OR TRIM(COALESCE(po.pricing_status, '')) = ''
+        OR po.pricing_status IN ('unpriced', 'partially_priced')
+      )`;
+    }
+    if (buyerStatus && hasBuyerState) {
+      const buyerStates = String(buyerStatus)
+        .split(',')
+        .map((s) => String(s || '').trim().toLowerCase())
+        .filter(Boolean);
+      const allowedBuyerStates = new Set(['draft', 'in_progress', 'prices_saved', 'completed', 'revision_requested']);
+      const safeStates = buyerStates.filter((s) => allowedBuyerStates.has(s));
+      if (safeStates.length) {
+        const includesDraft = safeStates.includes('draft');
+        const statesWithoutDraft = safeStates.filter((s) => s !== 'draft');
+        const clauses = [];
+        if (statesWithoutDraft.length) {
+          clauses.push(`po.buyer_state IN (${statesWithoutDraft.map(() => '?').join(',')})`);
+          p.push(...statesWithoutDraft);
+        }
+        if (includesDraft) {
+          clauses.push("(po.buyer_state IS NULL OR po.buyer_state = '' OR po.buyer_state = 'draft')");
+        }
+        where += ` AND (${clauses.join(' OR ')})`;
+      } else {
+        where += ' AND 1=0';
+      }
     }
   } else if (completedByBuyer && hasBuyerState) {
     where += " AND po.buyer_state = 'completed'";
@@ -1256,6 +1295,11 @@ async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt,
       where += ` AND po.status IN (${safe.map(() => '?').join(',')})`;
       p.push(...safe);
     }
+  } else if (status && String(status).trim().toLowerCase() === 'completed' && hasReceiptStatus) {
+    where += ` AND (
+      po.status = 'completed'
+      OR po.receipt_status IN ('completed', 'received_completed')
+    )`;
   } else if (status) {
     where += ' AND po.status = ?';
     p.push(String(status));
@@ -2238,6 +2282,42 @@ async function countPendingRequests() {
   return r[0].c;
 }
 
+async function getPurchasingHubCounters() {
+  const pendingRequests = Number(await countPendingRequests()) || 0;
+  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
+  const hasReceiptStatus = await hasCol('purchase_orders', 'receipt_status');
+
+  let activeOrders = 0;
+  if (hasBuyerState) {
+    const [r] = await pool.query(
+      "SELECT COUNT(*) AS c FROM purchase_orders WHERE buyer_state IN ('in_progress','prices_saved','revision_requested')"
+    );
+    activeOrders = Number(r && r[0] && r[0].c) || 0;
+  } else {
+    const [r] = await pool.query("SELECT COUNT(*) AS c FROM purchase_orders WHERE status NOT IN ('cancelled','completed')");
+    activeOrders = Number(r && r[0] && r[0].c) || 0;
+  }
+
+  let openOrders = 0;
+  if (hasReceiptStatus) {
+    const [r] = await pool.query(
+      `SELECT COUNT(*) AS c
+       FROM purchase_orders
+       WHERE status <> 'cancelled'
+         AND NOT (
+           status = 'completed'
+           OR receipt_status IN ('completed', 'received_completed')
+         )`
+    );
+    openOrders = Number(r && r[0] && r[0].c) || 0;
+  } else {
+    const [r] = await pool.query("SELECT COUNT(*) AS c FROM purchase_orders WHERE status NOT IN ('cancelled','completed')");
+    openOrders = Number(r && r[0] && r[0].c) || 0;
+  }
+
+  return { pendingRequests, activeOrders, openOrders };
+}
+
 /**
  * Sipariş kalemi iptali (talep tarafına otomatik dönüş yok). qty_received > 0 ise yasak.
  */
@@ -2334,6 +2414,7 @@ module.exports = {
   runOrderBuyerAction,
   runRequestBuyerAction,
   countPendingRequests,
+  getPurchasingHubCounters,
   loadProductForPurchasing,
   stripOrderForWarehouse,
   hasCol,

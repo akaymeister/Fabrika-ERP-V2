@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/style.css" />
   <style>
     .pur-list-actions a { text-decoration: none; display: inline-block; }
+    .appr-line-hint { max-width: 360px; font-size: var(--font-size-ui); }
   </style>
 </head>
 <body class="app-shell app-master-page">
@@ -83,7 +84,7 @@
       }
       body.innerHTML = list.map((r) => {
         const lineHint = (r.items || []).map((i) => i.product_name || '').filter(Boolean).join('; ').slice(0, 120);
-        return '<tr data-rid="' + r.id + '"><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td style="max-width:360px;font-size:13px">' + (lineHint || '—') + '</td><td><button type="button" class="a-ok" data-id="' + r.id + '">' + tKey('purch.req.approve') + '</button> <button type="button" class="a-no" data-id="' + r.id + '">' + tKey('purch.req.reject') + '</button></td></tr>';
+        return '<tr data-rid="' + r.id + '"><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td class="appr-line-hint">' + (lineHint || '—') + '</td><td><button type="button" class="a-ok" data-id="' + r.id + '">' + tKey('purch.req.approve') + '</button> <button type="button" class="a-no" data-id="' + r.id + '">' + tKey('purch.req.reject') + '</button></td></tr>';
       }).join('');
       body.querySelectorAll('.a-ok').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'approved')));
       body.querySelectorAll('.a-no').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'rejected')));
@@ -96,7 +97,7 @@
       msg.style.color = '#0f766e';
       load();
     }
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
       e.preventDefault();
       fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { location.href = '/login.html'; });
     });
