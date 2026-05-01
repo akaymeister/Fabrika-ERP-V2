@@ -6,19 +6,25 @@
   <title data-i18n="project.hub.title">Proje yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="project.hub.title">Proje yönetimi</h1>
         <p class="subtitle" data-i18n="project.hub.sub">Yeni proje, kod ve ileride maliyet / teklif</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -26,13 +32,10 @@
           <option value="en">English</option>
         </select>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
       <div class="hero-text">
@@ -56,10 +59,12 @@
         <p data-i18n="project.hub.cardQuotes">Teklifler ve onay (yakında)</p>
       </a>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/project-common.js" defer></script>
   <script>

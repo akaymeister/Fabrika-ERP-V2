@@ -132,15 +132,18 @@
   }
 
   function renderGlobalNav(items, activeModuleKey) {
-    return `<nav class="stock-nav app-main-nav global-module-nav" aria-label="Global modules">
+    return `<nav class="stock-nav app-main-nav global-module-nav app-global-module-nav" aria-label="Global modules">
       ${items
         .map((item) => {
           const active = item.moduleKey === activeModuleKey ? 'active' : '';
           const disabled = item.disabled ? 'aria-disabled="true"' : '';
           const href = item.disabled ? 'javascript:void(0)' : item.href;
-          return `<a href="${safeText(href)}" class="${active} ${safeText(item.iconClass || '')}" ${disabled} data-module-key="${safeText(
+          const iconCls = safeText(item.iconClass || '');
+          return `<a href="${safeText(href)}" class="app-module-nav-link ${active} ${iconCls}" ${disabled} data-module-key="${safeText(
             item.moduleKey
-          )}" data-i18n="${safeText(item.labelKey || '')}">${safeText(tGlobal(item.labelKey, item.fallback))}</a>`;
+          )}"><span class="app-module-nav-dot" aria-hidden="true"></span><span class="app-module-nav-text" data-i18n="${safeText(
+            item.labelKey || ''
+          )}">${safeText(tGlobal(item.labelKey, item.fallback))}</span></a>`;
         })
         .join('')}
     </nav>`;
@@ -215,8 +218,8 @@
       ? `<img src="${safeText(photo)}" alt="avatar" class="global-user-avatar-img" />`
       : `<span class="global-user-avatar-fallback">${safeText(initialsOf(user))}</span>`;
     const html = `<div id="globalUserTools" class="global-user-tools">
-      <button type="button" class="global-icon-btn" id="btnGlobalNotif" title="Bildirim" aria-label="Bildirim">${ICON_BELL_SVG}</button>
-      <button type="button" class="global-icon-btn" id="btnGlobalMsg" title="Mesaj" aria-label="Mesaj">${ICON_MSG_SVG}</button>
+      <button type="button" class="global-icon-btn" id="btnGlobalNotif" title="${safeText(tGlobal('nav.userMenu.notifications', 'Bildirimler'))}" aria-label="${safeText(tGlobal('nav.userMenu.notifications', 'Bildirimler'))}">${ICON_BELL_SVG}</button>
+      <button type="button" class="global-icon-btn" id="btnGlobalMsg" title="${safeText(tGlobal('nav.userMenu.messages', 'Mesajlar'))}" aria-label="${safeText(tGlobal('nav.userMenu.messages', 'Mesajlar'))}">${ICON_MSG_SVG}</button>
       <div class="global-user-wrap">
         <button type="button" class="global-user-btn" id="btnGlobalUserMenu">
           <span class="global-user-avatar">${avatarHtml}</span>
@@ -227,14 +230,14 @@
           <span class="global-user-caret">▾</span>
         </button>
         <div class="global-user-dropdown" id="globalUserDropdown" style="display:none">
-          <a href="/my-profile.html">Profilim</a>
-          <a href="/my-profile.html#change-password">Sifre Degistir</a>
-          <button type="button" id="btnGlobalNotifications">Bildirimler</button>
-          <button type="button" id="btnGlobalLogout">Cikis Yap</button>
+          <a href="/my-profile.html" data-i18n="nav.userMenu.profile">${safeText(tGlobal('nav.userMenu.profile', 'Profilim'))}</a>
+          <a href="/my-profile.html#change-password" data-i18n="nav.userMenu.changePassword">${safeText(tGlobal('nav.userMenu.changePassword', 'Şifre değiştir'))}</a>
+          <button type="button" id="btnGlobalNotifications" data-i18n="nav.userMenu.notifications">${safeText(tGlobal('nav.userMenu.notifications', 'Bildirimler'))}</button>
+          <button type="button" id="btnGlobalLogout" data-i18n="nav.logout">${safeText(tGlobal('nav.logout', 'Çıkış'))}</button>
         </div>
       </div>
       <div class="global-user-dropdown global-notif-dropdown" id="globalNotifDropdown" style="display:none">
-        <p>Henüz bildiriminiz yok.</p>
+        <p data-i18n="nav.userMenu.noNotifications">${safeText(tGlobal('nav.userMenu.noNotifications', 'Henüz bildiriminiz yok.'))}</p>
       </div>
     </div>`;
     topbarRight.insertAdjacentHTML('beforeend', html);
@@ -294,6 +297,9 @@
     const visibleItems = GLOBAL_MODULES.filter((item) => hasRoleAccess(item, user) && hasPermissionAccess(item, user));
     slot.innerHTML = renderGlobalNav(visibleItems, activeModuleKey);
     ensureUserTools(user);
+    if (window.i18n && typeof window.i18n.apply === 'function') {
+      window.i18n.apply(document);
+    }
     markNavReady();
   }
 

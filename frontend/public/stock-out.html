@@ -5,223 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="stock.out.title">Stok çıkış</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .product-dd-wrap {
-      position: relative;
-    }
-    .product-dd {
-      list-style: none;
-      margin: 4px 0 0 0;
-      padding: 0;
-      position: absolute;
-      left: 0;
-      right: 0;
-      z-index: 40;
-      max-height: 280px;
-      overflow-y: auto;
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
-    }
-    .product-dd li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 8px 10px;
-      cursor: pointer;
-      font-size: 13px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .product-dd li:hover,
-    .product-dd li.active {
-      background: #f1f5f9;
-    }
-    .product-dd .frequent-tag {
-      flex-shrink: 0;
-      font-size: 11px;
-      background: #dbeafe;
-      color: #1d4ed8;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: 600;
-    }
-    .stock-out-form-card {
-      max-width: 100%;
-    }
-    .qty-inline {
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      gap: 6px;
-      min-width: 0;
-    }
-    .qty-inline input[type="number"] {
-      min-width: 0;
-      flex: 1 1 72px;
-    }
-    .unit-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 8px 12px;
-      background: #e2e8f0;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 13px;
-    }
-    .btn-unit-toggle {
-      flex-shrink: 0;
-      white-space: nowrap;
-      width: auto;
-      padding: 6px 10px;
-      font-size: 13px;
-      background: #f1f5f9;
-      color: #1d4ed8;
-      border: 1px solid #cbd5e1;
-    }
-    .stock-out-qty-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px 20px;
-      margin: 0 0 12px;
-      padding: 10px 0 0;
-      border-top: 1px solid #e2e8f0;
-    }
-    .m2m3-readout {
-      font-size: 13px;
-      color: #0f172a;
-      font-weight: 600;
-    }
-    .m2m3-readout span {
-      color: #64748b;
-      font-weight: 500;
-    }
-    .product-unit-hint {
-      font-size: 12px;
-      color: #64748b;
-      margin: 4px 0 0;
-    }
-    .form-stock-out-r1,
-    .form-stock-out-r2 {
-      display: grid;
-      gap: 12px 16px;
-      align-items: end;
-      margin-bottom: 12px;
-    }
-    .form-stock-out-r1 {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
-    .form-stock-out-r2 {
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.5fr) minmax(0, 1fr);
-    }
-    @media (max-width: 900px) {
-      .form-stock-out-r1,
-      .form-stock-out-r2 {
-        grid-template-columns: 1fr;
-      }
-    }
-    .stock-now-box {
-      padding: 10px 12px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 700;
-      text-align: center;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #0f172a;
-    }
-    .stock-now-box.warn {
-      background: #fef2f2;
-      color: #b91c1c;
-      border-color: #fecaca;
-    }
-    .text-right-mov {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-    .stock-out-mov-card {
-      max-width: 100%;
-      margin-top: 20px;
-    }
-    .mov-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: end;
-      margin-bottom: 12px;
-    }
-    .mov-filters .form-field {
-      margin: 0;
-      min-width: 140px;
-    }
-    .mov-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 6px;
-      min-width: 0;
-    }
-    .mov-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      border-radius: 8px;
-      border: 1px solid;
-      cursor: pointer;
-      white-space: nowrap;
-      line-height: 1.2;
-      font-family: inherit;
-    }
-    .mov-btn-edit {
-      background: #eff6ff;
-      border-color: #93c5fd;
-      color: #1d4ed8;
-    }
-    .mov-btn-edit:hover {
-      background: #dbeafe;
-    }
-    .mov-btn-del {
-      background: #fef2f2;
-      border-color: #f87171;
-      color: #b91c1c;
-    }
-    .mov-btn-del:hover {
-      background: #fee2e2;
-    }
-    dialog.stock-dialog {
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 16px;
-      max-width: 440px;
-    }
-    dialog.stock-dialog.wide {
-      max-width: 480px;
-    }
-  </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="stock.out.title">Stok çıkış</h1>
         <p class="subtitle" data-i18n="stock.out.sub">Proje, depo, ürün; önce proje stoku, sonra genel, sonra diğer (FIFO)</p>
       </div>
-      <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -229,29 +33,26 @@
         </select>
         <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
-    <div class="card stock-out-form-card">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
+    <div class="card stock-out-form-card app-card">
       <form id="f">
         <div class="form-stock-out-r1">
           <div class="form-field">
             <label for="projectId" data-i18n="stock.in.project">Proje</label>
-            <select id="projectId" required>
+            <select id="projectId" required class="app-select">
               <option value="" data-i18n="stock.in.projectPick">Proje seçin</option>
             </select>
           </div>
           <div class="form-field">
             <label for="wid" data-i18n="stock.in.selectWh">Depo</label>
-            <select id="wid" required></select>
+            <select id="wid" required class="app-select"></select>
           </div>
           <div class="form-field">
             <label for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
-            <select id="scid" required disabled></select>
+            <select id="scid" required disabled class="app-select"></select>
           </div>
         </div>
         <div class="form-stock-out-r2">
@@ -261,24 +62,23 @@
               <input
                 type="text"
                 id="productQ"
-                class="input-upper"
+                class="input-upper app-input app-fill-block"
                 autocomplete="off"
                 data-i18n-placeholder="stock.in.productQPh"
-                style="width: 100%; box-sizing: border-box"
               />
               <input type="hidden" id="pid" name="productId" />
               <ul id="productDd" class="product-dd" hidden></ul>
             </div>
           </div>
           <div class="form-field">
-            <label data-i18n="stock.out.colStockM2" style="font-weight: 600">Güncel stok</label>
+            <label data-i18n="stock.out.colStockM2" class="stock-out-stock-label">Güncel stok</label>
             <div id="currentStockM2" class="stock-now-box" role="status">—</div>
-            <p class="product-unit-hint" id="stockM2Sub" data-i18n="stock.out.colStockHint" style="display: none; margin-top: 4px"></p>
+            <p class="product-unit-hint stock-m2-sub" id="stockM2Sub" data-i18n="stock.out.colStockHint"></p>
           </div>
           <div class="form-field">
             <label for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
             <div class="qty-inline">
-              <input type="number" id="qtyInput" min="0.0001" step="any" required />
+              <input type="number" id="qtyInput" min="0.0001" step="any" required class="app-input" />
               <span id="qtyUnitBadge" class="unit-badge">—</span>
               <button type="button" class="btn-unit-toggle" id="btnQtyUnitToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
             </div>
@@ -291,94 +91,92 @@
         </div>
         <div class="form-field form-field-wide">
           <label for="note" data-i18n="common.note">Not</label>
-          <textarea id="note" class="input-upper" rows="2"></textarea>
+          <textarea id="note" class="input-upper app-input app-fill-block" rows="2"></textarea>
         </div>
-        <div class="form-actions-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px">
+        <div class="form-actions-row stock-out-form-actions">
           <button
             type="submit"
             id="btnSubmit"
-            class="module-button"
-            style="width: auto; padding: 10px 16px; background: #7c2d12"
+            class="module-button app-button v3-stock-out-submit"
             data-i18n="stock.out.submit"
           >
             Çıkış kaydet
           </button>
         </div>
-        <p id="msg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
-        <p id="ok" style="display: none; margin-top: 10px; color: #166534; font-weight: 700"></p>
+        <p id="msg" class="login-error stock-out-feedback-msg"></p>
+        <p id="ok" class="stock-out-ok-msg"></p>
       </form>
     </div>
 
     <dialog id="outVoidDialog" class="stock-dialog">
-      <h4 style="margin: 0 0 8px" data-i18n="stock.out.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
-      <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="stock.out.voidDlgHint">Hareket silinir; stok ve maliyet geri yüklenir.</p>
-      <textarea id="outVoidReason" class="input-upper" style="width: 100%; box-sizing: border-box" rows="3"></textarea>
-      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px">
-        <button type="button" class="module-button btn-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="module-button" id="outVoidOk" style="background: #b91c1c" data-i18n="stock.out.voidDlgConfirm">Sil</button>
+      <h4 class="stock-dialog-title" data-i18n="stock.out.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
+      <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.out.voidDlgHint">Hareket silinir; stok ve maliyet geri yüklenir.</p>
+      <textarea id="outVoidReason" class="input-upper app-input app-fill-block" rows="3"></textarea>
+      <div class="app-dialog-actions">
+        <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="module-button app-button v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
       </div>
     </dialog>
 
     <dialog id="outEditDialog" class="stock-dialog wide">
-      <h4 style="margin: 0 0 10px" data-i18n="stock.out.editDlgTitle">Hareketi düzenle</h4>
-      <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="stock.out.editDlgHint">Önce açıklama, sonra yeni değerler. Eski hareket iptal, yeni çıkış kaydedilir.</p>
-      <div class="form-field" style="margin-bottom: 10px">
+      <h4 class="stock-out-edit-title" data-i18n="stock.out.editDlgTitle">Hareketi düzenle</h4>
+      <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.out.editDlgHint">Önce açıklama, sonra yeni değerler. Eski hareket iptal, yeni çıkış kaydedilir.</p>
+      <div class="form-field stock-out-edit-field">
         <label for="outEditReason" data-i18n="stock.out.editReasonLabel">Düzenleme açıklaması (zorunlu)</label>
-        <textarea id="outEditReason" class="input-upper" style="width: 100%; box-sizing: border-box" rows="2"></textarea>
+        <textarea id="outEditReason" class="input-upper app-input app-fill-block" rows="2"></textarea>
       </div>
-      <div class="form-field" style="margin-bottom: 10px">
+      <div class="form-field stock-out-edit-field">
         <label for="outEditProductId" data-i18n="stock.out.editProductId">Ürün ID</label>
-        <input type="number" id="outEditProductId" min="1" step="1" class="input-upper" style="width: 100%; box-sizing: border-box" />
+        <input type="number" id="outEditProductId" min="1" step="1" class="input-upper app-input app-fill-block" />
       </div>
-      <div class="form-field" style="margin-bottom: 10px">
+      <div class="form-field stock-out-edit-field">
         <label for="outEditProjectId" data-i18n="stock.in.project">Proje</label>
-        <select id="outEditProjectId" style="width: 100%; box-sizing: border-box"></select>
+        <select id="outEditProjectId" class="app-select app-fill-block"></select>
       </div>
-      <div class="form-field" style="margin-bottom: 10px">
+      <div class="form-field stock-out-edit-field">
         <label for="outEditQty" data-i18n="stock.in.qty">Miktar</label>
         <div class="qty-inline">
-          <input type="number" id="outEditQty" min="0.0001" step="any" class="input-upper" style="min-width: 0; flex: 1" />
+          <input type="number" id="outEditQty" min="0.0001" step="any" class="input-upper app-input stock-out-edit-qty-inp" />
           <span id="outEditQtyUnit" class="unit-badge">—</span>
           <button type="button" class="btn-unit-toggle" id="outEditQtyToggle" data-i18n="stock.in.unitSwitch">Birim değiştir</button>
         </div>
         <input type="hidden" id="outEditQtyMode" value="pieces" />
         <input type="hidden" id="outEditM2p" value="0" />
       </div>
-      <div class="form-field" style="margin-bottom: 10px">
+      <div class="form-field stock-out-edit-field">
         <label for="outEditNote" data-i18n="common.note">Not</label>
-        <textarea id="outEditNote" class="input-upper" style="width: 100%; box-sizing: border-box" rows="2"></textarea>
+        <textarea id="outEditNote" class="input-upper app-input app-fill-block" rows="2"></textarea>
       </div>
-      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px">
-        <button type="button" class="module-button btn-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="module-button" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
+      <div class="app-dialog-actions">
+        <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="module-button app-button app-button-primary" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
       </div>
     </dialog>
 
-    <div class="card stock-out-mov-card">
-      <h3 style="margin-top: 0" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
-      <div class="mov-filters">
+    <div class="card stock-out-mov-card app-card">
+      <h3 class="app-section-title-tight" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
+      <div class="mov-filters app-filterbar">
         <div class="form-field">
           <label for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
-          <select id="movFilterProject">
+          <select id="movFilterProject" class="app-select">
             <option value="" data-i18n="stock.in.movAllProjects">Tümü</option>
           </select>
         </div>
         <div class="form-field">
           <label for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
-          <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" />
+          <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" class="app-input" />
         </div>
         <button
           type="button"
-          class="module-button"
+          class="module-button app-button app-button-secondary app-mov-refresh-btn"
           id="btnMovRefresh"
-          style="width: auto; padding: 8px 14px; height: 42px"
           data-i18n="stock.in.movRefresh"
         >
           Yenile
         </button>
       </div>
-      <div style="overflow-x: auto">
-        <table>
+      <div class="app-table-scroll">
+        <table class="app-table">
           <thead>
             <tr>
               <th data-i18n="stock.mov.colDate">Tarih</th>
@@ -389,17 +187,19 @@
               <th data-i18n="stock.mov.colBirim">Birim</th>
               <th data-i18n="common.note">Not</th>
               <th data-i18n="stock.mov.colUser">Kullanıcı</th>
-              <th data-i18n="stock.out.movColActions" style="min-width: 8rem">İşlem</th>
+              <th data-i18n="stock.out.movColActions" class="stock-out-mov-actions-col">İşlem</th>
             </tr>
           </thead>
           <tbody id="movTb"></tbody>
         </table>
       </div>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>

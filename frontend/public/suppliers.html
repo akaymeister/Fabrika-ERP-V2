@@ -17,19 +17,25 @@
     .sup-filter input { padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; min-width:220px; font:inherit; }
   </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container pur-wide">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container pur-wide app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="suppliers.title">Tedarikçiler</h1>
         <p class="subtitle" data-i18n="suppliers.sub">Tedarikçi listesi, yeni tedarikçi ekleme. Sipariş işleme ekranında bu liste kullanılır.</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -38,13 +44,10 @@
         </select>
         <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
     <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
 
     <section class="card">
@@ -84,10 +87,12 @@
         </table>
       </div>
     </section>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js?v=14" defer></script>
+<script src="/js/i18n.js?v=14" defer></script>
   <script src="/js/navigation.js?v=1" defer></script>
   <script src="/js/purchasing-common.js?v=14" defer></script>
   <script>
@@ -141,14 +146,32 @@
         ['sName','sPhone','sEmail','sTax','sAddress','sNote'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
         load();
       }
-      document.getElementById('logoutBtn').addEventListener('click', (e) => { e.preventDefault(); fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).finally(() => location.href='/login.html'); });
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+          location.href = '/login.html';
+        });
+      });
       document.getElementById('btnAdd').addEventListener('click', add);
       q.addEventListener('input', render);
-      (async function init() {
-        if (window.initPurchasingPageNav) await window.initPurchasingPageNav('suppliers');
-        await load();
-        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
-      })();
+
+      /* defer scriptler (i18n, navigation, purchasing-common) DOMContentLoaded öncesinde çalışır;
+         inline script sırası yüzünden burada purApi / initPurchasingPageNav henüz yoktu. */
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          if (typeof window.initPurchasingPageNav === 'function') {
+            await window.initPurchasingPageNav('suppliers');
+          }
+          await load();
+          if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        } catch (err) {
+          console.error(err);
+          if (msg) {
+            msg.textContent = err && err.message ? err.message : String(err);
+            msg.style.color = '#b91c1c';
+          }
+        }
+      });
     })();
   </script>
 </body>

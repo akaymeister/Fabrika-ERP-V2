@@ -58,19 +58,25 @@
     @media (max-width:980px) { .attm-inline-5 { grid-template-columns:1fr; } }
   </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="hr.att.monthly.title">Aylık puantaj</h1>
         <p class="subtitle" data-i18n="hr.att.monthly.sub">Ay bazında satır ve özet</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -79,13 +85,10 @@
         </select>
         <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
     <section class="card">
       <div id="liveCards" class="attm-live-cards hidden">
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.totalNormal">Toplam normal çalışma</div><div class="v" id="kpiTotalNormal">0</div></div>
@@ -131,10 +134,12 @@
         <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th><th data-i18n="hr.att.colNote">Not</th><th data-i18n="hr.emp.colAction">İşlem</th>
       </tr></thead><tbody id="monthlyBody"></tbody></table></div>
     </section>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <div id="attmEditModal" class="attm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="attmEditModalTitle">
+<div id="attmEditModal" class="attm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="attmEditModalTitle">
     <div class="attm-modal">
       <h3 id="attmEditModalTitle" data-i18n="hr.att.monthly.editReasonModalTitle">Günlük puantaja geçiş</h3>
       <p class="attm-modal-help" data-i18n="hr.att.monthly.editReasonHelp">Günlük puantaj ekranında değişiklik yapmadan önce gerekçe zorunludur.</p>

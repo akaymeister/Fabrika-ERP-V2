@@ -6,20 +6,26 @@
   <title data-i18n="stock.mov.title">Stok hareketleri</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="stock.mov.title">Stok hareketleri</h1>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+        <h1 class="app-page-title" data-i18n="stock.mov.title">Stok hareketleri</h1>
         <p class="subtitle" data-i18n="stock.mov.sub">Giriş ve çıkış kayıtları</p>
       </div>
-      <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -27,23 +33,20 @@
         </select>
         <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
-    <div class="card">
-      <div class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
-        <div class="form-field" style="margin: 0; min-width: 220px">
-          <label for="filterP" data-i18n="stock.mov.filterP">Ürün ID (opsiyonel)</label>
-          <input type="number" id="filterP" min="1" step="1" data-i18n-placeholder="stock.mov.filterAll" />
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
+    <div class="card app-card">
+      <div class="filters app-filterbar stock-mov-filters">
+        <div class="form-field stock-mov-filter-field">
+          <label class="app-label" for="filterP" data-i18n="stock.mov.filterP">Ürün ID (opsiyonel)</label>
+          <input type="number" id="filterP" min="1" step="1" class="app-input" data-i18n-placeholder="stock.mov.filterAll" />
         </div>
-        <button type="button" class="module-button" id="btnF" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.mov.refresh">Yenile</button>
+        <button type="button" class="module-button app-button app-button-secondary stock-mov-refresh-btn" id="btnF" data-i18n="stock.mov.refresh">Yenile</button>
       </div>
-      <div style="overflow-x: auto; margin-top: 12px">
-        <table>
+      <div class="app-table-scroll stock-mov-table-wrap">
+        <table class="app-table">
           <thead>
             <tr>
               <th data-i18n="stock.mov.colDate">Tarih</th>
@@ -64,10 +67,12 @@
         </table>
       </div>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>

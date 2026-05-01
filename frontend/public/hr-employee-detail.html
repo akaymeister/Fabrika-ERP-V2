@@ -6,19 +6,25 @@
   <title data-i18n="hr.emp.form.title">Personel kartı</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container emp-detail-page">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container emp-detail-page app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="hr.emp.form.title">Personel kartı</h1>
         <p class="subtitle emp-breadcrumb" data-i18n="hr.emp.breadcrumb">Personel > Personel Kartı</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -28,13 +34,10 @@
         <a data-topbar-persist="1" id="btnBack" href="/hr-employees.html" class="version-btn" data-i18n="hr.emp.back">Geri</a>
         <a data-topbar-persist="1" id="btnEdit" href="/hr-employee-form.html" class="version-btn" data-i18n="hr.emp.edit">Düzenle</a>
       </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
 
     <section class="emp-detail-grid-top emp-section">
       <article class="emp-detail-card">
@@ -66,11 +69,12 @@
     </section>
 
     <div id="msg" class="muted emp-detail-msg"></div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-employee-detail.js" defer></script>

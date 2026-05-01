@@ -6,20 +6,26 @@
   <title data-i18n="stock.product.title">Ürünler</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="stock.product.title">Ürünler</h1>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+        <h1 class="app-page-title" data-i18n="stock.product.title">Ürünler</h1>
         <p class="subtitle" data-i18n="stock.product.sub">En × boy × yükseklik; marka; depo ve alt kategori. Maliyet: stok girişi.</p>
       </div>
-      <div class="topbar-right">
-        <select id="languageSelect" aria-label="lang" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right">
+        <select id="languageSelect" aria-label="lang" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -27,16 +33,13 @@
         </select>
         <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
 
-    <div class="card">
-      <h3 id="formCardTitle" data-i18n="stock.product.formNew">Yeni ürün</h3>
+
+    <div class="card app-card">
+      <h3 id="formCardTitle" class="app-card-title" data-i18n="stock.product.formNew">Yeni ürün</h3>
       <p id="editCodeLine" style="display: none; font-size: 13px; color: #64748b; margin: 0 0 4px">Düzenlenen kod: —</p>
       <p style="font-size:13px;margin:0 0 8px">
         <a href="/stock-warehouses.html" data-i18n="stock.product.manageWarehouses">Depo / kategori yönetimi</a>
@@ -46,11 +49,11 @@
         <div class="product-form-warehouse-row">
           <div class="form-field">
             <label for="warehouseId" data-i18n="stock.product.warehouse">Depo</label>
-            <select id="warehouseId" required></select>
+            <select id="warehouseId" class="app-select" required></select>
           </div>
           <div class="form-field">
             <label for="warehouseSubId" data-i18n="stock.product.subcategory">Alt kategori</label>
-            <select id="warehouseSubId" required></select>
+            <select id="warehouseSubId" class="app-select" required></select>
           </div>
         </div>
         <div class="product-form-warehouse-row">
@@ -60,7 +63,7 @@
           </div>
           <div class="form-field">
             <label for="pbrand" data-i18n="stock.product.brand">Marka</label>
-            <select id="pbrand"><option value="" data-i18n="stock.product.brandNone">— Markasız —</option></select>
+            <select id="pbrand" class="app-select"><option value="" data-i18n="stock.product.brandNone">— Markasız —</option></select>
           </div>
         </div>
         <div class="product-form-dims-row">
@@ -78,19 +81,19 @@
           </div>
           <div class="form-field">
             <label for="unitId" data-i18n="stock.product.unit">Birim</label>
-            <select id="unitId" required></select>
+            <select id="unitId" class="app-select" required></select>
           </div>
           <div class="form-field form-field-unit-btn">
             <span class="dims-label-spacer" aria-hidden="true">&nbsp;</span>
-            <button type="button" class="secondary-btn" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
+            <button type="button" class="secondary-btn app-button app-button-secondary" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
           </div>
         </div>
         <p class="form-hint" style="grid-column:1/-1;font-size:13px;color:#64748b;margin:0" data-i18n="stock.product.priceOnStockIn">
           Birim fiyat ve USD/UZS dönüşümü stok giriş ekranındadır.
         </p>
-        <div class="form-field form-field-wide form-actions" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
-          <button type="submit" id="btnSaveProduct" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="stock.product.save">Kaydet</button>
-          <button type="button" id="btnCancelEdit" class="secondary-btn" style="display: none" data-i18n="stock.product.cancelEdit">Vazgeç</button>
+        <div class="form-field form-field-wide form-actions app-form-actions" style="grid-column: 1 / -1">
+          <button type="submit" id="btnSaveProduct" class="module-button app-button app-button-primary" data-i18n="stock.product.save">Kaydet</button>
+          <button type="button" id="btnCancelEdit" class="secondary-btn app-button app-button-secondary stock-products-cancel-edit" data-i18n="stock.product.cancelEdit">Vazgeç</button>
         </div>
       </form>
       <p id="unitListMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="status"></p>
@@ -98,40 +101,40 @@
       <p id="pmsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
     </div>
 
-    <div class="card" style="margin-top: 20px">
-      <h3 data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
+    <div class="card app-card stock-products-excel-card">
+      <h3 class="app-card-title" data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
       <p style="font-size: 13px; color: #64748b; margin: 0 0 10px" data-i18n="stock.product.excelHint">
         Şablonu indirin; depo, alt kategori, birim ve marka adları sistemdekilerle aynı olsun. En fazla 500 satır.
       </p>
       <div class="product-excel-bar">
         <a href="/api/stock/products/import-template" class="excel-template-btn" data-i18n="stock.product.downloadTemplate" download>Şablon indir</a>
         <input type="file" id="excelImportFile" class="product-excel-file" accept=".xlsx,.xls,.csv" />
-        <button type="button" class="module-button product-excel-upload" id="btnExcelImport" data-i18n="stock.product.uploadImport">
+        <button type="button" class="module-button product-excel-upload app-button app-button-primary" id="btnExcelImport" data-i18n="stock.product.uploadImport">
           Yükle ve içe aktar
         </button>
       </div>
       <p id="importMsg" style="display: none; margin-top: 10px; font-size: 14px; white-space: pre-wrap" role="status"></p>
     </div>
 
-    <div class="card" style="margin-top: 20px">
-      <h3 data-i18n="stock.product.listTitle">Liste</h3>
-      <div class="filters" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end">
-        <div class="form-field" style="margin: 0; min-width: 200px">
-          <label for="filterWarehouse" data-i18n="stock.product.warehouse">Depo</label>
-          <select id="filterWarehouse"><option value="" data-i18n="stock.product.allWh">Tüm depolar</option></select>
+    <div class="card app-card stock-products-list-card">
+      <h3 class="app-card-title" data-i18n="stock.product.listTitle">Liste</h3>
+      <div class="filters app-filterbar stock-products-filters">
+        <div class="form-field stock-products-filter-field">
+          <label class="app-label" for="filterWarehouse" data-i18n="stock.product.warehouse">Depo</label>
+          <select id="filterWarehouse" class="app-select"><option value="" data-i18n="stock.product.allWh">Tüm depolar</option></select>
         </div>
-        <div class="form-field" style="margin: 0; min-width: 200px">
-          <label for="filterBrand" data-i18n="stock.product.brandFilter">Marka</label>
-          <select id="filterBrand"><option value="" data-i18n="stock.product.allBrands">Tümü</option></select>
+        <div class="form-field stock-products-filter-field">
+          <label class="app-label" for="filterBrand" data-i18n="stock.product.brandFilter">Marka</label>
+          <select id="filterBrand" class="app-select"><option value="" data-i18n="stock.product.allBrands">Tümü</option></select>
         </div>
-        <div class="form-field" style="margin: 0; min-width: 200px">
-          <label for="filterQ" data-i18n="stock.product.search">Ara</label>
-          <input type="search" id="filterQ" class="input-upper" data-i18n-placeholder="stock.product.searchPh" />
+        <div class="form-field stock-products-filter-field">
+          <label class="app-label" for="filterQ" data-i18n="stock.product.search">Ara</label>
+          <input type="search" id="filterQ" class="input-upper app-input" data-i18n-placeholder="stock.product.searchPh" />
         </div>
-        <button type="button" class="module-button" id="btnFilter" style="width: auto; padding: 8px 14px; height: 42px" data-i18n="stock.product.filter">Filtrele</button>
+        <button type="button" class="module-button app-button app-button-primary stock-products-filter-btn" id="btnFilter" data-i18n="stock.product.filter">Filtrele</button>
       </div>
-      <div style="overflow-x: auto; margin-top: 12px">
-        <table>
+      <div class="app-table-scroll stock-products-table-wrap">
+        <table class="app-table">
           <thead>
             <tr>
               <th data-i18n="stock.product.colCode">Kod</th>
@@ -149,10 +152,12 @@
         </table>
       </div>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
@@ -427,7 +432,7 @@
             <td>${fmtQty(p.stock_pieces)}</td>
             <td>${fmtQty(p.stock_m2)}</td>
             <td>${fmtQty(p.stock_m3)}</td>
-            <td><div class="table-actions"><button type="button" class="secondary-btn btn-edit product-edit-btn" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="secondary-btn btn-danger product-delete-btn" data-pid="${p.id}">${esc(
+            <td><div class="table-actions app-action-bar"><button type="button" class="secondary-btn btn-edit product-edit-btn app-button app-button-secondary app-action-button app-action-edit" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="secondary-btn btn-danger product-delete-btn app-button app-button-danger app-action-button app-action-delete" data-pid="${p.id}">${esc(
               delL
             )}</button></div></td>
           </tr>`

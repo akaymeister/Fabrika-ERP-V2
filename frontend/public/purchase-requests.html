@@ -5,74 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ — KONTROL & ONAY</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .pr-layout { display: flex; flex-direction: column; gap: 16px; }
-    .pr-row-sel { background: #e0f2fe !important; }
-    .pr-det-table th, .pr-det-table td { font-size: var(--font-size-ui); padding: 6px 8px; }
-    .pur-list-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
-    /* Global button { width:100% } — detayda eylem butonları tek satır, sağa yaslı */
-    .pr-act-buttons {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      margin-top: 12px;
-      box-sizing: border-box;
-    }
-    .pr-act-buttons > .version-btn {
-      width: auto;
-      min-width: 0;
-      flex: 0 0 auto;
-    }
-    @media (max-width: 520px) {
-      .pr-act-buttons {
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-    }
-  </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container pur-wide">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container pur-wide app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ</h1>
-        <p class="subtitle" data-i18n="purch.wf.listSub">Liste, detay, onay / red / revizyon</p>
-      </div>
-      <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
-</div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
+      <div id="globalNavSlot"></div>
       <aside class="app-master-sidebar">
         <div id="navSlot" class="app-master-subtabs"></div>
       </aside>
-      <main class="app-master-main">
-    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
-    <div class="pur-list-actions">
-      <a class="version-btn" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen" style="text-decoration:none">Talep aç</a>
-      <a class="version-btn" href="/purchase-processing.html" data-i18n="nav.purch.processing" style="text-decoration:none;background:#1d4ed8">Satınalma işleme</a>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 class="app-page-title" data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ</h1>
+          <p class="subtitle" data-i18n="purch.wf.listSub">Liste, detay, onay / red / revizyon</p>
+        </div>
+        <div class="topbar-right">
+          <select id="languageSelect" data-i18n-placeholder="lang.label" class="app-select app-topbar-lang" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+    <p id="msg" class="app-msg-slot" role="status"></p>
+    <div class="pur-list-actions app-filterbar">
+      <a class="version-btn app-button app-button-secondary" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
+      <a class="version-btn app-button app-button-primary" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
     </div>
     <div class="pr-layout">
-      <section class="card">
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px">
+      <section class="card app-card">
+        <div class="app-filterbar">
           <label for="fFilter" data-i18n="purch.wf.filter">Durum</label>
-          <select id="fFilter" style="padding:8px;border-radius:8px;min-width:180px">
+          <select id="fFilter" class="app-select">
             <option value="" data-i18n="purch.wf.filterAll">Tümü</option>
             <option value="draft" data-i18n="purch.status.reqV2.draft">Taslak</option>
             <option value="pending" data-i18n="purch.status.req.pending">Onay bekliyor</option>
@@ -84,8 +57,8 @@
             <option value="cancelled" data-i18n="purch.status.ord.cancelled">İptal</option>
           </select>
         </div>
-        <div style="overflow-x:auto">
-          <table>
+        <div class="app-table-scroll">
+          <table class="app-table">
             <thead>
               <tr>
                 <th data-i18n="purch.req.lColCode">Talep no</th>
@@ -100,11 +73,12 @@
           </table>
         </div>
       </section>
-      <section class="card" id="detailPanel">
+      <section class="card app-card" id="detailPanel">
         <p class="muted" data-i18n="purch.wf.selectRow">Bir satır seçin…</p>
       </section>
     </div>
-      </main>
+        </main>
+      </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>

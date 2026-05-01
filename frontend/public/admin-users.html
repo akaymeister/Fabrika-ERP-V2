@@ -6,111 +6,80 @@
   <title>Kullanıcılar — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body data-admin-nav="users" class="app-shell admin-users-page">
-  <div class="admin-users-shell">
-    <header class="admin-users-topbar">
-      <div class="admin-users-brand" aria-label="Brand">
-        <span class="admin-users-logo">AHK</span>
+<body data-admin-nav="users" class="app-shell app-master-page app-ui-v3 admin-users-page">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-      <nav class="admin-users-main-nav" aria-label="Main Modules">
-        <a href="/" data-i18n="nav.dashboard">Ana sayfa</a>
-        <a href="/stock.html" data-i18n="nav.stock">Stok</a>
-        <a href="/purchasing.html" data-i18n="nav.purchasing">Satınalma</a>
-        <a href="/projects.html" data-i18n="nav.projects">Proje</a>
-        <a href="/hr.html" data-i18n="nav.hr">İK</a>
-        <a href="/admin.html" class="active" data-i18n="nav.admin">Süper Yönetim</a>
-      </nav>
-      <div class="admin-users-tools">
-        <button type="button" class="admin-users-icon-btn" aria-label="notifications">N</button>
-        <div class="admin-users-profile-wrap">
-          <button type="button" class="admin-users-profile" id="adminUserMenuBtn" aria-haspopup="menu" aria-expanded="false">
-            <span class="admin-users-profile-avatar" id="adminUserAvatar">C</span>
-            <span class="admin-users-profile-meta">
-              <strong id="adminUserName">Kullanıcı</strong>
-              <small id="adminUserRole" data-i18n="nav.admin">Süper Yönetim</small>
-            </span>
-          </button>
-          <div class="admin-users-profile-menu" id="adminUserMenu" role="menu" hidden>
-            <a href="/my-profile.html" role="menuitem">Profilim</a>
-            <a href="/admin-settings.html" role="menuitem">Sistem ayarları</a>
-            <button type="button" id="logoutBtnMenu" role="menuitem" data-i18n="nav.logout">Çıkış</button>
-          </div>
-        </div>
-        <select id="languageSelect" aria-label="Language" class="admin-users-lang">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <a href="#" class="logout-btn" id="logoutBtn" data-i18n="nav.logout">Çıkış</a>
-      </div>
-    </header>
-
-    <div class="admin-users-body">
-      <aside class="admin-users-sidebar">
-        <div class="admin-users-sidebar-title" data-i18n="admin.title">Süper yönetim</div>
-        <nav class="admin-users-sidebar-nav" aria-label="Super Management">
-          <a href="/admin-users.html" class="active" data-i18n="admin.users">Kullanıcılar</a>
-          <a href="/admin.html">Roller</a>
-          <a href="/admin-permissions.html">Rol Yetkileri</a>
-          <a href="/admin-permissions.html">Ek Yetkiler</a>
-          <a href="/admin-settings.html">Sistem Ayarları</a>
-          <a href="/admin.html">Audit Log</a>
-        </nav>
-        <div class="admin-users-sidebar-title admin-users-sidebar-title--mt">Kısa Yollar</div>
-        <nav class="admin-users-sidebar-nav admin-users-sidebar-nav--quick" aria-label="Quick Links">
-          <a href="/admin-user-new.html">Yeni Kullanıcı Ekle</a>
-          <a href="/admin.html">Rol Ekle</a>
-          <a href="/admin-permissions.html">Yetki Şablonları</a>
-          <a href="/admin-settings.html">Sistem Yedekleme</a>
-        </nav>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs admin-users-subtabs"></div>
       </aside>
-
-      <main class="admin-users-content">
-        <div id="globalNavSlot" style="display:none"></div>
-        <div id="navSlot" class="admin-users-subtabs"></div>
-        <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
-        <section class="card admin-section admin-users-card" id="userSection">
-          <div class="admin-users-card-head">
-            <div class="section-header" style="margin:0">
-              <h3 data-i18n="admin.users">Kullanıcılar</h3>
-              <p data-i18n="admin.usersSub">Sistem kullanıcıları — rol atama, pasif, şifre sıfırlama</p>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 class="app-page-title" data-i18n="admin.users">Kullanıcılar</h1>
+          <p class="subtitle" data-i18n="admin.usersSub">Sistem kullanıcıları — rol atama, pasif, şifre sıfırlama</p>
+        </div>
+        <div class="topbar-right">
+          <select id="languageSelect" aria-label="Language" class="admin-users-lang app-select app-topbar-lang">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main admin-users-content">
+          <div class="app-a11y-hide" aria-hidden="true">
+            <button type="button" id="adminUserMenuBtn" tabindex="-1"></button>
+            <div id="adminUserMenu" role="menu" hidden></div>
+            <span id="adminUserAvatar"></span>
+            <strong id="adminUserName"></strong>
+            <small id="adminUserRole"></small>
+            <a href="#" id="logoutBtn" tabindex="-1"></a>
+            <button type="button" id="logoutBtnMenu" tabindex="-1"></button>
+          </div>
+          <p id="adminErr" class="login-error app-error-state admin-users-err"></p>
+          <section class="card admin-section admin-users-card app-card" id="userSection">
+            <div class="admin-users-toolbar app-filterbar">
+              <input type="text" class="app-input admin-users-search-input" placeholder="Kullanıcı ara..." aria-label="search users" />
+              <button type="button" class="secondary-btn app-button app-button-secondary admin-users-filter-btn">Filtrele</button>
+              <a href="/admin-user-new.html" class="module-button admin-users-new-btn app-button app-button-primary" data-i18n="admin.newUserBtn">+ Yeni kullanıcı</a>
             </div>
-          </div>
-          <div class="admin-users-toolbar">
-            <input type="text" placeholder="Kullanıcı ara..." aria-label="search users" />
-            <button type="button" class="secondary-btn">Filtrele</button>
-            <a href="/admin-user-new.html" class="module-button admin-users-new-btn" data-i18n="admin.newUserBtn">+ Yeni kullanıcı</a>
-          </div>
 
-          <div class="admin-users-table-wrap">
-            <table class="admin-users-table">
-              <thead>
-                <tr>
-                  <th>Kullanıcı Adı</th>
-                  <th>Ad Soyad</th>
-                  <th>E-Posta</th>
-                  <th>Rol</th>
-                  <th>Durum</th>
-                  <th>İşlemler</th>
-                </tr>
-              </thead>
-              <tbody id="userTableBody"></tbody>
-            </table>
-          </div>
-          <div class="admin-users-pagination">
-            <span>Toplam <strong id="totalUsersCount">0</strong> kullanıcı</span>
-            <div class="admin-users-page-list">
-              <button type="button" class="admin-users-page-btn active">1</button>
-              <button type="button" class="admin-users-page-btn">2</button>
-              <button type="button" class="admin-users-page-btn">3</button>
-              <span>...</span>
-              <button type="button" class="admin-users-page-btn">5</button>
+            <div class="admin-users-table-wrap app-table-scroll">
+              <table class="admin-users-table app-table">
+                <thead>
+                  <tr>
+                    <th>Kullanıcı Adı</th>
+                    <th>Ad Soyad</th>
+                    <th>E-Posta</th>
+                    <th>Rol</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+              </table>
             </div>
-          </div>
-        </section>
-      </main>
+            <div class="admin-users-pagination">
+              <span>Toplam <strong id="totalUsersCount">0</strong> kullanıcı</span>
+              <div class="admin-users-page-list">
+                <button type="button" class="admin-users-page-btn active">1</button>
+                <button type="button" class="admin-users-page-btn">2</button>
+                <button type="button" class="admin-users-page-btn">3</button>
+                <span>...</span>
+                <button type="button" class="admin-users-page-btn">5</button>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>

@@ -3,85 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Departman / Pozisyon — Fabrika ERP V2</title>
+  <title data-i18n="hr.structure.pageTitle">Departmanlar / Pozisyonlar</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1>Departmanlar / Pozisyonlar</h1>
-        <p class="subtitle">Faz 1A iskelet ekran</p>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+        <h1 class="app-page-title" data-i18n="hr.structure.pageTitle">Departmanlar / Pozisyonlar</h1>
+        <p class="subtitle" data-i18n="hr.structure.pageSub">İK yapısı</p>
       </div>
-      <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn">IK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
-    <div id="msg" class="muted" style="margin:10px 0;"></div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
 
-    <div class="grid">
-      <section class="card">
-        <h2>Departmanlar</h2>
+    <div id="msg" class="muted app-muted-text" style="margin:10px 0;"></div>
+
+    <div class="hr-structure-grid">
+      <section class="card app-card hr-structure-panel">
+        <h2 class="app-card-title" data-i18n="hr.structure.blockDeps">Departmanlar</h2>
         <form id="depForm">
           <div class="inline-group">
-            <input id="depName" class="input-upper" placeholder="Departman adi" required />
-            <input id="depCode" class="input-upper" placeholder="Kod (opsiyonel)" />
+            <input id="depName" class="input-upper app-input" data-i18n-placeholder="hr.structure.depNamePlaceholder" placeholder="Departman adı" required />
+            <input id="depCode" class="input-upper app-input" data-i18n-placeholder="hr.structure.depCodePlaceholder" placeholder="Kod (isteğe bağlı)" />
           </div>
-          <button type="submit" id="depSubmitBtn">Departman Ekle</button>
+          <div class="hr-st-form-footer">
+            <button type="submit" id="depSubmitBtn" class="hr-st-icon-btn hr-st-submit" aria-label="">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
+          </div>
         </form>
-        <div class="card" style="padding:12px;margin-top:12px">
-          <table>
-            <thead><tr><th>Ad</th><th>Kod</th><th>Durum</th><th>Islem</th></tr></thead>
-            <tbody id="depBody"><tr><td colspan="4">Yukleniyor...</td></tr></tbody>
+        <div class="card app-card hr-structure-inner">
+          <div class="hr-structure-table-wrap">
+          <table class="app-table">
+            <thead><tr>
+              <th data-i18n="hr.structure.colName">Ad</th>
+              <th data-i18n="hr.structure.colCode">Kod</th>
+              <th data-i18n="hr.emp.colStatus">Durum</th>
+              <th data-i18n="hr.emp.colAction">İşlem</th>
+            </tr></thead>
+            <tbody id="depBody"><tr><td colspan="4" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
           </table>
+          </div>
         </div>
       </section>
 
-      <section class="card">
-        <h2>Pozisyonlar</h2>
+      <section class="card app-card hr-structure-panel">
+        <h2 class="app-card-title" data-i18n="hr.structure.blockPos">Pozisyonlar</h2>
         <form id="posForm">
-          <select id="posDepartment" required></select>
+          <select id="posDepartment" class="app-select" required></select>
           <div class="inline-group">
-            <input id="posName" class="input-upper" placeholder="Pozisyon adi" required />
-            <input id="posCode" class="input-upper" placeholder="Kod (opsiyonel)" />
+            <input id="posName" class="input-upper app-input" data-i18n-placeholder="hr.structure.posNamePlaceholder" placeholder="Pozisyon adı" required />
+            <input id="posCode" class="input-upper app-input" data-i18n-placeholder="hr.structure.posCodePlaceholder" placeholder="Kod (isteğe bağlı)" />
           </div>
-          <button type="submit" id="posSubmitBtn">Pozisyon Ekle</button>
+          <div class="hr-st-form-footer">
+            <button type="submit" id="posSubmitBtn" class="hr-st-icon-btn hr-st-submit" aria-label="">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
+          </div>
         </form>
-        <div class="card" style="padding:12px;margin-top:12px">
-          <table>
-            <thead><tr><th>Pozisyon</th><th>Departman</th><th>Kod</th><th>Durum</th><th>Islem</th></tr></thead>
-            <tbody id="posBody"><tr><td colspan="5">Yukleniyor...</td></tr></tbody>
+        <div class="card app-card hr-structure-inner">
+          <div class="hr-structure-table-wrap">
+          <table class="app-table">
+            <thead><tr>
+              <th data-i18n="hr.structure.colPosition">Pozisyon</th>
+              <th data-i18n="hr.emp.colDept">Departman</th>
+              <th data-i18n="hr.structure.colCode">Kod</th>
+              <th data-i18n="hr.emp.colStatus">Durum</th>
+              <th data-i18n="hr.emp.colAction">İşlem</th>
+            </tr></thead>
+            <tbody id="posBody"><tr><td colspan="5" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
           </table>
+          </div>
         </div>
       </section>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-structure.js" defer></script>
   <script>
     function startHrStructurePage() {
       (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('structure');
         await window.initHrStructurePage?.();
@@ -95,4 +124,3 @@
   </script>
 </body>
 </html>
-

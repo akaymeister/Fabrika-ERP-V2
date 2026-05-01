@@ -6,19 +6,25 @@
   <title data-i18n="admin.pageTitle">Süper yönetim — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page" data-admin-nav="home">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3" data-admin-nav="home">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="admin.title">Süper yönetim</h1>
         <p class="subtitle">Kullanici, yetki ve sistem ayari yonetim merkezi</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -26,13 +32,10 @@
           <option value="en">English</option>
         </select>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
     <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
 
     <section class="hero-panel premium-hero" style="margin-bottom:24px">
@@ -61,10 +64,12 @@
         <p>Varsayilan para, dil ve proje kod ayarlari</p>
       </a>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/admin-common.js" defer></script>
   <script src="/js/admin.js" defer></script>

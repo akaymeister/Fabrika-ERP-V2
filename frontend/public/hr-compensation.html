@@ -82,18 +82,25 @@
     @media (max-width: 768px) { .comp-filters { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="hr.compensation.title">Ücret artışı ve performans değerlendirme</h1>
         <p class="subtitle" data-i18n="hr.compensation.sub">Taslak zam önerileri</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -102,13 +109,10 @@
         </select>
         <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
       </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
         <section class="card comp-section-card">
           <p class="muted" data-i18n="hr.compensation.filters">Filtreler</p>
           <div class="comp-filters">
@@ -131,10 +135,12 @@
             </table>
           </div>
         </section>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-compensation.js" defer></script>

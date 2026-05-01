@@ -5,71 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.proc.title">SATINALMA İŞLEME</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .po-row-sel { background: #e0f2fe !important; }
-    .pur-line-scroll { max-width: 100%; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0; }
-    .pur-line-table { min-width: 960px; width: 100%; }
-    .pur-line-table th, .pur-line-table td { font-size: var(--font-size-ui); vertical-align: middle; padding: 8px 10px; }
-    .pur-line-table th { white-space: nowrap; background: #f8fafc; }
-    .pur-inp { min-height: 40px; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; font: inherit; }
-    select.pur-inp { min-height: 40px; min-width: 140px; }
-    .r-stock { font-variant-numeric: tabular-nums; font-weight: 600; }
-    .pur-req-btns { width: 100%; box-sizing: border-box; margin-top: 16px; text-align: right; }
-    .pur-req-btns-row { display: inline-flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .pur-req-btns .version-btn, .pur-req-btns .logout-btn, .pur-req-btns a.version-btn { width: auto; min-width: 0; flex: 0 0 auto; }
-    .proc-top-print-wrap { display: inline-flex; align-items: center; gap: 8px; }
-    .proc-lock-hint { margin: 8px 0 0; font-size: var(--font-size-meta); color: #64748b; }
-    .proc-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
-    .proc-badge { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: #f1f5f9; color: #0f172a; font-size: var(--font-size-meta); font-weight: 600; }
-    .po-line-cancelled { background: #fef2f2 !important; opacity: 0.92; }
-    .po-line-cancelled .pur-inp { background: #f8fafc; pointer-events: none; }
-    .proc-cancel-badge { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; background: #fecaca; color: #7f1d1d; font-size: var(--font-size-meta); font-weight: 700; }
-    .proc-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
-    .proc-modal-backdrop.proc-modal-open { display: flex; }
-    .proc-modal { background: #fff; border-radius: 12px; max-width: 420px; width: 100%; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; }
-    .proc-modal h3 { margin: 0 0 12px; font-size: 1.05rem; }
-    .proc-modal textarea { width: 100%; min-height: 88px; box-sizing: border-box; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px; font: inherit; resize: vertical; }
-    .proc-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
-  </style>
 </head>
-<body class="app-shell app-master-page">
-  <div class="container pur-wide">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container pur-wide app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="purch.proc.titleV2">SATINALMA İŞLEME</h1>
-        <p class="subtitle" data-i18n="purch.proc.subV4">Üstte fiyat bekleyen siparişler, altta fiyatlandırma detayı. Fiziksel stok burada artmaz.</p>
-      </div>
-      <div class="topbar-right">
-        <select id="languageSelect" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <div class="proc-top-print-wrap" data-topbar-persist="1">
-          <button type="button" class="version-btn" id="btnPrint" disabled data-i18n="purch.proc.btnPrint" style="background:#475569;border:none;color:#fff">Yazdır</button>
-        </div>
-        <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
-</div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
+      <div id="globalNavSlot"></div>
       <aside class="app-master-sidebar">
         <div id="navSlot" class="app-master-subtabs"></div>
       </aside>
-      <main class="app-master-main">
-    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 class="app-page-title" data-i18n="purch.proc.titleV2">SATINALMA İŞLEME</h1>
+          <p class="subtitle" data-i18n="purch.proc.subV4">Üstte fiyat bekleyen siparişler, altta fiyatlandırma detayı. Fiziksel stok burada artmaz.</p>
+        </div>
+        <div class="topbar-right">
+          <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <div class="proc-top-print-wrap" data-topbar-persist="1">
+            <button type="button" class="version-btn app-button app-button-secondary" id="btnPrint" disabled data-i18n="purch.proc.btnPrint">Yazdır</button>
+          </div>
+          <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+    <p id="msg" class="app-msg-slot" role="status"></p>
 
-    <section class="card">
+    <section class="card app-card">
       <h3 data-i18n="purch.proc.blockIncoming">GELEN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.incomingSub">Yalnız fiyat bekleyen veya kısmen fiyatlanmış satınalma siparişleri listelenir.</p>
       <div class="pur-line-scroll">
-        <table class="pur-line-table">
+        <table class="pur-line-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.proc.colOrderCode">Sipariş</th>
@@ -84,14 +60,14 @@
       </div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card app-card app-card-stack-mt">
       <h3 data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
       <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
       <div id="orderFormBlock" hidden>
-        <p id="orderMeta" style="font-weight:600;margin-bottom:12px"></p>
+        <p id="orderMeta" class="proc-order-meta"></p>
         <div id="orderBadges" class="proc-meta"></div>
         <div class="pur-line-scroll">
-          <table class="pur-line-table">
+          <table class="pur-line-table app-table">
             <thead>
               <tr>
                 <th data-i18n="purch.proc.colProductName">Ürün adı</th>
@@ -111,22 +87,22 @@
         </div>
         <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
           <div class="pur-req-btns-row">
-            <button type="button" class="version-btn" id="btnStart" style="background:#0d9488;border:none;color:#fff" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-            <button type="button" class="version-btn" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing" style="background:#16a34a;border:none;color:#fff">Fiyatları kaydet</button>
-            <button type="button" class="version-btn" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder" style="background:#2563eb;border:none;color:#fff">Siparişi tamamla</button>
-            <button type="button" class="version-btn" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder" style="background:#b45309;border:none;color:#fff">Siparişi revizeye gönder</button>
+            <button type="button" class="version-btn app-button app-button-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
+            <button type="button" class="version-btn app-button app-button-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
+            <button type="button" class="version-btn app-button app-button-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
+            <button type="button" class="version-btn app-button app-button-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
           </div>
         </div>
         <p id="procLockHint" class="proc-lock-hint" data-i18n="purch.proc.lockedHint">Fiyat, tedarikçi, para birimi ve kur alanları sipariş işleme alınmadan düzenlenemez.</p>
-      <p class="muted text-meta" style="margin-top:10px" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
+      <p class="muted text-meta proc-help-footer" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
       </div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card app-card app-card-stack-mt">
       <h3 data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.activeSub">İşleme alınmış fakat tamamlanmamış siparişler. Satıra tıklayarak yukarıda düzenleyin.</p>
       <div class="pur-line-scroll">
-        <table class="pur-line-table">
+        <table class="pur-line-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.proc.colOrderCode">Sipariş</th>
@@ -142,11 +118,11 @@
       </div>
     </section>
 
-    <section class="card" style="margin-top:16px">
+    <section class="card app-card app-card-stack-mt">
       <h3 data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak yukarıda inceleyebilirsiniz.</p>
       <div class="pur-line-scroll">
-        <table class="pur-line-table">
+        <table class="pur-line-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.proc.colOrderCode">Sipariş</th>
@@ -161,18 +137,19 @@
         </table>
       </div>
     </section>
+        </main>
+      </div>
+    </div>
   </div>
   <div id="cancelLineModal" class="proc-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancelLineTitle">
     <div class="proc-modal">
       <h3 id="cancelLineTitle" data-i18n="purch.proc.cancelLineTitle">Sipariş kalemini iptal et</h3>
-      <label for="cancelLineReason" style="display:block;font-size:var(--font-size-ui);font-weight:600;margin-bottom:6px" data-i18n="purch.proc.cancelReasonLabel">İptal açıklaması (zorunlu)</label>
+      <label for="cancelLineReason" class="proc-cancel-label" data-i18n="purch.proc.cancelReasonLabel">İptal açıklaması (zorunlu)</label>
       <textarea id="cancelLineReason" maxlength="1900" data-i18n-placeholder="purch.proc.cancelReasonPh" placeholder=""></textarea>
       <div class="proc-modal-actions">
         <button type="button" class="logout-btn" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
-        <button type="button" class="version-btn" id="cancelLineConfirm" style="background:#b91c1c;border:none;color:#fff" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
+        <button type="button" class="version-btn app-button app-button-danger" id="cancelLineConfirm" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
       </div>
-    </div>
-      </main>
     </div>
   </div>
   <script src="/js/i18n.js?v=15" defer></script>

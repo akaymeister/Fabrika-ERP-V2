@@ -6,19 +6,25 @@
   <title data-i18n="project.quotes.pageTitle">Proje fiyat teklifleri</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
         <h1 data-i18n="project.quotes.pageTitle">Proje fiyat teklifleri</h1>
         <p class="subtitle" data-i18n="project.quotes.sub">Planlanan bölüm</p>
       </div>
-      <div class="topbar-right">
+        <div class="topbar-right">
         <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -27,54 +33,62 @@
         </select>
         <a data-topbar-persist="1" href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
     <div class="card" style="max-width: 720px">
       <span class="module-tag plan-tag" data-i18n="dashboard.tagPlan">Yakında</span>
       <h2 data-i18n="project.placeholder.title" style="margin-top: 12px">Geliştirme aşamasında</h2>
       <p class="muted" data-i18n="project.quotes.placeholderP">Teklifler, sürümler ve onay akışı; sonraki sürümler.</p>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/project-common.js" defer></script>
   <script>
-    document.getElementById('languageSelect')?.addEventListener('change', (e) => {
-      const v = e.target.value;
-      if (v && window.i18n) {
-        localStorage.setItem('erp_lang', v);
-        window.i18n.loadDict(v).then(() => {
-          window.i18n.apply(document);
-          if (window.i18n.setDocumentLang) window.i18n.setDocumentLang(v);
-        });
-      }
-    });
-    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
-        window.location.href = '/login.html';
+    /* defer script’lerden sonra çalışmalı; aksi halde initProjectPageNav tanımsız kalır */
+    function startProjectQuotesPage() {
+      document.getElementById('languageSelect')?.addEventListener('change', (e) => {
+        const v = e.target.value;
+        if (v && window.i18n) {
+          localStorage.setItem('erp_lang', v);
+          window.i18n.loadDict(v).then(async () => {
+            window.i18n.apply(document);
+            if (window.i18n.setDocumentLang) window.i18n.setDocumentLang(v);
+            if (window.initProjectPageNav) await window.initProjectPageNav('quotes');
+          });
+        }
       });
-    });
-    (async function start() {
-      const lang = window.i18n && window.i18n.getLang ? window.i18n.getLang() : 'tr';
-      if (window.i18n && window.i18n.loadDict) {
-        await window.i18n.loadDict(lang);
-      }
-      const sel = document.getElementById('languageSelect');
-      if (sel) sel.value = lang;
-      if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
-      if (window.i18n && window.i18n.apply) window.i18n.apply(document);
-      if (window.initProjectPageNav) {
-        await window.initProjectPageNav('quotes');
-      }
-    })();
+      document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => {
+          window.location.href = '/login.html';
+        });
+      });
+      (async function () {
+        const lang = window.i18n && window.i18n.getLang ? window.i18n.getLang() : 'tr';
+        if (window.i18n && window.i18n.loadDict) {
+          await window.i18n.loadDict(lang);
+        }
+        const sel = document.getElementById('languageSelect');
+        if (sel) sel.value = lang;
+        if (window.i18n && window.i18n.setDocumentLang) window.i18n.setDocumentLang(lang);
+        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        if (window.initProjectPageNav) {
+          await window.initProjectPageNav('quotes');
+        }
+      })();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startProjectQuotesPage);
+    } else {
+      startProjectQuotesPage();
+    }
   </script>
 </body>
 </html>

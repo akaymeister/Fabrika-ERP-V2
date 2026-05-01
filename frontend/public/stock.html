@@ -6,33 +6,35 @@
   <title>Stok — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="stock.hub.title">Stok yönetimi</h1>
-        <p class="subtitle" data-i18n="stock.hub.sub">Ürün, marka, hareket ve depo temelli süreçler</p>
-      </div>
-      <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-</div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
+      <div id="globalNavSlot"></div>
       <aside class="app-master-sidebar">
         <div id="navSlot" class="app-master-subtabs"></div>
       </aside>
-      <main class="app-master-main">
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 data-i18n="stock.hub.title">Stok yönetimi</h1>
+          <p class="subtitle" data-i18n="stock.hub.sub">Ürün, marka, hareket ve depo temelli süreçler</p>
+        </div>
+        <div class="topbar-right">
+          <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
 
     <section class="hero-panel premium-hero" style="margin-bottom: 24px">
       <div class="hero-text">
@@ -77,7 +79,8 @@
         <p data-i18n="stock.hub.cardMov">Tüm stok hareketleri</p>
       </a>
     </div>
-      </main>
+        </main>
+      </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>

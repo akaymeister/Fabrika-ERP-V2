@@ -6,20 +6,26 @@
   <title data-i18n="stock.brands.title">Markalar — Stok</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="stock.brands.title">Markalar</h1>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+        <h1 class="app-page-title" data-i18n="stock.brands.title">Markalar</h1>
         <p class="subtitle" data-i18n="stock.brands.sub">Aynı ürün adı farklı markada tekrar edebilir</p>
       </div>
-      <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -27,26 +33,23 @@
         </select>
         <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
 </div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
-      <aside class="app-master-sidebar">
-        <div id="navSlot" class="app-master-subtabs"></div>
-      </aside>
-      <main class="app-master-main">
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
 
     <div class="grid">
-      <div class="card">
-        <h3 id="formCardTitle" data-i18n="stock.brands.new">Yeni marka</h3>
+      <div class="card app-card">
+        <h3 id="formCardTitle" class="app-card-title" data-i18n="stock.brands.new">Yeni marka</h3>
         <form id="fBrand" class="product-form-grid" style="grid-template-columns: 1fr">
           <input type="hidden" id="editBrandId" value="" />
           <div class="form-field">
-            <label for="brandName" data-i18n="stock.brands.name">Marka adı</label>
-            <input type="text" id="brandName" class="input-upper" required maxlength="200" />
+            <label class="app-label" for="brandName" data-i18n="stock.brands.name">Marka adı</label>
+            <input type="text" id="brandName" class="input-upper app-input" required maxlength="200" />
           </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
-            <button type="submit" id="btnBrandSubmit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="stock.brands.save">Kaydet</button>
-            <button type="button" id="btnBrandCancel" class="secondary-btn" style="display: none" data-i18n="stock.brands.cancel">Vazgeç</button>
+          <div class="app-form-actions">
+            <button type="submit" id="btnBrandSubmit" class="module-button app-button app-button-primary" data-i18n="stock.brands.save">Kaydet</button>
+            <button type="button" id="btnBrandCancel" class="secondary-btn app-button app-button-secondary stock-brands-cancel" data-i18n="stock.brands.cancel">Vazgeç</button>
           </div>
         </form>
         <p id="brandMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="alert"></p>
@@ -54,10 +57,10 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top: 20px">
-      <h3 data-i18n="stock.brands.list">Marka listesi</h3>
-      <div style="overflow-x: auto">
-        <table>
+    <div class="card app-card stock-brands-list-card">
+      <h3 class="app-card-title" data-i18n="stock.brands.list">Marka listesi</h3>
+      <div class="app-table-scroll">
+        <table class="app-table">
           <thead>
             <tr>
               <th data-i18n="stock.brands.colId">ID</th>
@@ -70,10 +73,12 @@
         </table>
       </div>
     </div>
-      </main>
+      
+        </main>
+      </div>
     </div>
   </div>
-  <script src="/js/i18n.js" defer></script>
+<script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
@@ -169,12 +174,12 @@
             ? `<strong>${esc(b.name)}</strong> <span style="font-size:12px;color:#64748b">(${esc(sysL)})</span>`
             : `<strong>${esc(b.name)}</strong>`;
           const actions = isSys
-            ? `<div class="table-actions"><button type="button" class="secondary-btn btn-edit" data-action="edit" data-id="${b.id}">${esc(
+            ? `<div class="table-actions app-action-bar"><button type="button" class="secondary-btn btn-edit app-button app-button-secondary app-action-button app-action-edit" data-action="edit" data-id="${b.id}">${esc(
                 editL
               )}</button></div>`
-            : `<div class="table-actions"><button type="button" class="secondary-btn btn-edit" data-action="edit" data-id="${b.id}">${esc(
+            : `<div class="table-actions app-action-bar"><button type="button" class="secondary-btn btn-edit app-button app-button-secondary app-action-button app-action-edit" data-action="edit" data-id="${b.id}">${esc(
                 editL
-              )}</button><button type="button" class="secondary-btn btn-danger" data-action="delete" data-id="${b.id}">${esc(
+              )}</button><button type="button" class="secondary-btn btn-danger app-button app-button-danger app-action-button app-action-delete" data-action="delete" data-id="${b.id}">${esc(
                 delL
               )}</button></div>`;
           return `<tr>

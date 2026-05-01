@@ -6,50 +6,49 @@
   <title data-i18n="dashboard.pageTitle">Gösterge paneli — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="dashboard.title">Fabrika ERP</h1>
-        <p class="subtitle">
-          <span data-i18n="dashboard.subLine">Merkezi yönetim paneli —</span>
-          <span id="sessionInfo" data-i18n="dashboard.sessionLoading">Oturum yükleniyor…</span>
-        </p>
-      </div>
-
-      <div class="topbar-right">
-        <div class="system-badge" data-i18n="dashboard.badge">ERP V2</div>
-
-        <div class="user-info-box">
-          <span class="user-name" id="userFullName" data-i18n="dashboard.userLoading">Yükleniyor…</span>
-          <span class="user-role" id="userRole" data-i18n="dashboard.roleLoading">Rol yükleniyor…</span>
-        </div>
-
-        <div class="language-box">
-          <label for="languageSelect" id="languageLabel" data-i18n="lang.label">Dil</label>
-          <select id="languageSelect" aria-label="Language">
-            <option value="tr">Türkçe</option>
-            <option value="uz">O‘zbekcha</option>
-            <option value="ru">Русский</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-
-        <a data-topbar-persist="1" href="/admin.html" class="version-btn" id="adminLink" style="display: none" data-i18n="dashboard.adminLink"
-          >Süper yönetim</a>
-</div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
+      <div id="globalNavSlot"></div>
       <aside class="app-master-sidebar">
         <div id="navSlot" class="app-master-subtabs"></div>
       </aside>
-      <main class="app-master-main">
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 data-i18n="dashboard.title">Fabrika ERP</h1>
+          <p class="subtitle">
+            <span data-i18n="dashboard.subLine">Merkezi yönetim paneli —</span>
+            <span id="sessionInfo" data-i18n="dashboard.sessionLoading">Oturum yükleniyor…</span>
+          </p>
+        </div>
+
+        <div class="topbar-right">
+          <span id="userFullName" class="app-a11y-hide" aria-hidden="true"></span>
+          <span id="userRole" class="app-a11y-hide" aria-hidden="true"></span>
+          <div class="system-badge" data-topbar-persist="1" data-i18n="dashboard.badge">ERP V2</div>
+
+          <div class="language-box">
+            <label for="languageSelect" id="languageLabel" data-i18n="lang.label">Dil</label>
+            <select id="languageSelect" aria-label="Language">
+              <option value="tr">Türkçe</option>
+              <option value="uz">O‘zbekcha</option>
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <a data-topbar-persist="1" href="/admin.html" class="version-btn" id="adminLink" style="display: none" data-i18n="dashboard.adminLink"
+            >Süper yönetim</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
 
     <section class="hero-panel premium-hero">
       <div class="hero-text">
@@ -240,7 +239,8 @@
         </table>
       </div>
     </section>
-      </main>
+        </main>
+      </div>
     </div>
   </div>
 

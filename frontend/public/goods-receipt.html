@@ -4,137 +4,45 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.gr.title">MAL KABUL</title>
-  <link rel="stylesheet" href="/style.css?v=gr10" />
-  <style>
-    .gr-po-scroll {
-      max-width: 100%;
-      overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-    .gr-po-table {
-      min-width: 720px;
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--font-size-ui);
-    }
-    .gr-po-table th {
-      background: #f8fafc;
-      text-align: left;
-      padding: 10px;
-      white-space: nowrap;
-    }
-    .gr-po-table td {
-      padding: 10px;
-      border-top: 1px solid #f1f5f9;
-    }
-    .gr-po-table tbody tr {
-      cursor: pointer;
-    }
-    .gr-po-table tbody tr:hover {
-      background: #f8fafc;
-    }
-    .gr-po-table tbody tr.gr-po-sel {
-      background: #e0f2fe;
-    }
-    .gr-line-scroll {
-      overflow-x: auto;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-    }
-    .gr-line-table {
-      min-width: 1260px;
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--font-size-ui);
-    }
-    .gr-line-table th {
-      background: #f1f5f9;
-      padding: 8px;
-      text-align: left;
-      white-space: nowrap;
-      position: sticky;
-      top: 0;
-    }
-    .gr-line-table td {
-      padding: 6px 8px;
-      border-top: 1px solid #f1f5f9;
-      vertical-align: middle;
-    }
-    .gr-line-table .gr-inp {
-      width: 88px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-      box-sizing: border-box;
-    }
-    .gr-action-row {
-      margin-top: 16px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: nowrap;
-      width: 100%;
-    }
-    .gr-action-row .module-button,
-    .gr-action-row .version-btn {
-      width: auto;
-      min-width: 0;
-      flex: 0 0 auto;
-    }
-    .gr-meta-inline {
-      font-size: var(--font-size-meta);
-      color: #64748b;
-    }
-    .gr-line-table .gr-inp-wide {
-      min-width: 120px;
-      width: 100%;
-    }
-    .gr-att {
-      max-height: 48px;
-      max-width: 64px;
-      object-fit: cover;
-      border-radius: 4px;
-      border: 1px solid #e2e8f0;
-    }
-  </style>
+  <link rel="stylesheet" href="/style.css?v=gr11" />
 </head>
-<body class="app-shell app-master-page">
-  <div class="container pur-wide">
-    <div class="topbar dashboard-topbar">
-      <div class="app-master-brand" aria-label="Brand">
+<body class="app-shell app-master-page app-ui-v3">
+  <div class="container pur-wide app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
         <span class="app-master-logo">AHK</span>
         <strong>Fabrika ERP V2</strong>
       </div>
-
-      <div class="topbar-left">
-        <h1 data-i18n="purch.gr.title">MAL KABUL</h1>
-        <p class="subtitle" data-i18n="purch.gr.subShort">Depo: siparişe göre miktarsal kabul. Fiyat / maliyet satınalma tarafında.</p>
-      </div>
-      <div class="topbar-right">
-        <select id="languageSelect" style="max-width: 120px; padding: 8px; border-radius: 8px" aria-label="Language">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock.hub">Stok</a>
-</div>
-    </div>
-    <div id="globalNavSlot"></div>
-    <div class="app-master-body">
+      <div id="globalNavSlot"></div>
       <aside class="app-master-sidebar">
         <div id="navSlot" class="app-master-subtabs"></div>
       </aside>
-      <main class="app-master-main">
-    <p id="msg" style="min-height: 1.2em; margin: 8px 0" role="status"></p>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left">
+          <h1 class="app-page-title" data-i18n="purch.gr.title">MAL KABUL</h1>
+          <p class="subtitle" data-i18n="purch.gr.subShort">Depo: siparişe göre miktarsal kabul. Fiyat / maliyet satınalma tarafında.</p>
+        </div>
+        <div class="topbar-right">
+          <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock.hub">Stok</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+    <p id="msg" class="app-msg-slot" role="status"></p>
 
-    <section class="card">
-      <h3 style="margin-top: 0" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
+    <section class="card app-card">
+      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
       <div class="gr-po-scroll">
-        <table class="gr-po-table">
+        <table class="gr-po-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.gr.colOrderCode">Sipariş</th>
@@ -153,14 +61,14 @@
       </div>
     </section>
 
-    <section class="card" style="margin-top: 16px">
-      <h3 style="margin-top: 0" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
+    <section class="card app-card app-card-stack-mt">
+      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
       <p id="grDetailEmpty" class="muted" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
       <div id="grDetailBlock" hidden>
-        <p id="grOrderMeta" style="font-weight: 600; margin: 0 0 10px" class="display-upper"></p>
-        <p class="product-unit-hint" style="margin: 0 0 8px" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
+        <p id="grOrderMeta" class="display-upper gr-order-meta"></p>
+        <p class="product-unit-hint gr-hint-spaced" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
         <div class="gr-line-scroll">
-          <table class="gr-line-table" id="grLineTable">
+          <table class="gr-line-table app-table" id="grLineTable">
             <thead>
               <tr>
                 <th data-i18n="purch.gr.colProduct">Ürün</th>
@@ -179,15 +87,15 @@
         </div>
         <div class="gr-action-row" role="group" aria-label="Mal kabul eylemleri">
           <button type="button" class="version-btn" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
-          <button type="button" class="module-button" id="grBtnSave" data-i18n="common.save">Kaydet</button>
+          <button type="button" class="module-button app-button app-button-primary" id="grBtnSave" data-i18n="common.save">Kaydet</button>
         </div>
       </div>
     </section>
-    <section class="card" style="margin-top: 16px">
-      <h3 style="margin-top: 0" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
+    <section class="card app-card app-card-stack-mt">
+      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.gr.completedSub">Mal kabulü tamamlanan siparişler sadece inceleme amaçlı listelenir.</p>
       <div class="gr-po-scroll">
-        <table class="gr-po-table">
+        <table class="gr-po-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.gr.colOrderCode">Sipariş</th>
@@ -205,7 +113,8 @@
         </table>
       </div>
     </section>
-      </main>
+        </main>
+      </div>
     </div>
   </div>
   <script src="/js/stock-common.js?v=gr10"></script>
@@ -588,11 +497,6 @@
       boot();
     })();
   </script>
-  <style>
-    .r-stock {
-      font-variant-numeric: tabular-nums;
-    }
-  </style>
 </body>
 </html>
 
