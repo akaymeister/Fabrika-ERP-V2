@@ -170,6 +170,21 @@ app.get('/hr-employee-detail.html', requirePageAuth, requirePagePermission('modu
 app.get('/hr-structure.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-structure.html'));
 app.get('/hr-attendance.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-attendance.html'));
 app.get('/hr-settings.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-settings.html'));
+app.get('/hr-attendance-monthly.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-attendance-monthly.html'));
+app.get('/hr-attendance-locks.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-attendance-locks.html'));
+app.get('/hr-compensation.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-compensation.html'));
+app.get('/hr-payroll.html', requirePageAuth, requirePagePermission('module.hr'), sendPage('hr-payroll.html'));
+app.get('/stock-warehouses.html', requirePageAuth, requirePagePermission('module.stock'), sendPage('stock-warehouses.html'));
+app.get(
+  '/suppliers.html',
+  requirePageAuth,
+  requirePagePermission('module.purchasing'),
+  sendPage('suppliers.html')
+);
+app.get('/admin-users.html', requirePageSuperAdmin, sendPage('admin-users.html'));
+app.get('/admin-settings.html', requirePageSuperAdmin, sendPage('admin-settings.html'));
+app.get('/admin-permissions.html', requirePageSuperAdmin, sendPage('admin-permissions.html'));
+app.get('/admin-user-new.html', requirePageSuperAdmin, sendPage('admin-user-new.html'));
 app.get('/my-profile.html', requirePageAuth, sendPage('my-profile.html'));
 
 // --- Statik: index otomatik kapalı ---
