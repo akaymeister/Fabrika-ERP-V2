@@ -6,7 +6,7 @@
   <title data-i18n="suppliers.title">Tedarikçiler</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page suppliers-page">
   <div class="container pur-wide app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,18 +20,18 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="suppliers.title">Tedarikçiler</h1>
         <p class="subtitle" data-i18n="suppliers.sub">Tedarikçi listesi, yeni tedarikçi ekleme. Sipariş işleme ekranında bu liste kullanılır.</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        <a data-topbar-persist="1" href="/purchasing.html" class="btn btn-secondary" data-i18n="nav.purch.hub">Satınalma</a>
 </div>
       </header>
       <div class="app-content">
@@ -39,7 +39,7 @@
 
     <p id="msg" class="purch-msg-api" role="status"></p>
 
-    <section class="card app-card">
+    <section class="card app-card erp-card">
       <h3 class="app-card-title" data-i18n="suppliers.addH">Yeni tedarikçi</h3>
       <div class="sup-form">
         <div><input id="sName" class="app-input" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.name" /></div>
@@ -50,12 +50,12 @@
         <div class="full"><textarea id="sNote" class="app-input app-textarea" rows="2" placeholder="" data-i18n-placeholder="suppliers.note"></textarea></div>
       </div>
       <p class="sup-actions-bar">
-        <button type="button" class="logout-btn app-button app-button-primary" id="btnAdd" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
+        <button type="button" class="btn btn-primary" id="btnAdd" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
       </p>
       <p class="sup-muted" data-i18n="suppliers.futureNote">İleride: cari hesap, borç/alacak, bakiye ekranları bu modül altında açılacak.</p>
     </section>
 
-    <section class="card app-card sup-list-card">
+    <section class="card app-card erp-card sup-list-card">
       <h3 class="app-card-title" data-i18n="suppliers.listH">Tedarikçi listesi</h3>
       <div class="sup-filter">
         <input id="q" class="app-input" placeholder="" data-i18n-placeholder="suppliers.filterPh" />

@@ -6,7 +6,7 @@
   <title data-i18n="stock.product.title">Ürünler</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page stock-products-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,25 +20,25 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="stock.product.title">Ürünler</h1>
         <p class="subtitle" data-i18n="stock.product.sub">En × boy × yükseklik; marka; depo ve alt kategori. Maliyet: stok girişi.</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" aria-label="lang" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a data-topbar-persist="1" href="/stock.html" class="btn btn-secondary" data-i18n="nav.stock">Stok</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
 
-    <div class="card app-card">
+    <div class="card app-card erp-card">
       <h3 id="formCardTitle" class="app-card-title" data-i18n="stock.product.formNew">Yeni ürün</h3>
       <p id="editCodeLine" class="stock-products-edit-code-line">Düzenlenen kod: —</p>
       <p class="stock-products-wh-link-line">
@@ -85,15 +85,15 @@
           </div>
           <div class="form-field form-field-unit-btn">
             <span class="dims-label-spacer" aria-hidden="true">&nbsp;</span>
-            <button type="button" class="secondary-btn app-button app-button-secondary" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
           </div>
         </div>
         <p class="form-hint stock-products-form-hint-full" data-i18n="stock.product.priceOnStockIn">
           Birim fiyat ve USD/UZS dönüşümü stok giriş ekranındadır.
         </p>
         <div class="form-field form-field-wide form-actions app-form-actions stock-products-form-actions-full">
-          <button type="submit" id="btnSaveProduct" class="module-button app-button app-button-primary" data-i18n="stock.product.save">Kaydet</button>
-          <button type="button" id="btnCancelEdit" class="secondary-btn app-button app-button-secondary stock-products-cancel-edit" data-i18n="stock.product.cancelEdit">Vazgeç</button>
+          <button type="submit" id="btnSaveProduct" class="btn btn-primary" data-i18n="stock.product.save">Kaydet</button>
+          <button type="button" id="btnCancelEdit" class="btn btn-secondary stock-products-cancel-edit" data-i18n="stock.product.cancelEdit">Vazgeç</button>
         </div>
       </form>
       <p id="unitListMsg" class="login-error stock-products-msg" role="status"></p>
@@ -101,7 +101,7 @@
       <p id="pmsg" class="login-error stock-products-msg"></p>
     </div>
 
-    <div class="card app-card stock-products-excel-card">
+    <div class="card app-card erp-card stock-products-excel-card">
       <h3 class="app-card-title" data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
       <p class="stock-products-excel-hint" data-i18n="stock.product.excelHint">
         Şablonu indirin; depo, alt kategori, birim ve marka adları sistemdekilerle aynı olsun. En fazla 500 satır.
@@ -109,14 +109,14 @@
       <div class="product-excel-bar">
         <a href="/api/stock/products/import-template" class="excel-template-btn" data-i18n="stock.product.downloadTemplate" download>Şablon indir</a>
         <input type="file" id="excelImportFile" class="product-excel-file" accept=".xlsx,.xls,.csv" />
-        <button type="button" class="module-button product-excel-upload app-button app-button-primary" id="btnExcelImport" data-i18n="stock.product.uploadImport">
+        <button type="button" class="btn btn-primary product-excel-upload" id="btnExcelImport" data-i18n="stock.product.uploadImport">
           Yükle ve içe aktar
         </button>
       </div>
       <p id="importMsg" class="stock-products-import-msg" role="status"></p>
     </div>
 
-    <div class="card app-card stock-products-list-card">
+    <div class="card app-card erp-card stock-products-list-card">
       <h3 class="app-card-title" data-i18n="stock.product.listTitle">Liste</h3>
       <div class="filters app-filterbar stock-products-filters">
         <div class="form-field stock-products-filter-field">
@@ -131,7 +131,7 @@
           <label class="app-label" for="filterQ" data-i18n="stock.product.search">Ara</label>
           <input type="search" id="filterQ" class="input-upper app-input" data-i18n-placeholder="stock.product.searchPh" />
         </div>
-        <button type="button" class="module-button app-button app-button-primary stock-products-filter-btn" id="btnFilter" data-i18n="stock.product.filter">Filtrele</button>
+        <button type="button" class="btn btn-primary stock-products-filter-btn" id="btnFilter" data-i18n="stock.product.filter">Filtrele</button>
       </div>
       <div class="app-table-scroll stock-products-table-wrap">
         <table class="app-table">
@@ -432,7 +432,7 @@
             <td>${fmtQty(p.stock_pieces)}</td>
             <td>${fmtQty(p.stock_m2)}</td>
             <td>${fmtQty(p.stock_m3)}</td>
-            <td><div class="table-actions app-action-bar"><button type="button" class="secondary-btn btn-edit product-edit-btn app-button app-button-secondary app-action-button app-action-edit" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="secondary-btn btn-danger product-delete-btn app-button app-button-danger app-action-button app-action-delete" data-pid="${p.id}">${esc(
+            <td><div class="erp-table-actions app-action-bar"><button type="button" class="btn btn-secondary btn-sm btn-edit product-edit-btn app-action-button app-action-edit" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="btn btn-danger btn-sm product-delete-btn app-action-button app-action-delete" data-pid="${p.id}">${esc(
               delL
             )}</button></div></td>
           </tr>`

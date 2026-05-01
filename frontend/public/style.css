@@ -7094,3 +7094,33 @@ body.app-ui-v3.admin-user-new-page .admin-user-new-account-options {
 body.app-ui-v3.admin-user-new-page .admin-user-new-account-option {
   margin: 0;
 }
+
+/* --- V2.5 UI Stabilization (wave 3: stock / purchasing / admin / profile / hr settings) --- */
+body.app-ui-v3.admin-hub-page .admin-hub-err {
+  margin: 0 0 12px;
+  color: #b91c1c;
+}
+
+body.app-ui-v3.admin-hub-page .admin-hub-hero {
+  margin-bottom: 24px;
+}
+
+body.app-ui-v3.admin-hub-page .admin-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+body.app-ui-v3.my-profile-page .my-profile-must-change-banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-days-title {
+  margin: 0;
+}
+
+body.app-ui-v3.hr-settings-page .hr-days-list-gap {
+  margin-top: 8px;
+}

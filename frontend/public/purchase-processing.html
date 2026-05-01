@@ -6,7 +6,7 @@
   <title data-i18n="purch.proc.title">SATINALMA İŞLEME</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page purchase-processing-page">
   <div class="container pur-wide app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -24,7 +24,7 @@
           <h1 class="app-page-title" data-i18n="purch.proc.titleV2">SATINALMA İŞLEME</h1>
           <p class="subtitle" data-i18n="purch.proc.subV4">Üstte fiyat bekleyen siparişler, altta fiyatlandırma detayı. Fiziksel stok burada artmaz.</p>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
           <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
@@ -32,16 +32,16 @@
             <option value="en">English</option>
           </select>
           <div class="proc-top-print-wrap" data-topbar-persist="1">
-            <button type="button" class="version-btn app-button app-button-secondary" id="btnPrint" disabled data-i18n="purch.proc.btnPrint">Yazdır</button>
+            <button type="button" class="btn btn-secondary" id="btnPrint" disabled data-i18n="purch.proc.btnPrint">Yazdır</button>
           </div>
-          <a href="/purchasing.html" class="version-btn app-button app-button-secondary" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
+          <a href="/purchasing.html" class="btn btn-secondary" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
         </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
     <p id="msg" class="app-msg-slot" role="status"></p>
 
-    <section class="card app-card">
+    <section class="card app-card erp-card">
       <h3 class="app-card-title" data-i18n="purch.proc.blockIncoming">GELEN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.incomingSub">Yalnız fiyat bekleyen veya kısmen fiyatlanmış satınalma siparişleri listelenir.</p>
       <div class="pur-line-scroll">
@@ -60,7 +60,7 @@
       </div>
     </section>
 
-    <section class="card app-card app-card-stack-mt">
+    <section class="card app-card erp-card app-card-stack-mt">
       <h3 class="app-card-title" data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
       <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
       <div id="orderFormBlock" hidden>
@@ -87,10 +87,10 @@
         </div>
         <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
           <div class="pur-req-btns-row">
-            <button type="button" class="version-btn app-button app-button-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-            <button type="button" class="version-btn app-button app-button-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
-            <button type="button" class="version-btn app-button app-button-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
-            <button type="button" class="version-btn app-button app-button-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
+            <button type="button" class="btn btn-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
+            <button type="button" class="btn btn-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
+            <button type="button" class="btn btn-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
+            <button type="button" class="btn btn-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
           </div>
         </div>
         <p id="procLockHint" class="proc-lock-hint" data-i18n="purch.proc.lockedHint">Fiyat, tedarikçi, para birimi ve kur alanları sipariş işleme alınmadan düzenlenemez.</p>
@@ -98,7 +98,7 @@
       </div>
     </section>
 
-    <section class="card app-card app-card-stack-mt">
+    <section class="card app-card erp-card app-card-stack-mt">
       <h3 class="app-card-title" data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.activeSub">İşleme alınmış fakat tamamlanmamış siparişler. Satıra tıklayarak yukarıda düzenleyin.</p>
       <div class="pur-line-scroll">
@@ -118,7 +118,7 @@
       </div>
     </section>
 
-    <section class="card app-card app-card-stack-mt">
+    <section class="card app-card erp-card app-card-stack-mt">
       <h3 class="app-card-title" data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak yukarıda inceleyebilirsiniz.</p>
       <div class="pur-line-scroll">
@@ -147,8 +147,8 @@
       <label for="cancelLineReason" class="proc-cancel-label" data-i18n="purch.proc.cancelReasonLabel">İptal açıklaması (zorunlu)</label>
       <textarea id="cancelLineReason" class="app-input app-textarea proc-cancel-line-textarea" maxlength="1900" data-i18n-placeholder="purch.proc.cancelReasonPh" placeholder=""></textarea>
       <div class="proc-modal-actions">
-        <button type="button" class="logout-btn app-button app-button-secondary" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
-        <button type="button" class="version-btn app-button app-button-danger" id="cancelLineConfirm" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
+        <button type="button" class="btn btn-secondary" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
+        <button type="button" class="btn btn-danger" id="cancelLineConfirm" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
       </div>
     </div>
   </div>

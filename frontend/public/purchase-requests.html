@@ -6,7 +6,7 @@
   <title data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ — KONTROL & ONAY</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page purchase-requests-page">
   <div class="container pur-wide app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -24,25 +24,25 @@
           <h1 class="app-page-title" data-i18n="purch.wf.listTitle">SATINALMA TALEPLERİ</h1>
           <p class="subtitle" data-i18n="purch.wf.listSub">Liste, detay, onay / red / revizyon</p>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
           <select id="languageSelect" data-i18n-placeholder="lang.label" class="app-select app-topbar-lang" aria-label="Language">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
             <option value="ru">Русский</option>
             <option value="en">English</option>
           </select>
-          <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+          <a data-topbar-persist="1" href="/purchasing.html" class="btn btn-secondary" data-i18n="nav.purch.hub">Satınalma</a>
         </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
     <p id="msg" class="app-msg-slot" role="status"></p>
     <div class="pur-list-actions app-filterbar">
-      <a class="version-btn app-button app-button-secondary" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
-      <a class="version-btn app-button app-button-primary" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
+      <a class="btn btn-secondary" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
+      <a class="btn btn-primary" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
     </div>
     <div class="pr-layout">
-      <section class="card app-card">
+      <section class="card app-card erp-card">
         <div class="app-filterbar">
           <label class="app-label" for="fFilter" data-i18n="purch.wf.filter">Durum</label>
           <select id="fFilter" class="app-select">
@@ -73,7 +73,7 @@
           </table>
         </div>
       </section>
-      <section class="card app-card" id="detailPanel">
+      <section class="card app-card erp-card" id="detailPanel">
         <p class="muted" data-i18n="purch.wf.selectRow">Bir satır seçin…</p>
       </section>
     </div>

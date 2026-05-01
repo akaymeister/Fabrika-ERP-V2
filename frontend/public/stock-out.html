@@ -6,7 +6,7 @@
   <title data-i18n="stock.out.title">Stok çıkış</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page stock-out-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,24 +20,24 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="stock.out.title">Stok çıkış</h1>
         <p class="subtitle" data-i18n="stock.out.sub">Proje, depo, ürün; önce proje stoku, sonra genel, sonra diğer (FIFO)</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a data-topbar-persist="1" href="/stock.html" class="btn btn-secondary" data-i18n="nav.stock">Stok</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <div class="card stock-out-form-card app-card">
+    <div class="card stock-out-form-card app-card erp-card">
       <form id="f">
         <div class="form-stock-out-r1">
           <div class="form-field">
@@ -97,7 +97,7 @@
           <button
             type="submit"
             id="btnSubmit"
-            class="module-button app-button app-button-primary v3-stock-out-submit"
+            class="btn btn-primary v3-stock-out-submit"
             data-i18n="stock.out.submit"
           >
             Çıkış kaydet
@@ -113,8 +113,8 @@
       <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.out.voidDlgHint">Hareket silinir; stok ve maliyet geri yüklenir.</p>
       <textarea id="outVoidReason" class="input-upper app-input app-textarea app-fill-block" rows="3"></textarea>
       <div class="app-dialog-actions">
-        <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="module-button app-button app-button-danger v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
+        <button type="button" class="btn btn-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="btn btn-danger v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
       </div>
     </dialog>
 
@@ -148,12 +148,12 @@
         <textarea id="outEditNote" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
       </div>
       <div class="app-dialog-actions">
-        <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="module-button app-button app-button-primary" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
+        <button type="button" class="btn btn-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="btn btn-primary" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
       </div>
     </dialog>
 
-    <div class="card stock-out-mov-card app-card">
+    <div class="card stock-out-mov-card app-card erp-card">
       <h3 class="app-card-title" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
       <div class="mov-filters app-filterbar">
         <div class="form-field">
@@ -168,7 +168,7 @@
         </div>
         <button
           type="button"
-          class="module-button app-button app-button-secondary app-mov-refresh-btn"
+          class="btn btn-secondary app-mov-refresh-btn"
           id="btnMovRefresh"
           data-i18n="stock.in.movRefresh"
         >

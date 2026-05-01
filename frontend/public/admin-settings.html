@@ -31,7 +31,7 @@
             <option value="ru">Русский</option>
             <option value="en">English</option>
           </select>
-          <a data-topbar-persist="1" href="/admin.html" class="version-btn app-button app-button-secondary">Süper yönetim</a>
+          <a data-topbar-persist="1" href="/admin.html" class="btn btn-secondary">Süper yönetim</a>
         </div>
       </header>
       <div class="app-content">
@@ -39,7 +39,7 @@
 
     <p id="adminErr" class="login-error app-error-state admin-settings-err"></p>
 
-    <section class="card app-card admin-section admin-settings-settings-card">
+    <section class="card app-card erp-card admin-section admin-settings-settings-card">
       <div class="app-card-header section-header">
         <h3 class="app-card-title">Sistem ayarları</h3>
         <p class="app-muted-text">Varsayılan para birimi; örn. UZS.</p>
@@ -61,13 +61,13 @@
         </p>
       </div>
       <div class="app-form-actions">
-      <button type="button" class="module-button app-button app-button-primary" id="btnSaveSettings">Ayarları kaydet</button>
+      <button type="button" class="btn btn-primary" id="btnSaveSettings">Ayarları kaydet</button>
       </div>
       <p id="setMsg" class="admin-settings-success-msg"></p>
       </div>
     </section>
 
-    <section id="tunnelCard" class="card app-card admin-section admin-settings-tunnel-card" style="display:none">
+    <section id="tunnelCard" class="card app-card erp-card admin-section admin-settings-tunnel-card" style="display:none">
       <div class="app-card-header section-header">
         <h3 class="app-card-title" data-i18n="admin.tunnel.title">Geçici Online Erişim</h3>
         <p class="app-muted-text" data-i18n="admin.tunnel.desc">
@@ -88,17 +88,17 @@
           <label class="app-label" data-i18n="admin.tunnel.link">Oluşturulan link</label>
           <div class="admin-settings-link-row">
             <input id="tunnelUrl" type="text" readonly class="app-input" />
-            <button type="button" class="module-button app-button app-button-primary" id="btnTunnelCopy" data-i18n="admin.tunnel.copy">
+            <button type="button" class="btn btn-primary" id="btnTunnelCopy" data-i18n="admin.tunnel.copy">
               Linki kopyala
             </button>
           </div>
         </div>
       </div>
       <div class="app-form-actions admin-settings-tunnel-actions">
-        <button type="button" class="module-button app-button app-button-primary" id="btnTunnel1h" data-i18n="admin.tunnel.open1h">1 Saat Aç</button>
-        <button type="button" class="module-button app-button app-button-primary" id="btnTunnel4h" data-i18n="admin.tunnel.open4h">4 Saat Aç</button>
-        <button type="button" class="module-button app-button app-button-primary" id="btnTunnel8h" data-i18n="admin.tunnel.open8h">8 Saat Aç</button>
-        <button type="button" class="logout-btn app-button app-button-danger" id="btnTunnelStop" data-i18n="admin.tunnel.stop">Erişimi Kapat</button>
+        <button type="button" class="btn btn-primary" id="btnTunnel1h" data-i18n="admin.tunnel.open1h">1 Saat Aç</button>
+        <button type="button" class="btn btn-primary" id="btnTunnel4h" data-i18n="admin.tunnel.open4h">4 Saat Aç</button>
+        <button type="button" class="btn btn-primary" id="btnTunnel8h" data-i18n="admin.tunnel.open8h">8 Saat Aç</button>
+        <button type="button" class="btn btn-danger" id="btnTunnelStop" data-i18n="admin.tunnel.stop">Erişimi Kapat</button>
       </div>
       <p id="tunnelLastCheck" class="muted app-muted-text admin-settings-tunnel-meta">Son kontrol: -</p>
       <p id="tunnelMsg" class="login-error admin-settings-tunnel-err"></p>

@@ -6,7 +6,7 @@
   <title data-i18n="stock.warehouse.title">Depolar</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page stock-warehouses-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,18 +20,18 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="stock.warehouse.title">Depolar</h1>
         <p class="subtitle" data-i18n="stock.warehouse.sub">Fiziksel depo (üst) ve alt kategoriler — ürün kaydında zorunlu</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" aria-label="lang" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok</a>
+        <a data-topbar-persist="1" href="/stock.html" class="btn btn-secondary" data-i18n="nav.stock">Stok</a>
 </div>
       </header>
       <div class="app-content">
@@ -39,18 +39,18 @@
 
 
     <div class="wh-top-forms">
-      <div class="card app-card">
+      <div class="card app-card erp-card">
         <h3 class="app-card-title" data-i18n="stock.warehouse.addWh">Yeni depo (ana kategori)</h3>
         <form id="fWh" class="filters wh-form-row">
           <div class="form-field wh-form-field-grow">
             <label class="app-label" for="newWh" data-i18n="stock.warehouse.whName">Depo adı</label>
             <input type="text" id="newWh" class="input-upper app-input" maxlength="120" data-i18n-placeholder="stock.warehouse.whNamePh" />
           </div>
-          <button type="submit" class="module-button app-button app-button-primary" data-i18n="stock.warehouse.saveWh">Ekle</button>
+          <button type="submit" class="btn btn-primary" data-i18n="stock.warehouse.saveWh">Ekle</button>
         </form>
       </div>
 
-      <div class="card app-card">
+      <div class="card app-card erp-card">
         <h3 class="app-card-title" data-i18n="stock.warehouse.addSub">Alt kategori ekle</h3>
         <form id="fSub" class="product-form-grid stock-wh-fsub-grid">
           <div class="form-field">
@@ -61,12 +61,12 @@
             <label class="app-label" for="newSub" data-i18n="stock.warehouse.subName">Alt kategori adı</label>
             <input type="text" id="newSub" class="input-upper app-input" maxlength="120" data-i18n-placeholder="stock.warehouse.subNamePh" />
           </div>
-          <button type="submit" class="module-button app-button app-button-primary" data-i18n="stock.warehouse.saveSub">Ekle</button>
+          <button type="submit" class="btn btn-primary" data-i18n="stock.warehouse.saveSub">Ekle</button>
         </form>
       </div>
     </div>
 
-    <div class="card app-card">
+    <div class="card app-card erp-card">
       <h3 class="app-card-title" data-i18n="stock.warehouse.list">Liste</h3>
       <div id="whList" class="wh-list-slot"></div>
     </div>
@@ -165,7 +165,7 @@
                   escAttr(s.name) +
                   '" />' +
                   '<div class="wh-sub-actions">' +
-                  '<button type="button" class="secondary-btn btn-danger wh-sub-btn-del app-button app-button-danger" data-wh-id="' +
+                  '<button type="button" class="btn btn-danger btn-sm wh-sub-btn-del" data-wh-id="' +
                   w.id +
                   '" data-sub-id="' +
                   s.id +
@@ -186,8 +186,8 @@
               .join('') || '<li>—</li>'}
             </ul>
             <div class="wh-block-footer">
-            <button type="button" class="secondary-btn btn-edit wh-block-btn-edit app-button app-button-secondary">${esc(te)}</button>
-            <button type="button" class="module-button wh-block-btn-save app-button app-button-primary" hidden>${esc(ts)}</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-edit wh-block-btn-edit">${esc(te)}</button>
+            <button type="button" class="btn btn-primary btn-sm wh-block-btn-save" hidden>${esc(ts)}</button>
             </div>
             </div>`
         )

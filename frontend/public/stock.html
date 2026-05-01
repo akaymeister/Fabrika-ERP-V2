@@ -6,7 +6,7 @@
   <title>Stok — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page stock-hub-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,11 +20,11 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
           <h1 class="app-page-title" data-i18n="stock.hub.title">Stok yönetimi</h1>
           <p class="subtitle" data-i18n="stock.hub.sub">Ürün, marka, hareket ve depo temelli süreçler</p>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
           <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
@@ -45,36 +45,35 @@
     </section>
 
     <div class="dashboard-grid stock-hub-grid">
-      <a class="dashboard-card stock-hub-dash-link" href="/stock-brands.html">
+      <a class="dashboard-card stock-hub-dash-link erp-link-card" href="/stock-brands.html">
         <h3 class="app-card-title" data-i18n="nav.stock.brands">Markalar</h3>
         <p data-i18n="stock.hub.cardBrands">Marka ekle / listele</p>
       </a>
-      <a class="dashboard-card stock-hub-dash-link" href="/stock-warehouses.html">
+      <a class="dashboard-card stock-hub-dash-link erp-link-card" href="/stock-warehouses.html">
         <h3 class="app-card-title" data-i18n="nav.stock.warehouses">Depolar</h3>
         <p data-i18n="stock.hub.cardWarehouses">Ana depo + alt kategori</p>
       </a>
-      <a class="dashboard-card primary-card stock-hub-dash-link" href="/stock-products.html">
+      <a class="dashboard-card primary-card stock-hub-dash-link erp-link-card" href="/stock-products.html">
         <h3 class="app-card-title" data-i18n="nav.stock.products">Ürünler</h3>
         <p data-i18n="stock.hub.cardProducts">Kayıt, ad + ölçü; marka isteğe bağlı</p>
       </a>
       <a
-        class="dashboard-card stock-hub-dash-link"
+        class="dashboard-card stock-hub-dash-link erp-link-card is-hidden"
         id="stockPanelLinkIn"
         href="/stock-in.html"
-        style="display: none"
       >
         <h3 class="app-card-title" data-i18n="nav.stock.in">Stok giriş</h3>
         <p data-i18n="stock.hub.cardInSuper">Manuel giriş / düzeltme (süper yönetici)</p>
       </a>
-      <a class="dashboard-card stock-hub-dash-link" href="/stock-out.html">
+      <a class="dashboard-card stock-hub-dash-link erp-link-card" href="/stock-out.html">
         <h3 class="app-card-title" data-i18n="nav.stock.out">Stok çıkış</h3>
         <p data-i18n="stock.hub.cardOut">Çıkış; yetersiz stok kontrolü</p>
       </a>
-      <a class="dashboard-card stock-hub-dash-link" href="/goods-receipt.html">
+      <a class="dashboard-card stock-hub-dash-link erp-link-card" href="/goods-receipt.html">
         <h3 class="app-card-title" data-i18n="nav.stock.receipt">Mal kabul</h3>
         <p data-i18n="stock.hub.cardReceipt">Siparişe göre kabul, depo girişi</p>
       </a>
-      <a class="dashboard-card stock-hub-dash-link" href="/stock-movements.html">
+      <a class="dashboard-card stock-hub-dash-link erp-link-card" href="/stock-movements.html">
         <h3 class="app-card-title" data-i18n="nav.stock.mov">Hareketler</h3>
         <p data-i18n="stock.hub.cardMov">Tüm stok hareketleri</p>
       </a>

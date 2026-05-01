@@ -39,9 +39,8 @@
     .hr-month-table td:first-child { width:50%; background:#f8fafc; font-weight:600; }
     .hr-month-table .x-total { background:#f8fafc; }
     .hr-def-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .hr-settings-row .version-btn,
-    .hr-settings-row .logout-btn,
-    .hr-settings-head .version-btn {
+    .hr-settings-row .btn,
+    .hr-settings-head .btn {
       min-width: 74px;
       height: 30px;
       padding: 0 10px;
@@ -61,7 +60,7 @@
     @media (max-width: 1200px) { .hr-layout-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page hr-settings-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -75,25 +74,25 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="hr.settings.title">İK Ayarlar</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="hr.settings.title">İK Ayarlar</h1>
         <p class="subtitle" data-i18n="hr.settings.sub">Puantaj parametreleri ve tanımlar</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="btn btn-secondary" data-i18n="nav.hr.hub">İK</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
 
-    <section class="card hr-settings-card">
+    <section class="card erp-card hr-settings-card">
       <h3 data-i18n="hr.settings.workSchedule">Çalışma Programı</h3>
       <div class="hr-layout-grid">
         <div class="hr-table-wrap">
@@ -198,7 +197,7 @@
         </div>
 
         <aside class="hr-days-card">
-          <h4 style="margin:0" data-i18n="hr.settings.weeklyDays">Haftalık çalışma günleri</h4>
+          <h4 class="hr-settings-days-title" data-i18n="hr.settings.weeklyDays">Haftalık çalışma günleri</h4>
           <div class="hr-days-list">
             <label><input id="wd_mon" type="checkbox" /><span data-i18n="hr.settings.day.mon">Pazartesi</span></label>
             <label><input id="wd_tue" type="checkbox" /><span data-i18n="hr.settings.day.tue">Salı</span></label>
@@ -208,31 +207,31 @@
             <label><input id="wd_sat" type="checkbox" /><span data-i18n="hr.settings.day.sat">Cumartesi</span></label>
             <label><input id="wd_sun" type="checkbox" /><span data-i18n="hr.settings.day.sun">Pazar</span></label>
           </div>
-          <div class="hr-days-list" style="margin-top:8px">
+          <div class="hr-days-list hr-days-list-gap">
             <label><input id="sunday_workable" type="checkbox" /><span data-i18n="hr.settings.sundayWorkable">Pazar günü çalışılabilir</span></label>
             <label><input id="sunday_paid" type="checkbox" /><span data-i18n="hr.settings.sundayPaid">Pazar günü ücretli</span></label>
           </div>
         </aside>
       </div>
       <div class="hr-settings-actions">
-        <button id="btnSaveSettings" class="version-btn" data-i18n="common.save">Kaydet</button>
+        <button id="btnSaveSettings" class="btn btn-primary" data-i18n="common.save">Kaydet</button>
       </div>
       <p id="settingsMsg" class="api-msg"></p>
     </section>
 
     <div class="hr-def-grid">
-      <section class="card hr-settings-card">
+      <section class="card erp-card hr-settings-card">
         <div class="hr-settings-head">
           <h3 data-i18n="hr.settings.workTypes">Is Tipleri</h3>
-          <button id="btnAddWorkType" class="version-btn" data-i18n="common.add">Ekle</button>
+          <button id="btnAddWorkType" class="btn btn-primary btn-sm" data-i18n="common.add">Ekle</button>
         </div>
         <div id="workTypesList"></div>
       </section>
 
-      <section class="card hr-settings-card">
+      <section class="card erp-card hr-settings-card">
         <div class="hr-settings-head">
           <h3 data-i18n="hr.settings.workStatuses">Çalışma Durumları</h3>
-          <button id="btnAddWorkStatus" class="version-btn" data-i18n="common.add">Ekle</button>
+          <button id="btnAddWorkStatus" class="btn btn-primary btn-sm" data-i18n="common.add">Ekle</button>
         </div>
         <div id="workStatusesList"></div>
       </section>

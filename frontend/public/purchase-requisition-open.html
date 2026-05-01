@@ -6,7 +6,7 @@
   <title data-i18n="purch.open.title">Satınalma siparişi aç</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3 pur-req-open-page">
+<body class="app-shell app-master-page app-ui-v3 erp-page pur-req-open-page">
   <div class="container pur-wide app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,18 +20,18 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="purch.open.title">Satınalma siparişi aç</h1>
         <p class="subtitle" data-i18n="purch.open.sub">Proje ve satırlar; taslak veya onaya gönderim</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" data-i18n-placeholder="lang.label" class="app-select app-topbar-lang" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub">Satınalma</a>
+        <a data-topbar-persist="1" href="/purchasing.html" class="btn btn-secondary" data-i18n="nav.purch.hub">Satınalma</a>
 </div>
       </header>
       <div class="app-content">
@@ -39,7 +39,7 @@
 
     <p id="msg" class="api-msg purch-msg-api" role="status"></p>
 
-    <section class="card app-card">
+    <section class="card app-card erp-card">
       <h3 class="app-card-title" data-i18n="purch.open.formH">Talep / sipariş satırları</h3>
       <div class="pur-req-top">
         <div>
@@ -81,9 +81,9 @@
       </div>
       <div class="pur-req-btns">
         <div class="pur-req-btns-row" role="group" aria-label="Talep eylemleri">
-          <button type="button" id="addLine" class="version-btn app-button app-button-secondary" data-i18n="purch.req.addLine">Satır ekle</button>
-          <button type="button" id="submitReq" class="logout-btn app-button app-button-primary" data-i18n="purch.req.submit">Talep oluştur</button>
-          <button type="button" id="saveDraft" class="version-btn app-button app-button-secondary" data-i18n="purch.req.saveDraft">Taslak kaydet</button>
+          <button type="button" id="addLine" class="btn btn-secondary" data-i18n="purch.req.addLine">Satır ekle</button>
+          <button type="button" id="submitReq" class="btn btn-primary" data-i18n="purch.req.submit">Talep oluştur</button>
+          <button type="button" id="saveDraft" class="btn btn-secondary" data-i18n="purch.req.saveDraft">Taslak kaydet</button>
         </div>
       </div>
     </section>

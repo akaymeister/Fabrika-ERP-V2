@@ -6,7 +6,7 @@
   <title data-i18n="admin.pageTitle">Süper yönetim — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3" data-admin-nav="home">
+<body class="app-shell app-master-page app-ui-v3 erp-page admin-hub-page" data-admin-nav="home">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,12 +20,12 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="admin.title">Süper yönetim</h1>
-        <p class="subtitle">Kullanici, yetki ve sistem ayari yonetim merkezi</p>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="admin.title">Süper yönetim</h1>
+        <p class="subtitle app-muted-text">Kullanıcı, yetki ve sistem ayarı yönetim merkezi</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -36,9 +36,9 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+    <p id="adminErr" class="login-error app-error-state admin-hub-err is-hidden"></p>
 
-    <section class="hero-panel premium-hero" style="margin-bottom:24px">
+    <section class="hero-panel premium-hero admin-hub-hero">
       <div class="hero-text">
         <span class="hero-mini-badge">Yonetim</span>
         <h2>Super yonetim merkezi</h2>
@@ -46,22 +46,22 @@
       </div>
     </section>
 
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
-      <a class="dashboard-card" href="/admin-user-new.html" style="text-decoration:none;color:inherit">
-        <h3>Yeni kullanici ekle</h3>
-        <p>Yeni hesap acma ve ilk rol atama</p>
+    <div class="dashboard-grid admin-hub-grid">
+      <a class="dashboard-card erp-link-card" href="/admin-user-new.html">
+        <h3>Yeni kullanıcı ekle</h3>
+        <p>Yeni hesap açma ve ilk rol atama</p>
       </a>
-      <a class="dashboard-card" href="/admin-users.html" style="text-decoration:none;color:inherit">
-        <h3>Kullanicilar</h3>
-        <p>Rol degistirme, aktif/pasif ve sifre sifirlama</p>
+      <a class="dashboard-card erp-link-card" href="/admin-users.html">
+        <h3>Kullanıcılar</h3>
+        <p>Rol değiştirme, aktif/pasif ve şifre sıfırlama</p>
       </a>
-      <a class="dashboard-card" href="/admin-permissions.html" style="text-decoration:none;color:inherit">
+      <a class="dashboard-card erp-link-card" href="/admin-permissions.html">
         <h3>Rol yetkileri / ek yetkiler</h3>
-        <p>Rol bazli izinler ve kullaniciya ozel ek izinler</p>
+        <p>Rol bazlı izinler ve kullanıcıya özel ek izinler</p>
       </a>
-      <a class="dashboard-card" href="/admin-settings.html" style="text-decoration:none;color:inherit">
-        <h3>Sistem ayarlari</h3>
-        <p>Varsayilan para, dil ve proje kod ayarlari</p>
+      <a class="dashboard-card erp-link-card" href="/admin-settings.html">
+        <h3>Sistem ayarları</h3>
+        <p>Varsayılan para, dil ve proje kod ayarları</p>
       </a>
     </div>
       

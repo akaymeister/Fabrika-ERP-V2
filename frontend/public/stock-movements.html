@@ -6,7 +6,7 @@
   <title data-i18n="stock.mov.title">Stok hareketleri</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page stock-movements-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,30 +20,30 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="stock.mov.title">Stok hareketleri</h1>
         <p class="subtitle" data-i18n="stock.mov.sub">Giriş ve çıkış kayıtları</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/stock.html" class="version-btn" data-i18n="nav.stock">Stok paneli</a>
+        <a data-topbar-persist="1" href="/stock.html" class="btn btn-secondary" data-i18n="nav.stock">Stok paneli</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <div class="card app-card">
+    <div class="card app-card erp-card">
       <div class="filters app-filterbar stock-mov-filters">
         <div class="form-field stock-mov-filter-field">
           <label class="app-label" for="filterP" data-i18n="stock.mov.filterP">Ürün ID (opsiyonel)</label>
           <input type="number" id="filterP" min="1" step="1" class="app-input" data-i18n-placeholder="stock.mov.filterAll" />
         </div>
-        <button type="button" class="module-button app-button app-button-secondary stock-mov-refresh-btn" id="btnF" data-i18n="stock.mov.refresh">Yenile</button>
+        <button type="button" class="btn btn-secondary stock-mov-refresh-btn" id="btnF" data-i18n="stock.mov.refresh">Yenile</button>
       </div>
       <div class="app-table-scroll stock-mov-table-wrap">
         <table class="app-table">

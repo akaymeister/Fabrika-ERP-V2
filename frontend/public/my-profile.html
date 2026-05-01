@@ -6,7 +6,7 @@
   <title data-i18n="me.title">Benim Hesabım</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page my-profile-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,12 +20,12 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-          <h1 data-i18n="me.title">Benim Hesabım</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title erp-page-title" data-i18n="me.title">Benim Hesabım</h1>
           <p class="subtitle" data-i18n="me.subtitle">Kişisel bilgileriniz, çalışma bilgileriniz ve hesap ayarlarınız.</p>
         </div>
-        <div class="topbar-right">
-          <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
             <option value="ru">Русский</option>
@@ -35,50 +35,50 @@
       </header>
       <div class="app-content">
         <main class="app-master-main">
-    <p id="profileMsg" class="login-error" style="display:none"></p>
-    <p id="mustChangeBanner" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#fef3c7;color:#92400e"></p>
+    <p id="profileMsg" class="login-error is-hidden"></p>
+    <p id="mustChangeBanner" class="my-profile-must-change-banner is-hidden"></p>
 
-    <section class="card my-prof-card">
+    <section class="card erp-card my-prof-card">
       <h3 data-i18n="me.profileSummary">Profil Özeti</h3>
       <div class="my-prof-summary">
         <div id="myAvatar" class="my-prof-avatar">U</div>
         <div class="my-prof-grid" id="summaryGrid"></div>
       </div>
-      <p id="unlinkedInfo" class="muted" style="display:none" data-i18n="me.unlinked">
+      <p id="unlinkedInfo" class="muted is-hidden" data-i18n="me.unlinked">
         Bu kullanıcı henüz bir personel kartına bağlanmamış.
       </p>
     </section>
 
-    <section class="card my-prof-card" id="change-password">
+    <section class="card erp-card my-prof-card" id="change-password">
       <h3 data-i18n="me.accountInfo">Hesap Bilgileri</h3>
       <div class="my-prof-grid" id="accountGrid"></div>
       <div class="my-pass-grid">
         <input id="curPass" type="password" data-i18n-placeholder="me.currentPassword" placeholder="Mevcut şifre" />
         <input id="newPass" type="password" data-i18n-placeholder="me.newPassword" placeholder="Yeni şifre" />
         <input id="confirmPass" type="password" data-i18n-placeholder="me.confirmPassword" placeholder="Yeni şifre tekrar" />
-        <button id="btnMePass" class="version-btn" type="button" data-i18n="me.changePassword">Şifre Değiştir</button>
+        <button id="btnMePass" class="btn btn-primary" type="button" data-i18n="me.changePassword">Şifre Değiştir</button>
       </div>
       <p id="passMsg" class="api-msg"></p>
     </section>
 
-    <section class="card my-prof-card">
+    <section class="card erp-card my-prof-card">
       <h3 data-i18n="me.salary">Maaş Bilgilerim</h3>
       <div class="my-prof-grid" id="salaryGrid"></div>
     </section>
 
-    <section class="card my-prof-card">
+    <section class="card erp-card my-prof-card">
       <h3 data-i18n="me.attendance">Puantaj / Çalışma Bilgilerim</h3>
       <div class="my-prof-grid" id="attendanceGrid"></div>
       <p class="muted" data-i18n="me.attendancePlaceholder">Bu alan ileride puantaj modülü ile otomatik dolacaktır.</p>
     </section>
 
-    <section class="card my-prof-card">
+    <section class="card erp-card my-prof-card">
       <h3 data-i18n="me.advance">Avans / Ödeme Bilgilerim</h3>
       <div class="my-prof-grid" id="advanceGrid"></div>
       <p class="muted" data-i18n="me.advancePlaceholder">Bu alan taslak olarak hazırlanmıştır.</p>
     </section>
 
-    <section class="card my-prof-card">
+    <section class="card erp-card my-prof-card">
       <h3 data-i18n="me.notifications">Bildirimler</h3>
       <p class="muted" data-i18n="me.noNotifications">Henüz bildiriminiz yok.</p>
     </section>

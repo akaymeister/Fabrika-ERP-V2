@@ -6,7 +6,7 @@
   <title data-i18n="purch.hub.title">Satınalma yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page purchasing-hub-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,11 +20,11 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
         <h1 class="app-page-title" data-i18n="purch.hub.title">Satınalma yönetimi</h1>
         <p class="subtitle" data-i18n="purch.hub.sub">Dört adım: talep → onay → sipariş → mal kabul (stok)</p>
       </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
         <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
@@ -60,19 +60,19 @@
     </section>
 
     <div class="dashboard-grid purch-hub-cards purch-hub-grid">
-      <a class="dashboard-card primary-card purch-hub-dash-link" href="/purchase-requisition-open.html" id="linkOpenReq">
+      <a class="dashboard-card primary-card purch-hub-dash-link erp-link-card" href="/purchase-requisition-open.html" id="linkOpenReq">
         <h3 class="app-card-title" data-i18n="purch.hub.step1">Talep aç</h3>
         <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak; fiyat yok</p>
       </a>
-      <a class="dashboard-card purch-hub-dash-link" href="/purchase-requests.html" id="linkReq">
+      <a class="dashboard-card purch-hub-dash-link erp-link-card" href="/purchase-requests.html" id="linkReq">
         <h3 class="app-card-title" data-i18n="purch.hub.step2">Talepler & onay</h3>
         <p data-i18n="purch.hub.cardReq">Liste, detay, onay / red / revizyon</p>
       </a>
-      <a class="dashboard-card purch-hub-dash-link" href="/purchase-processing.html" id="linkProc">
+      <a class="dashboard-card purch-hub-dash-link erp-link-card" href="/purchase-processing.html" id="linkProc">
         <h3 class="app-card-title" data-i18n="purch.hub.step3">Satınalma işleme</h3>
         <p data-i18n="purch.hub.cardProc">Sipariş, fiyat, yazdır; stok artmaz</p>
       </a>
-      <a class="dashboard-card purch-hub-dash-link" href="/suppliers.html" id="linkSup">
+      <a class="dashboard-card purch-hub-dash-link erp-link-card" href="/suppliers.html" id="linkSup">
         <h3 class="app-card-title" data-i18n="nav.purch.suppliers">Tedarikçiler</h3>
         <p data-i18n="purch.hub.cardSup">Tedarikçi ekle, liste; ileride cari işlemler</p>
       </a>
