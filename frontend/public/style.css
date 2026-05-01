@@ -1941,72 +1941,241 @@ body.nav-ready .topbar-right {
   }
 }
 
-.hr-settings-card {
+body.app-ui-v3.hr-settings-page .hr-settings-card {
   margin-top: 12px;
 }
-.hr-settings-grid {
+
+body.app-ui-v3.hr-settings-page .hr-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr) 220px;
+  gap: 12px;
+  align-items: start;
+}
+
+body.app-ui-v3.hr-settings-page .hr-table-wrap {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table th,
+body.app-ui-v3.hr-settings-page .hr-program-table td {
+  border: 1px solid #dbe1ea;
+  padding: 4px 8px;
+  font-size: var(--font-size-ui);
+  vertical-align: middle;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table thead th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table td:first-child {
+  background: #f8fafc;
+  font-weight: 600;
+  width: 32%;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table .x-time {
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-program-table .x-total {
+  width: 100%;
+  background: #f8fafc;
+  color: #0f172a;
+  min-height: 22px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-total-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-formula {
+  display: none;
+}
+
+body.app-ui-v3.hr-settings-page .hr-formula-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+body.app-ui-v3.hr-settings-page .hr-days-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+body.app-ui-v3.hr-settings-page .hr-days-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-days-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-ui);
+}
+
+body.app-ui-v3.hr-settings-page .hr-month-block {
+  max-width: 100%;
+}
+
+body.app-ui-v3.hr-settings-page .hr-month-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+body.app-ui-v3.hr-settings-page .hr-month-table th,
+body.app-ui-v3.hr-settings-page .hr-month-table td {
+  border: 1px solid #dbe1ea;
+  padding: 4px 8px;
+  font-size: var(--font-size-ui);
+}
+
+body.app-ui-v3.hr-settings-page .hr-month-table td:first-child {
+  width: 50%;
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+body.app-ui-v3.hr-settings-page .hr-month-table .x-total {
+  background: #f8fafc;
+}
+
+body.app-ui-v3.hr-settings-page .hr-def-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
-.hr-settings-grid label {
+
+body.app-ui-v3.hr-settings-page .hr-settings-grid label {
   display: block;
   margin-bottom: 6px;
   font-size: 12px;
   color: #64748b;
 }
-.hr-settings-grid input {
+
+body.app-ui-v3.hr-settings-page .hr-settings-grid input {
   width: 100%;
 }
-.hr-settings-actions {
+
+body.app-ui-v3.hr-settings-page .hr-settings-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
 }
-.hr-settings-actions .version-btn,
-.hr-settings-head .version-btn,
-.hr-settings-row .version-btn,
-.hr-settings-row .logout-btn {
+
+body.app-ui-v3.hr-settings-page .hr-settings-row .btn,
+body.app-ui-v3.hr-settings-page .hr-settings-head .btn {
   width: auto;
-  min-width: 88px;
-  height: 34px;
-  padding: 0 12px;
+  min-width: 74px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: 8px;
   font-size: 12px;
 }
-.hr-settings-head {
+
+body.app-ui-v3.hr-settings-page .hr-settings-row .x-save,
+body.app-ui-v3.hr-settings-page #btnSaveSettings {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
 }
-.hr-settings-row {
+
+body.app-ui-v3.hr-settings-page .hr-settings-row {
   display: grid;
   grid-template-columns: 1fr 1.4fr 120px 130px 110px 110px;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
 }
-.hr-settings-toggle {
+
+body.app-ui-v3.hr-settings-page .hr-settings-row.type-row {
+  grid-template-columns: 1.6fr auto auto auto;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-row.status-row {
+  grid-template-columns: 1.4fr 0.9fr auto auto auto;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-row .x-name,
+body.app-ui-v3.hr-settings-page .hr-settings-row .x-mult {
+  min-height: 30px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-settings-toggle {
   display: flex;
   gap: 6px;
   align-items: center;
   color: #334155;
   font-size: 13px;
 }
+
+@media (max-width: 1200px) {
+  body.app-ui-v3.hr-settings-page .hr-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 1100px) {
-  .hr-settings-grid {
+  body.app-ui-v3.hr-settings-page .hr-settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .hr-settings-row {
+  body.app-ui-v3.hr-settings-page .hr-settings-row {
     grid-template-columns: 1fr 1fr 100px 110px 100px 100px;
   }
 }
-@media (max-width: 760px) {
-  .hr-settings-grid {
+
+@media (max-width: 980px) {
+  body.app-ui-v3.hr-settings-page .hr-def-grid {
     grid-template-columns: 1fr;
   }
-  .hr-settings-row {
+}
+
+@media (max-width: 760px) {
+  body.app-ui-v3.hr-settings-page .hr-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  body.app-ui-v3.hr-settings-page .hr-settings-row {
     grid-template-columns: 1fr;
   }
 }

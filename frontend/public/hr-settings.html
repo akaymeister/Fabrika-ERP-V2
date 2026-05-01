@@ -5,60 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="hr.settings.title">İK Ayarlar</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .hr-layout-grid { display:grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr) 220px; gap: 12px; align-items:start; }
-    .hr-table-wrap { border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#fff; }
-    .hr-program-table { width:100%; border-collapse: collapse; table-layout: fixed; }
-    .hr-program-table th, .hr-program-table td { border:1px solid #dbe1ea; padding:4px 8px; font-size:var(--font-size-ui); vertical-align:middle; }
-    .hr-program-table thead th { background:#f8fafc; font-weight:700; }
-    .hr-program-table td:first-child { background:#f8fafc; font-weight:600; width: 32%; }
-    .hr-program-table .x-time { width:100%; min-width:0; min-height:22px; }
-    .hr-program-table .x-total { width:100%; background:#f8fafc; color:#0f172a; min-height:22px; }
-    .hr-total-cell { display:flex; align-items:center; gap:6px; }
-    .hr-formula { display:none; }
-    .hr-formula-btn {
-      width:20px;
-      height:20px;
-      border-radius:999px;
-      border:1px solid #cbd5e1;
-      background:#f8fafc;
-      color:#475569;
-      font-size:12px;
-      line-height:1;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-    }
-    .hr-days-card { border:1px solid #cbd5e1; border-radius:8px; padding:10px; background:#f8fafc; }
-    .hr-days-list { display:grid; gap:6px; margin-top:6px; }
-    .hr-days-list label { display:flex; align-items:center; gap:8px; font-size:var(--font-size-ui); }
-    .hr-month-block { max-width:100%; }
-    .hr-month-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-    .hr-month-table th, .hr-month-table td { border:1px solid #dbe1ea; padding:4px 8px; font-size:var(--font-size-ui); }
-    .hr-month-table td:first-child { width:50%; background:#f8fafc; font-weight:600; }
-    .hr-month-table .x-total { background:#f8fafc; }
-    .hr-def-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .hr-settings-row .btn,
-    .hr-settings-head .btn {
-      min-width: 74px;
-      height: 30px;
-      padding: 0 10px;
-      border-radius: 8px;
-      font-size: 12px;
-    }
-    .hr-settings-row .x-save,
-    #btnSaveSettings {
-      background: #1d4ed8;
-      color: #fff;
-    }
-    .hr-settings-row.type-row { grid-template-columns: 1.6fr auto auto auto; }
-    .hr-settings-row.status-row { grid-template-columns: 1.4fr 0.9fr auto auto auto; }
-    .hr-settings-row .x-name,
-    .hr-settings-row .x-mult { min-height: 30px; }
-    @media (max-width: 980px) { .hr-def-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 1200px) { .hr-layout-grid { grid-template-columns: 1fr; } }
-  </style>
 </head>
 <body class="app-shell app-master-page app-ui-v3 erp-page hr-settings-page">
   <div class="container app-layout-v3">
@@ -183,7 +129,7 @@
             </tbody>
           </table>
           </div>
-          <div style="display:none">
+          <div class="is-hidden">
             <input id="daily_start_time" type="time" />
             <input id="daily_end_time" type="time" />
             <input id="break_1_minutes" type="number" />
