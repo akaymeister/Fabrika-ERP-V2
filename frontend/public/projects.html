@@ -6,7 +6,7 @@
   <title data-i18n="project.hub.title">Proje yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page projects-hub-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,12 +20,12 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="project.hub.title">Proje yönetimi</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="project.hub.title">Proje yönetimi</h1>
         <p class="subtitle" data-i18n="project.hub.sub">Yeni proje, kod ve ileride maliyet / teklif</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -37,7 +37,7 @@
         <main class="app-master-main">
 
 
-    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+    <section class="hero-panel premium-hero projects-hub-hero">
       <div class="hero-text">
         <span class="hero-mini-badge" data-i18n="project.hub.badge">Proje</span>
         <h2 data-i18n="project.hub.panel">Proje modülü</h2>
@@ -45,16 +45,16 @@
       </div>
     </section>
 
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
-      <a class="dashboard-card primary-card" href="/project-list.html" style="text-decoration: none; color: inherit">
+    <div class="dashboard-grid projects-hub-grid">
+      <a class="dashboard-card primary-card erp-link-card" href="/project-list.html">
         <h3 data-i18n="nav.project.add">Proje ekle</h3>
         <p data-i18n="project.hub.cardAdd">Yeni proje; otomatik kod, liste, düzenle</p>
       </a>
-      <a class="dashboard-card" href="/project-costs.html" style="text-decoration: none; color: inherit">
+      <a class="dashboard-card erp-link-card" href="/project-costs.html">
         <h3 data-i18n="nav.project.costs">Proje maliyet kontrolü</h3>
         <p data-i18n="project.hub.cardCosts">Bütçe ve gerçekleşen (yakında)</p>
       </a>
-      <a class="dashboard-card" href="/project-quotes.html" style="text-decoration: none; color: inherit">
+      <a class="dashboard-card erp-link-card" href="/project-quotes.html">
         <h3 data-i18n="nav.project.quotes">Proje fiyat teklifleri</h3>
         <p data-i18n="project.hub.cardQuotes">Teklifler ve onay (yakında)</p>
       </a>

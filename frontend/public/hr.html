@@ -6,7 +6,7 @@
   <title data-i18n="hr.hub.title">İK Dashboard — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page hr-hub-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,12 +20,12 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-          <h1 data-i18n="hr.hub.title">İK Dashboard</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title erp-page-title" data-i18n="hr.hub.title">İK Dashboard</h1>
           <p class="subtitle" data-i18n="hr.hub.sub">Faz 1A iskelet ekran</p>
         </div>
-        <div class="topbar-right">
-          <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
             <option value="ru">Русский</option>
@@ -36,14 +36,14 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <div class="section-header" style="margin-bottom: 4px">
-      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
-        <h3 data-i18n="hr.hub.kpiSectionTitle" style="margin: 0">Bugünkü puantaj özeti</h3>
-        <span id="hrHubKpiLocked" class="module-tag plan-tag" style="display: none; vertical-align: middle" data-i18n="hr.hub.kpiMonthLocked">Ay kilitli</span>
+    <div class="section-header hr-hub-kpi-header">
+      <div class="hr-hub-kpi-title-row">
+        <h3 class="hr-hub-kpi-title" data-i18n="hr.hub.kpiSectionTitle">Bugünkü puantaj özeti</h3>
+        <span id="hrHubKpiLocked" class="module-tag plan-tag is-hidden hr-hub-kpi-locked" data-i18n="hr.hub.kpiMonthLocked">Ay kilitli</span>
       </div>
-      <p id="hrHubKpiErr" class="subtitle" style="display: none; color: #b91c1c; margin-top: 6px" data-i18n="hr.hub.kpiLoadError">Özet yüklenemedi.</p>
+      <p id="hrHubKpiErr" class="subtitle hr-hub-kpi-err is-hidden" data-i18n="hr.hub.kpiLoadError">Özet yüklenemedi.</p>
     </div>
-    <div class="summary-section" id="hrHubKpiRow" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px" aria-live="polite">
+    <div class="summary-section hr-hub-kpi-grid" id="hrHubKpiRow" aria-live="polite">
       <div class="summary-card">
         <span class="summary-label" data-i18n="hr.hub.kpiTotal">Toplam çalışan</span>
         <strong id="hrHubKpiTotal">—</strong>
@@ -58,19 +58,19 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card erp-card">
       <h2 data-i18n="hr.hub.moduleTitle">İK Modülü</h2>
       <p data-i18n="hr.hub.moduleDesc">Bu sayfa Faz 1A iskeletidir. Tam ekran içeriği sonraki adımlarda doldurulacaktır.</p>
-      <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
-        <a class="dashboard-card" href="/hr-employees.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.employees">Personeller</h3></a>
-        <a class="dashboard-card" href="/hr-employee-form.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.employeeForm">Personel Kartı</h3></a>
-        <a class="dashboard-card" href="/hr-structure.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.structure">Departman / Pozisyon</h3></a>
-        <a class="dashboard-card" href="/hr-attendance.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceDaily">Günlük puantaj</h3></a>
-        <a class="dashboard-card" href="/hr-attendance-monthly.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
-        <a class="dashboard-card" href="/hr-attendance-locks.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
-        <a class="dashboard-card" href="/hr-settings.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
-        <a class="dashboard-card" href="/hr-compensation.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.compensation">Ücret değerlendirme</h3></a>
-        <a class="dashboard-card" href="/hr-payroll.html" style="text-decoration:none;color:inherit"><h3 data-i18n="nav.hr.payroll">Bordro yönetimi</h3></a>
+      <div class="dashboard-grid hr-hub-grid">
+        <a class="dashboard-card erp-link-card" href="/hr-employees.html"><h3 data-i18n="nav.hr.employees">Personeller</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-employee-form.html"><h3 data-i18n="nav.hr.employeeForm">Personel Kartı</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-structure.html"><h3 data-i18n="nav.hr.structure">Departman / Pozisyon</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance.html"><h3 data-i18n="nav.hr.attendanceDaily">Günlük puantaj</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance-monthly.html"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance-locks.html"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-settings.html"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-compensation.html"><h3 data-i18n="nav.hr.compensation">Ücret değerlendirme</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-payroll.html"><h3 data-i18n="nav.hr.payroll">Bordro yönetimi</h3></a>
       </div>
     </div>
         </main>

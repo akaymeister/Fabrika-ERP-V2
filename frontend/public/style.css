@@ -7019,3 +7019,78 @@ body.app-ui-v3.hr-structure-page .hr-structure-inner {
 body.app-ui-v3.hr-structure-page .hr-structure-table-wrap {
   margin-top: 0;
 }
+
+/* --- V2.5 UI Stabilization (wave 2: projects / hr hub / admin user new) --- */
+body.app-ui-v3 .erp-link-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+body.app-ui-v3.projects-hub-page .projects-hub-hero {
+  margin-bottom: 24px;
+}
+
+body.app-ui-v3.projects-hub-page .projects-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-header {
+  margin-bottom: 4px;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-title {
+  margin: 0;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-locked {
+  vertical-align: middle;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-err {
+  color: #b91c1c;
+  margin-top: 6px;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-kpi-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+body.app-ui-v3.hr-hub-page .hr-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-err {
+  margin: 0 0 12px;
+  color: #b91c1c;
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-card {
+  max-width: 680px;
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-form {
+  grid-template-columns: 1fr;
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-account-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-account-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+body.app-ui-v3.admin-user-new-page .admin-user-new-account-option {
+  margin: 0;
+}

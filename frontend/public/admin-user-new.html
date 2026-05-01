@@ -6,7 +6,7 @@
   <title data-i18n="admin.newUserPageTitle">—</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3" data-admin-nav="new-user">
+<body class="app-shell app-master-page app-ui-v3 erp-page admin-user-new-page" data-admin-nav="new-user">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,31 +20,31 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="admin.newUserPageHeading">—</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="admin.newUserPageHeading">—</h1>
         <p class="subtitle" data-i18n="admin.newUserPageSub">—</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/admin.html" class="version-btn" data-i18n="nav.admin">—</a>
+        <a data-topbar-persist="1" href="/admin.html" class="btn btn-secondary" data-i18n="nav.admin">—</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+    <p id="adminErr" class="login-error admin-user-new-err is-hidden"></p>
 
-    <section class="card admin-section" style="max-width:680px">
+    <section class="card admin-section erp-card admin-user-new-card">
       <div class="section-header">
         <h3 data-i18n="admin.newUser">—</h3>
         <p data-i18n="admin.newUserSub">—</p>
       </div>
-      <form id="formNewUser" class="product-form-grid" style="grid-template-columns: 1fr">
+      <form id="formNewUser" class="product-form-grid erp-form erp-form-grid admin-user-new-form">
         <div class="form-field">
           <label for="newUsername" data-i18n="admin.usernameField">—</label>
           <input type="text" id="newUsername" name="username" required autocomplete="off" />
@@ -58,13 +58,13 @@
           <input type="email" id="newEmail" name="email" />
         </div>
         <div class="form-field">
-          <div data-i18n="admin.newUser.accountKind" style="font-weight:600;margin-bottom:8px">—</div>
-          <div style="display:flex;flex-wrap:wrap;gap:12px 20px">
-            <label class="perm-item" style="margin:0">
+          <div class="admin-user-new-account-label" data-i18n="admin.newUser.accountKind">—</div>
+          <div class="admin-user-new-account-options">
+            <label class="perm-item admin-user-new-account-option">
               <input type="radio" name="newAccountKind" value="system" checked />
               <span data-i18n="admin.newUser.accountKindSystem">—</span>
             </label>
-            <label class="perm-item" style="margin:0">
+            <label class="perm-item admin-user-new-account-option">
               <input type="radio" name="newAccountKind" value="operational" />
               <span data-i18n="admin.newUser.accountKindOperational">—</span>
             </label>
@@ -82,8 +82,8 @@
           <label for="newPass" data-i18n="admin.user.password">—</label>
           <input type="password" id="newPass" name="password" required minlength="4" autocomplete="new-password" />
         </div>
-        <div class="form-field form-actions">
-          <button type="submit" class="module-button" style="width:auto;padding:10px 16px" data-i18n="admin.create">—</button>
+        <div class="form-field form-actions erp-form-actions">
+          <button type="submit" class="btn btn-primary" data-i18n="admin.create">—</button>
         </div>
       </form>
     </section>
