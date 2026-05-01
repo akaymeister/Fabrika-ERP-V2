@@ -1095,6 +1095,7 @@
   "hr.payroll.sub": "Модуль расчётных листов",
   "hr.payroll.placeholder": "Модуль расчётных листов в подготовке. Скоро здесь появятся операции.",
   "common.save": "Sohranit",
+  "common.clear": "Очистить",
   "common.saved": "Sohraneno",
   "common.add": "Dobavit",
   "common.delete": "Udalit",

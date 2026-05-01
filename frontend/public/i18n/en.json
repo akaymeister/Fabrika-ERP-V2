@@ -1215,6 +1215,7 @@
   "hr.payroll.sub": "Payroll module",
   "hr.payroll.placeholder": "The payroll module is in preparation. Payroll operations will appear here soon.",
   "common.save": "Save",
+  "common.clear": "Clear",
   "common.saved": "Saved",
   "common.add": "Add",
   "common.delete": "Delete",

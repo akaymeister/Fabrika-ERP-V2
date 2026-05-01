@@ -1217,6 +1217,7 @@
   "hr.payroll.sub": "Bordro modülü",
   "hr.payroll.placeholder": "Bordro modülü hazırlık aşamasındadır. Yakında bu alanda bordro işlemleri yer alacaktır.",
   "common.save": "Kaydet",
+  "common.clear": "Temizle",
   "common.saved": "Kaydedildi",
   "common.add": "Ekle",
   "common.delete": "Sil",
