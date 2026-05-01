@@ -562,7 +562,7 @@
         const canCancel = !cancelled && recv <= 0.0001;
         const cancelBtn = cancelled
           ? '—'
-          : `<button type="button" class="logout-btn po-line-cancel text-ui app-button app-button-danger" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+          : `<button type="button" class="btn btn-danger btn-sm po-line-cancel text-ui" data-action="cancel-line" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
         return `<tr${rowCls}>
           <td><span class="text-meta proc-product-code-muted">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
@@ -617,12 +617,6 @@
     linesDetailBody.querySelectorAll('.po-line-fx').forEach((el) => {
       const i = parseInt(el.getAttribute('data-i'), 10);
       lineInputs[i].fxEl = el;
-    });
-    linesDetailBody.querySelectorAll('.po-line-cancel').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const oi = btn.getAttribute('data-oi');
-        if (oi) openCancelModal(oi);
-      });
     });
     linesDetailBody.querySelectorAll('.po-line-sup, .po-line-price, .po-line-cur, .po-line-fx').forEach((el) => {
       const ev = el.tagName === 'SELECT' ? 'change' : 'input';
@@ -869,6 +863,15 @@
   if (btnSavePricing) btnSavePricing.addEventListener('click', savePricing);
   if (btnCompleteOrder) btnCompleteOrder.addEventListener('click', completeOrder);
   if (btnReviseOrder) btnReviseOrder.addEventListener('click', () => postBuyerAction('revise'));
+
+  if (linesDetailBody) {
+    linesDetailBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action="cancel-line"][data-oi]');
+      if (!btn || !linesDetailBody.contains(btn)) return;
+      const oi = btn.getAttribute('data-oi');
+      if (oi) openCancelModal(oi);
+    });
+  }
 
   if (cancelLineDismiss) {
     cancelLineDismiss.addEventListener('click', () => closeCancelModal());

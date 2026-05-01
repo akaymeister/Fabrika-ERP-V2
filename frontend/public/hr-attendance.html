@@ -6,7 +6,7 @@
   <title data-i18n="hr.att.daily.title">Gunluk puantaj</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page hr-attendance-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -31,7 +31,7 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn app-button app-button-secondary" data-i18n="nav.hr.hub">IK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="btn btn-secondary" data-i18n="nav.hr.hub">IK</a>
 </div>
       </header>
       <div class="app-content">
@@ -52,8 +52,8 @@
       </div>
       <div id="sundayOverrideBox" class="att-sunday-override">
         <div class="att-sunday-row">
-          <button type="button" id="btnSundayOpen" class="version-btn" data-i18n="hr.att.sunday.open">Pazar çalışmasını aç</button>
-          <button type="button" id="btnSundayClose" class="logout-btn app-button app-button-danger" data-i18n="hr.att.sunday.close">Pazar çalışmasını kapat</button>
+          <button type="button" id="btnSundayOpen" class="btn btn-secondary btn-sm" data-i18n="hr.att.sunday.open">Pazar çalışmasını aç</button>
+          <button type="button" id="btnSundayClose" class="btn btn-danger btn-sm" data-i18n="hr.att.sunday.close">Pazar çalışmasını kapat</button>
           <label class="att-sunday-label">
             <input id="chkSundayPaidDaily" type="checkbox" />
             <span data-i18n="hr.att.sunday.paid">Pazar günü ücretli</span>
@@ -75,8 +75,8 @@
         <input id="attNameFilter" type="text" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" class="app-input" />
       </div>
       <div class="app-toolbar-right att-toolbar-save">
-        <button type="button" id="btnLoadDaily" class="version-btn app-button app-button-secondary" data-i18n="hr.att.daily.load">Listele</button>
-        <button type="button" id="btnSaveDaily" class="version-btn app-button app-button-primary" data-i18n="hr.att.daily.save">Kaydet</button>
+        <button type="button" id="btnLoadDaily" class="btn btn-secondary" data-i18n="hr.att.daily.load">Listele</button>
+        <button type="button" id="btnSaveDaily" class="btn btn-primary" data-i18n="hr.att.daily.save">Kaydet</button>
       </div>
       </div>
       <p id="lockHint" class="text-dense att-lock-hint" data-i18n="hr.att.locked.hint">Bu ay kilitli</p>

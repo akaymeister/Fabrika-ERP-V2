@@ -8,8 +8,10 @@
   const positionFilter = document.getElementById('positionFilter');
   const searchInput = document.getElementById('searchInput');
   const btnSearch = document.getElementById('btnSearch');
+  const btnResetFilters = document.getElementById('btnResetFilters');
   const msgEl = document.getElementById('msg');
   const empHeadRow = document.getElementById('empHeadRow');
+  const languageSelect = document.getElementById('languageSelect');
 
   let employees = [];
   let salaryColumns = [];
@@ -30,6 +32,16 @@
     if (!msgEl) return;
     msgEl.textContent = text || '';
     msgEl.style.color = ok ? '#065f46' : '#b91c1c';
+  }
+
+  function ensureResetButtonLabel() {
+    if (!btnResetFilters) return;
+    const translated = window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t('common.clear') : '';
+    if (!translated || translated === 'common.clear') {
+      btnResetFilters.textContent = 'Temizle';
+      return;
+    }
+    btnResetFilters.textContent = translated;
   }
 
   function natLabel(code) {
@@ -159,6 +171,18 @@
     showMsg('', true);
   }
 
+  async function resetFilters() {
+    statusFilter.value = '';
+    natFilter.value = '';
+    countryFilter.value = '';
+    searchInput.value = '';
+    departmentFilter.value = '';
+    syncPositionFilterOptions();
+    positionFilter.value = '';
+    syncRegionFilterOptions('');
+    await loadEmployees();
+  }
+
   function salaryLabel(key) {
     const map = {
       total: 'hr.emp.salaryCol.total',
@@ -199,7 +223,7 @@
         <td>${e.position_name || '—'}</td>
         <td>${e.user_username || '—'}</td>
         ${salaryColumns.map((k) => `<td>${e.salary_columns?.[k] || '-'}</td>`).join('')}
-        <td class="table-actions">
+        <td class="erp-table-actions">
           <a class="emp-icon-btn" href="/hr-employee-detail.html?id=${e.id}" title="${t('hr.emp.view')}" aria-label="${t('hr.emp.view')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
@@ -252,13 +276,31 @@
 
   async function initHrEmployeesPage() {
     await loadDeptPos();
-    countryFilter?.addEventListener('change', () => syncRegionFilterOptions(null));
-    departmentFilter?.addEventListener('change', syncPositionFilterOptions);
+    countryFilter?.addEventListener('change', () => {
+      syncRegionFilterOptions('');
+    });
+    departmentFilter?.addEventListener('change', () => {
+      syncPositionFilterOptions();
+      if (!departmentFilter.value) {
+        positionFilter.value = '';
+      }
+    });
     btnSearch?.addEventListener('click', loadEmployees);
+    btnResetFilters?.addEventListener('click', resetFilters);
+    languageSelect?.addEventListener('change', () => {
+      window.setTimeout(ensureResetButtonLabel, 0);
+    });
+    searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        loadEmployees();
+      }
+    });
     empBody?.addEventListener('click', onTableClick);
     syncRegionFilterOptions(null);
     await loadEmployees();
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+    ensureResetButtonLabel();
   }
 
   window.initHrEmployeesPage = initHrEmployeesPage;

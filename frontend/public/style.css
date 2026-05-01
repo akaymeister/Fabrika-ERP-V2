@@ -2073,6 +2073,11 @@ body.app-ui-v3.hr-settings-page .hr-def-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-top: 12px;
+}
+
+body.app-ui-v3.hr-settings-page .hr-def-grid .hr-settings-card {
+  margin-top: 0;
 }
 
 body.app-ui-v3.hr-settings-page .hr-settings-grid {
@@ -5146,7 +5151,7 @@ body.app-ui-v3.hr-employees-page .emp-table-wrap th {
   font-weight: 700;
 }
 
-body.app-ui-v3.hr-employees-page .emp-table-wrap td:not(:has(.table-actions)):not(:has(.emp-photo-cell)) {
+body.app-ui-v3.hr-employees-page .emp-table-wrap td:not(:has(.erp-table-actions)):not(:has(.emp-photo-cell)) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5167,25 +5172,25 @@ body.app-ui-v3.hr-employees-page .emp-photo-code {
   white-space: nowrap;
 }
 
-body.app-ui-v3.hr-employees-page .table-actions {
+body.app-ui-v3.hr-employees-page .erp-table-actions {
   display: grid;
   grid-template-columns: repeat(3, 28px);
   grid-auto-rows: 28px;
   gap: 5px;
-  justify-content: center;
+  justify-content: end;
   align-items: center;
 }
 
-body.app-ui-v3.hr-employees-page .table-actions .emp-status-row {
+body.app-ui-v3.hr-employees-page .erp-table-actions .emp-status-row {
   grid-column: 1 / -1;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 6px;
   margin-top: 2px;
 }
 
-body.app-ui-v3.hr-employees-page .table-actions .emp-status-text {
+body.app-ui-v3.hr-employees-page .erp-table-actions .emp-status-text {
   font-size: 10px;
   color: #475569;
   font-weight: 600;
@@ -5223,7 +5228,7 @@ body.app-ui-v3.hr-employees-page .emp-icon-btn.emp-danger {
   border-color: #dc2626;
 }
 
-body.app-ui-v3.hr-employees-page .table-actions .emp-mini-toggle {
+body.app-ui-v3.hr-employees-page .erp-table-actions .emp-mini-toggle {
   transform: scale(0.78);
   transform-origin: center;
 }
@@ -5237,11 +5242,17 @@ body.app-ui-v3.hr-employees-page .emp-table-wrap td:last-child {
 
 body.app-ui-v3.hr-employees-page .emp-filter-toolbar .emp-filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   align-items: end;
   flex: 1;
   min-width: 0;
+}
+
+body.app-ui-v3.hr-employees-page .emp-filter-toolbar .emp-filter-grid > .app-select,
+body.app-ui-v3.hr-employees-page .emp-filter-toolbar .emp-filter-grid > .app-input {
+  min-width: 0;
+  width: 100%;
 }
 
 body.app-ui-v3.hr-employees-page .emp-list-msg {
@@ -5254,13 +5265,15 @@ body.app-ui-v3.hr-employees-page .emp-table-card {
 }
 
 body.app-ui-v3.hr-employees-page .emp-filter-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
 }
 
 body.app-ui-v3.hr-employees-page a.emp-new-link {
   text-decoration: none;
-  text-align: center;
-  line-height: var(--app-btn-height);
 }
 
 body.app-ui-v3 .hr-structure-msg {
@@ -5328,7 +5341,7 @@ body.app-ui-v3 .hr-structure-table-wrap td {
   white-space: nowrap;
 }
 
-body.app-ui-v3 .hr-structure-table-wrap td:has(.table-actions) {
+body.app-ui-v3 .hr-structure-table-wrap td:has(.erp-table-actions) {
   overflow: visible;
   white-space: normal;
 }
@@ -5340,20 +5353,22 @@ body.app-ui-v3 .hr-structure-table-wrap th {
 
 body.app-ui-v3 .hr-structure-table-wrap th:last-child,
 body.app-ui-v3 .hr-structure-table-wrap td:last-child {
-  width: 76px;
-  min-width: 76px;
+  width: 96px;
+  min-width: 96px;
+  text-align: right;
 }
 
-body.app-ui-v3 .hr-structure-panel .table-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 30px);
-  grid-auto-rows: 30px;
-  gap: 6px;
-  justify-content: center;
+body.app-ui-v3 .hr-structure-panel .erp-table-actions {
+  display: inline-flex;
+  justify-content: flex-end;
   align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: auto;
+  margin-left: auto;
 }
 
-body.app-ui-v3 .hr-structure-panel .table-actions > button {
+body.app-ui-v3 .hr-structure-panel .erp-table-actions > button {
   width: 30px;
   height: 30px;
   min-height: 0;
@@ -5478,6 +5493,15 @@ body.app-ui-v3 .pr-act-buttons > .version-btn {
   width: auto;
   min-width: 0;
   flex: 0 0 auto;
+}
+
+body.app-ui-v3 .pr-act-buttons > .btn {
+  width: auto;
+  min-width: 0;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 520px) {
@@ -5978,7 +6002,7 @@ body.app-ui-v3 .po-line-actions-cell {
   white-space: nowrap;
 }
 
-body.app-ui-v3 .po-line-cancel.app-button {
+body.app-ui-v3 .po-line-cancel {
   padding: 6px 10px;
 }
 
@@ -6360,7 +6384,7 @@ body.app-ui-v3 .attm-modal-actions {
 
 /* --- hr-attendance.html (önceki <style>) --- */
 body.app-ui-v3 .att-scroll {
-  overflow-x: hidden;
+  overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   width: 100%;
@@ -6424,10 +6448,11 @@ body.app-ui-v3 .att-actions-col {
 }
 
 body.app-ui-v3 .att-mini-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 6px;
+  width: 100%;
 }
 
 body.app-ui-v3 .att-mini-btn {
@@ -6512,12 +6537,29 @@ body.app-ui-v3 .att-inline-5 {
 
 /* Günlük puantaj: filtre sol — Listele/Kaydet sağ */
 body.app-ui-v3 .att-toolbar-row {
+  display: flex;
   align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.app-ui-v3 .att-toolbar-row .att-toolbar-save {
+  display: inline-flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 body.app-ui-v3 .att-toolbar-row .att-inline-5 {
   grid-template-columns: 1.1fr 1.1fr 1.5fr;
   flex: 1;
+  min-width: 0;
+}
+
+body.app-ui-v3 .att-toolbar-row .att-inline-5 > .app-select,
+body.app-ui-v3 .att-toolbar-row .att-inline-5 > .app-input {
+  width: 100%;
   min-width: 0;
 }
 
@@ -6600,6 +6642,14 @@ body.app-ui-v3 .att-edit-reason-banner .att-edit-reason-body {
 @media (max-width: 980px) {
   body.app-ui-v3 .att-inline-5 {
     grid-template-columns: 1fr;
+  }
+
+  body.app-ui-v3 .att-toolbar-row {
+    align-items: stretch;
+  }
+
+  body.app-ui-v3 .att-toolbar-row .att-toolbar-save {
+    justify-content: flex-end;
   }
 }
 

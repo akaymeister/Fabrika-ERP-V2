@@ -91,7 +91,7 @@
     const appr = r.approver_name ? `<p>${tKey('purch.wf.approver')}: ${esc(r.approver_name)}</p>` : '';
     const editL =
       r.pr_status === 'revision_requested' || r.pr_status === 'draft'
-        ? `<p><a class="version-btn app-button app-button-secondary pr-det-edit-link" href="/purchase-requisition-open.html?id=${r.id}">${tKey('purch.wf.editReq')}</a></p>`
+        ? `<p><a class="btn btn-secondary btn-sm pr-det-edit-link" href="/purchase-requisition-open.html?id=${r.id}">${tKey('purch.wf.editReq')}</a></p>`
         : '';
     const procExtra = r.procurement_state
       ? `<p class="text-ui pr-det-proc-extra"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
@@ -121,16 +121,28 @@
         <label class="app-label" for="actNote">${tKey('purch.wf.actionNote')}</label>
         <textarea id="actNote" class="app-input app-textarea pr-act-note-input" rows="2"></textarea>
         <div class="pr-act-buttons" role="group" aria-label="${esc(tKey('purch.req.lColAction'))}">
-          <button type="button" class="version-btn app-button app-button-success" id="btnAp">${tKey('purch.req.approve')}</button>
-          <button type="button" class="version-btn app-button app-button-danger" id="btnRj">${tKey('purch.req.reject')}</button>
-          <button type="button" class="version-btn app-button app-button-warning" id="btnRv">${tKey('purch.wf.requestRevision')}</button>
+          <button type="button" class="btn btn-success btn-sm" id="btnAp" data-action="approve" data-id="${esc(r.id)}">${tKey('purch.req.approve')}</button>
+          <button type="button" class="btn btn-danger btn-sm" id="btnRj" data-action="reject" data-id="${esc(r.id)}">${tKey('purch.req.reject')}</button>
+          <button type="button" class="btn btn-warning btn-sm" id="btnRv" data-action="revise" data-id="${esc(r.id)}">${tKey('purch.wf.requestRevision')}</button>
         </div>
       </div>
     `;
-    if (canAct) {
-      document.getElementById('btnAp').addEventListener('click', () => doPatch('approved'));
-      document.getElementById('btnRj').addEventListener('click', () => doPatch('rejected'));
-      document.getElementById('btnRv').addEventListener('click', () => doPatch('revision_requested'));
+  }
+
+  function onDetailActions(e) {
+    const btn = e.target.closest('button[data-action][data-id]');
+    if (!btn || !det.contains(btn)) return;
+    const action = String(btn.getAttribute('data-action') || '').trim();
+    if (action === 'approve') {
+      doPatch('approved');
+      return;
+    }
+    if (action === 'reject') {
+      doPatch('rejected');
+      return;
+    }
+    if (action === 'revise') {
+      doPatch('revision_requested');
     }
   }
 
@@ -206,6 +218,7 @@
     if (flt) {
       flt.addEventListener('change', () => load());
     }
+    det?.addEventListener('click', onDetailActions);
     (async function () {
       const approvalsQueue = window.location.search.includes('pending');
       if (window.initPurchasingPageNav) {

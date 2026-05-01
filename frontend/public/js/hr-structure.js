@@ -112,7 +112,7 @@
           <td>${d.name || '-'}</td>
           <td>${d.code || '-'}</td>
           <td>${st}</td>
-          <td class="table-actions">
+          <td class="erp-table-actions">
             <button type="button" class="hr-st-icon-btn hr-st-row-edit" data-act="edit-dep" data-id="${d.id}" title="${editLab}" aria-label="${editLab}">${svgEdit}</button>
             <button type="button" class="hr-st-icon-btn ${toggleCls}" data-act="toggle-dep" data-id="${d.id}" data-next="${next}" title="${toggleLab}" aria-label="${toggleLab}">${toggleSvg}</button>
           </td>
@@ -161,7 +161,7 @@
           <td>${p.department_name || '-'}</td>
           <td>${p.code || '-'}</td>
           <td>${st}</td>
-          <td class="table-actions">
+          <td class="erp-table-actions">
             <button type="button" class="hr-st-icon-btn hr-st-row-edit" data-act="edit-pos" data-id="${p.id}" title="${editLab}" aria-label="${editLab}">${svgEdit}</button>
             <button type="button" class="hr-st-icon-btn ${toggleCls}" data-act="toggle-pos" data-id="${p.id}" data-next="${next}" title="${toggleLab}" aria-label="${toggleLab}">${toggleSvg}</button>
           </td>
