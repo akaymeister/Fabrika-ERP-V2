@@ -19,6 +19,286 @@ body {
   --font-size-micro: 11px;
 }
 
+/* ERP V2.5 CENTRAL UI SYSTEM */
+:root {
+  --erp-radius: 10px;
+  --erp-radius-sm: 8px;
+  --erp-border: #dbe3ef;
+  --erp-bg: #ffffff;
+  --erp-muted: #64748b;
+  --erp-text: #0f172a;
+  --erp-btn-h: 34px;
+  --erp-btn-h-sm: 28px;
+}
+
+.erp-page {
+  width: 100%;
+}
+
+.erp-page-header,
+.erp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.erp-page-title {
+  margin: 0;
+}
+
+.erp-page-actions,
+.erp-actions,
+.erp-form-actions,
+.modal-actions,
+.erp-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.erp-section {
+  margin: 0 0 12px;
+}
+
+.erp-card {
+  background: var(--erp-bg);
+  border: 1px solid var(--erp-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  padding: 14px;
+}
+
+.erp-card-header,
+.modal-header,
+.erp-modal-header {
+  margin-bottom: 10px;
+}
+
+.erp-card-body,
+.modal-body,
+.erp-modal-body {
+  min-width: 0;
+}
+
+.erp-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.erp-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.erp-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.erp-form,
+.form.erp-form {
+  display: grid;
+  gap: 10px;
+}
+
+.erp-form-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.erp-form-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.erp-field {
+  min-width: 0;
+}
+
+.erp-field-full {
+  grid-column: 1 / -1;
+}
+
+.erp-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--erp-muted);
+  font-weight: 600;
+}
+
+.erp-input,
+.erp-select,
+.erp-textarea,
+.erp-form input:not([type='checkbox']):not([type='radio']),
+.erp-form select,
+.erp-form textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-sm);
+  font-size: 13px;
+  background: #fff;
+}
+
+.erp-textarea,
+.erp-form textarea {
+  min-height: 72px;
+}
+
+.btn,
+.version-btn,
+.module-button,
+.secondary-btn,
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  min-height: var(--erp-btn-h);
+  padding: 0 12px;
+  border-radius: var(--erp-radius-sm);
+  border: 1px solid transparent;
+  text-decoration: none;
+  line-height: 1;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.btn-sm {
+  min-height: var(--erp-btn-h-sm);
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  width: var(--erp-btn-h-sm);
+  min-width: var(--erp-btn-h-sm);
+  padding: 0;
+}
+
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-secondary,
+.btn-warning {
+  color: #fff;
+}
+
+.btn-primary,
+.version-btn,
+.module-button {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.btn-secondary,
+.secondary-btn {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.btn-success {
+  background: #15803d;
+  border-color: #166534;
+}
+
+.btn-danger,
+.logout-btn {
+  background: #b91c1c;
+  border-color: #991b1b;
+  color: #fff;
+}
+
+.btn-warning {
+  background: #d97706;
+  border-color: #b45309;
+}
+
+.erp-table-wrap {
+  width: 100%;
+  overflow-x: visible;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius);
+  background: #fff;
+}
+
+.erp-table,
+.table.erp-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.erp-table th,
+.erp-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.erp-table-compact th,
+.erp-table-compact td {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.erp-table-actions,
+.actions.erp-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.status,
+.erp-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-active,
+.erp-status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-passive,
+.erp-status-passive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.modal,
+.erp-modal {
+  border: 1px solid var(--erp-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.is-hidden {
+  display: none;
+}
+
+/* Deprecated class inventory (V2.5 geçiş dönemi, silinmedi) */
+/* version-btn, module-button, secondary-btn, logout-btn, table-actions, project-st-toggle, project-st-btn */
+
 .text-ui {
   font-size: var(--font-size-ui);
 }
@@ -6608,4 +6888,134 @@ body.app-ui-v3 .stock-out-mov-card .mov-btn-del:hover {
 
 body.app-ui-v3 dialog.stock-dialog.wide {
   max-width: 480px;
+}
+
+/* --- V2.5 UI Stabilization (pilot overrides) --- */
+body.app-ui-v3 .btn,
+body.app-ui-v3 .version-btn,
+body.app-ui-v3 .module-button,
+body.app-ui-v3 .secondary-btn,
+body.app-ui-v3 .logout-btn {
+  width: auto;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: none;
+}
+
+body.app-ui-v3 .btn.btn-primary,
+body.app-ui-v3 .version-btn.btn,
+body.app-ui-v3 .module-button.btn {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+body.app-ui-v3 .btn.btn-secondary {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+body.app-ui-v3 .btn.btn-danger {
+  background: #b91c1c;
+  border-color: #991b1b;
+  color: #fff;
+}
+
+body.app-ui-v3 .btn.btn-sm {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+body.app-ui-v3 .btn.btn-icon {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+body.app-ui-v3 .erp-form-actions {
+  justify-content: flex-end;
+}
+
+body.app-ui-v3 .project-list-form-card,
+body.app-ui-v3 .project-list-edit-card {
+  max-width: 640px;
+}
+
+body.app-ui-v3 .project-list-form-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+body.app-ui-v3 .project-list-form-grid {
+  grid-template-columns: 1fr;
+}
+
+body.app-ui-v3 .project-list-name-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(100px, 160px);
+  gap: 12px;
+  align-items: end;
+}
+
+body.app-ui-v3 .project-list-tight-field {
+  margin: 0;
+}
+
+body.app-ui-v3 .project-list-msg {
+  margin-top: 10px;
+}
+
+body.app-ui-v3 .project-list-msg-ok {
+  margin: 8px 0;
+  color: #15803d;
+  font-weight: 600;
+}
+
+body.app-ui-v3 .project-list-edit-card {
+  border: 1px solid #0f172a;
+}
+
+body.app-ui-v3 .project-list-edit-line,
+body.app-ui-v3 .project-list-code {
+  font-size: 13px;
+}
+
+body.app-ui-v3 .td-project-status,
+body.app-ui-v3 .td-project-actions {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+body.app-ui-v3 .project-list-table-card .erp-table-wrap {
+  overflow-x: visible;
+}
+
+body.app-ui-v3.hr-employee-form-page .emp-form-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+body.app-ui-v3.hr-employee-form-page .emp-form-photo-hint {
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+body.app-ui-v3.hr-employee-form-page .emp-form-msg {
+  margin-top: 10px;
+}
+
+body.app-ui-v3.hr-structure-page .hr-structure-inner {
+  padding: 0;
+  margin-top: 12px;
+}
+
+body.app-ui-v3.hr-structure-page .hr-structure-table-wrap {
+  margin-top: 0;
 }

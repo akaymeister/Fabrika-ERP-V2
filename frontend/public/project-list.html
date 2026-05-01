@@ -6,7 +6,7 @@
   <title data-i18n="project.add.pageTitle">Proje ekle</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page project-list-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,37 +20,36 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="project.add.pageTitle">Proje ekle</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="project.add.pageTitle">Proje ekle</h1>
         <p class="subtitle" data-i18n="project.add.sub">Yeni proje kaydı ve tüm kayıtlar</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/projects.html" class="version-btn" data-i18n="nav.project.hub">Özet</a>
+        <a data-topbar-persist="1" href="/projects.html" class="btn btn-secondary" data-i18n="nav.project.hub">Özet</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
 
-    <section class="card" style="max-width: 640px; margin-bottom: 20px">
+    <section class="card erp-card project-list-form-card">
       <h3 data-i18n="project.form.addTitle">Yeni proje</h3>
-      <p class="form-hint muted" style="margin: 0 0 12px; font-size: 13px" data-i18n="project.form.codeAuto"></p>
-      <form id="fAdd" class="product-form-grid" style="grid-template-columns: 1fr">
+      <p class="form-hint muted project-list-form-hint" data-i18n="project.form.codeAuto"></p>
+      <form id="fAdd" class="erp-form erp-form-grid project-list-form-grid">
         <div
-          class="form-field-row"
-          style="display: grid; grid-template-columns: 1fr minmax(100px, 160px); gap: 12px; align-items: end"
+          class="form-field-row project-list-name-row"
         >
-          <div class="form-field" style="margin: 0">
+          <div class="form-field project-list-tight-field">
             <label for="projectName" data-i18n="project.form.name">Proje adı</label>
             <input type="text" id="projectName" class="input-upper" required maxlength="300" autocomplete="off" data-i18n-placeholder="project.form.namePh" />
           </div>
-          <div class="form-field" style="margin: 0">
+          <div class="form-field project-list-tight-field">
             <label for="projectShort" data-i18n="project.form.shortName">Kısa ad</label>
             <input
               type="text"
@@ -66,37 +65,37 @@
             />
           </div>
         </div>
-        <div>
-          <button type="submit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="project.form.submit">Kaydet</button>
+        <div class="erp-form-actions">
+          <button type="submit" class="btn btn-primary" data-i18n="project.form.submit">Kaydet</button>
         </div>
       </form>
-      <p id="addMsg" class="login-error" style="display: none; margin-top: 10px" role="alert"></p>
+      <p id="addMsg" class="login-error project-list-msg is-hidden" role="alert"></p>
     </section>
 
-    <div class="card" id="editCard" style="display: none; max-width: 640px; margin-bottom: 20px; border: 1px solid #0f172a">
+    <div class="card erp-card project-list-edit-card is-hidden" id="editCard">
       <h3 data-i18n="project.form.editTitle">Proje adını düzenle</h3>
-      <p class="muted" style="font-size: 13px; margin: 0 0 8px" id="editCodeLine"></p>
-      <form id="fEdit" class="product-form-grid" style="grid-template-columns: 1fr">
+      <p class="muted project-list-edit-line" id="editCodeLine"></p>
+      <form id="fEdit" class="erp-form erp-form-grid project-list-form-grid">
         <input type="hidden" id="editId" value="" />
         <div class="form-field">
           <label for="editName" data-i18n="project.form.name">Proje adı</label>
           <input type="text" id="editName" class="input-upper" required maxlength="300" autocomplete="off" />
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
-          <button type="submit" class="module-button" style="width: auto; padding: 10px 16px" data-i18n="project.form.saveEdit">Kaydet</button>
-          <button type="button" class="secondary-btn" id="btnCancelEdit" data-i18n="project.form.cancelEdit">Vazgeç</button>
+        <div class="erp-form-actions">
+          <button type="submit" class="btn btn-primary" data-i18n="project.form.saveEdit">Kaydet</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEdit" data-i18n="project.form.cancelEdit">Vazgeç</button>
         </div>
       </form>
-      <p id="editMsg" class="login-error" style="display: none; margin-top: 10px" role="alert"></p>
+      <p id="editMsg" class="login-error project-list-msg is-hidden" role="alert"></p>
     </div>
 
-    <div class="card">
+    <div class="card erp-card project-list-table-card">
       <h3 data-i18n="project.hub.listTitle">Projeler</h3>
-      <p id="okMsg" class="form-hint" style="display: none; margin: 8px 0; color: #15803d; font-weight: 600" role="status" data-i18n="project.hub.created">Proje kaydedildi</p>
-      <p id="okEditMsg" class="form-hint" style="display: none; margin: 8px 0; color: #15803d; font-weight: 600" role="status" data-i18n="project.hub.updated">Güncellendi</p>
-      <p id="loadMsg" class="login-error" style="display: none; margin: 8px 0" role="alert"></p>
-      <div style="overflow-x: auto">
-        <table>
+      <p id="okMsg" class="form-hint project-list-msg project-list-msg-ok is-hidden" role="status" data-i18n="project.hub.created">Proje kaydedildi</p>
+      <p id="okEditMsg" class="form-hint project-list-msg project-list-msg-ok is-hidden" role="status" data-i18n="project.hub.updated">Güncellendi</p>
+      <p id="loadMsg" class="login-error project-list-msg is-hidden" role="alert"></p>
+      <div class="erp-table-wrap">
+        <table class="erp-table erp-table-compact app-table">
           <thead>
             <tr>
               <th data-i18n="project.list.colName">Proje adı</th>
@@ -190,18 +189,18 @@
           const pState = isActive ? ' project-st--dim' : ' project-st--on';
           return `<tr>
         <td class="display-upper"><strong>${esc(p.name)}</strong></td>
-        <td><code class="display-upper" style="font-size:13px">${esc(p.short_code || '—')}</code></td>
-        <td><code class="display-upper" style="font-size:13px">${esc(p.project_code)}</code></td>
-        <td class="td-project-status" style="white-space: nowrap; vertical-align: middle">
+        <td><code class="display-upper project-list-code">${esc(p.short_code || '—')}</code></td>
+        <td><code class="display-upper project-list-code">${esc(p.project_code)}</code></td>
+        <td class="td-project-status">
           <div class="project-st-toggle" role="group" aria-label="${esc(t('project.list.colStatus'))}">
-            <button type="button" class="project-st-btn project-status-btn project-st--active${aState}" data-pid="${id}" data-st="active" data-i18n="project.status.btnActive">Aktif</button>
-            <button type="button" class="project-st-btn project-status-btn project-st--passive${pState}" data-pid="${id}" data-st="on_hold" data-i18n="project.status.btnPassive">Pasif</button>
+            <button type="button" class="btn btn-sm project-st-btn project-status-btn project-st--active${aState}" data-pid="${id}" data-st="active" data-i18n="project.status.btnActive">Aktif</button>
+            <button type="button" class="btn btn-sm project-st-btn project-status-btn project-st--passive${pState}" data-pid="${id}" data-st="on_hold" data-i18n="project.status.btnPassive">Pasif</button>
           </div>
         </td>
-        <td class="user-actions td-project-actions" style="white-space: nowrap; vertical-align: middle">
-          <div class="table-actions">
-            <button type="button" class="secondary-btn btn-edit" data-edit-id="${id}" data-i18n="project.action.edit">Düzenle</button>
-            <button type="button" class="secondary-btn btn-danger" data-del-id="${id}" data-i18n="project.action.delete">Sil</button>
+        <td class="user-actions td-project-actions">
+          <div class="table-actions erp-table-actions">
+            <button type="button" class="btn btn-sm btn-secondary btn-edit" data-edit-id="${id}" data-i18n="project.action.edit">Düzenle</button>
+            <button type="button" class="btn btn-sm btn-danger" data-del-id="${id}" data-i18n="project.action.delete">Sil</button>
           </div>
         </td>
       </tr>`;

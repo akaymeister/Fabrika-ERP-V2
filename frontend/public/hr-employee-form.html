@@ -6,7 +6,7 @@
   <title data-i18n="hr.emp.form.title">Personel kartı</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page hr-employee-form-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,30 +20,30 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="hr.emp.form.title">Personel kartı</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title erp-page-title" data-i18n="hr.emp.form.title">Personel kartı</h1>
         <p class="subtitle" data-i18n="hr.emp.form.sub">Faz 1</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="btn btn-secondary" data-i18n="nav.hr.hub">IK</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <div class="card emp-form-shell">
+    <div class="card erp-card emp-form-shell">
       <h2 data-i18n="hr.emp.form.title">Personel formu</h2>
-      <form id="empForm">
+      <form id="empForm" class="erp-form">
         <div class="emp-form-grid-top">
-          <section class="emp-form-card">
+          <section class="emp-form-card erp-card erp-section">
             <h3 data-i18n="hr.emp.identity">Kimlik Bilgileri</h3>
-            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="grid erp-grid erp-grid-2 emp-form-two-col">
               <div>
                 <label for="employeeNoDisplay" data-i18n="hr.emp.employeeNo">Personel no</label>
                 <input id="employeeNoDisplay" type="text" readonly class="muted" data-i18n-placeholder="hr.emp.employeeNoHint" placeholder="Otomatik" />
@@ -101,18 +101,19 @@
               </div>
             </div>
           </section>
-          <section class="emp-form-card emp-form-photo-card">
+          <section class="emp-form-card erp-card emp-form-photo-card">
             <h3 data-i18n="hr.emp.photo">Fotoğraf</h3>
-            <img id="photoPreview" class="emp-form-photo-preview" style="display:none" alt="" />
+            <img id="photoPreview" class="emp-form-photo-preview is-hidden" alt="" />
             <div id="photoFallback" class="emp-form-photo-fallback">?</div>
             <label for="photoFile" data-i18n="hr.emp.photo">Fotoğraf</label>
             <input id="photoFile" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
-            <p class="muted" style="font-size:12px;margin:4px 0 0" data-i18n="hr.emp.photoHint">JPG, PNG, WebP</p>
+            <p class="muted emp-form-photo-hint" data-i18n="hr.emp.photoHint">JPG, PNG, WebP</p>
           </section>
         </div>
 
+        <section class="emp-form-card erp-card erp-section">
         <h3 data-i18n="hr.emp.salaryGroup">Maaş</h3>
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="grid erp-grid erp-grid-2 emp-form-two-col">
           <div>
             <label for="salaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
             <select id="salaryCurrency">
@@ -134,9 +135,11 @@
             <input id="unofficialSalary" type="number" readonly value="0" />
           </div>
         </div>
+        </section>
 
+        <section class="emp-form-card erp-card erp-section">
         <h3 data-i18n="hr.emp.addressGroup">Adres</h3>
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="grid erp-grid erp-grid-2 emp-form-two-col">
           <div>
             <label for="countryCode" data-i18n="hr.emp.country">Ülke</label>
             <select id="countryCode">
@@ -154,9 +157,11 @@
         </div>
         <label for="addressLine" data-i18n="hr.emp.addressLine">Açık adres</label>
         <textarea id="addressLine" class="input-upper" rows="2"></textarea>
+        </section>
 
+        <section class="emp-form-card erp-card erp-section">
         <h3 data-i18n="nav.hr.structure">Organizasyon</h3>
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="grid erp-grid erp-grid-2 emp-form-two-col">
           <div>
             <label for="phone" data-i18n="hr.emp.phone">Telefon</label>
             <input id="phone" type="text" />
@@ -196,13 +201,15 @@
             <label for="positionId" data-i18n="hr.emp.position">Pozisyon</label>
             <select id="positionId"><option value="" data-i18n="hr.emp.regionPick">Seçin</option></select>
           </div>
-          <div style="grid-column: 1 / -1">
+          <div class="erp-field-full">
             <label for="userId" data-i18n="hr.emp.userLink">Kullanıcı</label>
             <select id="userId"><option value="" data-i18n="hr.emp.regionPick">Seçin</option></select>
           </div>
         </div>
+        </section>
+        <section class="emp-form-card erp-card erp-section">
         <h3 data-i18n="hr.emp.telegramGroup">Telegram</h3>
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="grid erp-grid erp-grid-2 emp-form-two-col">
           <div>
             <label for="telegramUsername" data-i18n="hr.emp.telegramUsername">Telegram kullanıcı adı</label>
             <input id="telegramUsername" type="text" autocomplete="off" data-i18n-placeholder="hr.emp.telegramUsernamePlaceholder" placeholder="@" />
@@ -211,7 +218,7 @@
             <label for="telegramChatId" data-i18n="hr.emp.telegramChatId">Telegram chat ID</label>
             <input id="telegramChatId" type="text" autocomplete="off" data-i18n-placeholder="hr.emp.telegramChatIdPlaceholder" placeholder="id" />
           </div>
-          <div style="grid-column: 1 / -1">
+          <div class="erp-field-full">
             <label for="telegramNotifyEnabled" data-i18n="hr.emp.telegramNotify">Telegram bildirimi</label>
             <select id="telegramNotifyEnabled">
               <option value="1" data-i18n="hr.emp.telegramNotifyOn">Açık</option>
@@ -221,9 +228,12 @@
         </div>
         <label for="note" data-i18n="hr.emp.note">Not</label>
         <textarea id="note" class="input-upper"></textarea>
-        <button type="submit" id="saveBtn" data-i18n="hr.emp.save">Kaydet</button>
+        </section>
+        <div class="erp-form-actions">
+          <button type="submit" id="saveBtn" class="btn btn-primary" data-i18n="hr.emp.save">Kaydet</button>
+        </div>
       </form>
-      <div id="msg" class="muted" style="margin-top:10px"></div>
+      <div id="msg" class="muted emp-form-msg"></div>
     </div>
       
         </main>

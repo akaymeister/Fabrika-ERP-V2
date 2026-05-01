@@ -6,7 +6,7 @@
   <title data-i18n="hr.structure.pageTitle">Departmanlar / Pozisyonlar</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 erp-page hr-structure-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -31,7 +31,7 @@
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn app-button app-button-secondary" data-i18n="nav.hr.hub">IK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="btn btn-secondary" data-i18n="nav.hr.hub">IK</a>
 </div>
       </header>
       <div class="app-content">
@@ -40,22 +40,22 @@
     <div id="msg" class="muted app-muted-text hr-structure-msg"></div>
 
     <div class="hr-structure-grid">
-      <section class="card app-card hr-structure-panel">
-        <h2 class="app-card-title" data-i18n="hr.structure.blockDeps">Departmanlar</h2>
-        <form id="depForm">
+      <section class="card app-card erp-card hr-structure-panel">
+        <h2 class="app-card-title erp-card-header" data-i18n="hr.structure.blockDeps">Departmanlar</h2>
+        <form id="depForm" class="erp-form">
           <div class="inline-group">
             <input id="depName" class="input-upper app-input" data-i18n-placeholder="hr.structure.depNamePlaceholder" placeholder="Departman adı" required />
             <input id="depCode" class="input-upper app-input" data-i18n-placeholder="hr.structure.depCodePlaceholder" placeholder="Kod (isteğe bağlı)" />
           </div>
-          <div class="hr-st-form-footer">
-            <button type="submit" id="depSubmitBtn" class="hr-st-icon-btn hr-st-submit" aria-label="">
+          <div class="hr-st-form-footer erp-form-actions">
+            <button type="submit" id="depSubmitBtn" class="btn btn-sm btn-icon hr-st-icon-btn hr-st-submit" aria-label="">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
             </button>
           </div>
         </form>
-        <div class="card app-card hr-structure-inner">
-          <div class="hr-structure-table-wrap">
-          <table class="app-table">
+        <div class="hr-structure-inner erp-card-body">
+          <div class="hr-structure-table-wrap erp-table-wrap">
+          <table class="app-table erp-table erp-table-compact">
             <thead><tr>
               <th data-i18n="hr.structure.colName">Ad</th>
               <th data-i18n="hr.structure.colCode">Kod</th>
@@ -68,23 +68,23 @@
         </div>
       </section>
 
-      <section class="card app-card hr-structure-panel">
-        <h2 class="app-card-title" data-i18n="hr.structure.blockPos">Pozisyonlar</h2>
-        <form id="posForm">
+      <section class="card app-card erp-card hr-structure-panel">
+        <h2 class="app-card-title erp-card-header" data-i18n="hr.structure.blockPos">Pozisyonlar</h2>
+        <form id="posForm" class="erp-form">
           <select id="posDepartment" class="app-select" required></select>
           <div class="inline-group">
             <input id="posName" class="input-upper app-input" data-i18n-placeholder="hr.structure.posNamePlaceholder" placeholder="Pozisyon adı" required />
             <input id="posCode" class="input-upper app-input" data-i18n-placeholder="hr.structure.posCodePlaceholder" placeholder="Kod (isteğe bağlı)" />
           </div>
-          <div class="hr-st-form-footer">
-            <button type="submit" id="posSubmitBtn" class="hr-st-icon-btn hr-st-submit" aria-label="">
+          <div class="hr-st-form-footer erp-form-actions">
+            <button type="submit" id="posSubmitBtn" class="btn btn-sm btn-icon hr-st-icon-btn hr-st-submit" aria-label="">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
             </button>
           </div>
         </form>
-        <div class="card app-card hr-structure-inner">
-          <div class="hr-structure-table-wrap">
-          <table class="app-table">
+        <div class="hr-structure-inner erp-card-body">
+          <div class="hr-structure-table-wrap erp-table-wrap">
+          <table class="app-table erp-table erp-table-compact">
             <thead><tr>
               <th data-i18n="hr.structure.colPosition">Pozisyon</th>
               <th data-i18n="hr.emp.colDept">Departman</th>
