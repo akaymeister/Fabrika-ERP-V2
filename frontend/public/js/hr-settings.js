@@ -52,6 +52,8 @@
 
   let workTypes = [];
   let workStatuses = [];
+  let listenersBound = false;
+  let formulaListenerBound = false;
 
   function t(k) {
     return window.i18n?.t ? window.i18n.t(k) : k;
@@ -190,8 +192,8 @@
               <input class="x-active" type="checkbox" ${row.is_active ? 'checked' : ''}/>
               <span>${t('common.active')}</span>
             </label>
-            <button class="version-btn x-save">${t('common.save')}</button>
-            <button class="logout-btn x-del">${t('common.delete')}</button>
+            <button class="btn btn-primary btn-sm x-save">${t('common.save')}</button>
+            <button class="btn btn-danger btn-sm x-del">${t('common.delete')}</button>
           </div>`
         )
         .join('');
@@ -207,8 +209,8 @@
             <input class="x-active" type="checkbox" ${row.is_active ? 'checked' : ''}/>
             <span>${t('common.active')}</span>
           </label>
-          <button class="version-btn x-save">${t('common.save')}</button>
-          <button class="logout-btn x-del">${t('common.delete')}</button>
+          <button class="btn btn-primary btn-sm x-save">${t('common.save')}</button>
+          <button class="btn btn-danger btn-sm x-del">${t('common.delete')}</button>
         </div>`
       )
       .join('');
@@ -336,59 +338,76 @@
 
   function bindCrudDelegation(target) {
     target?.addEventListener('click', async (e) => {
-      const row = e.target.closest('.hr-settings-row');
-      if (!row) return;
-      if (e.target.classList.contains('x-save')) await updateItem(row);
-      if (e.target.classList.contains('x-del')) await deleteItem(row);
+      const targetEl = e.target;
+      if (!(targetEl instanceof Element)) return;
+      const saveBtn = targetEl.closest('button.x-save');
+      if (saveBtn) {
+        const row = saveBtn.closest('.hr-settings-row');
+        if (row) await updateItem(row);
+        return;
+      }
+      const delBtn = targetEl.closest('button.x-del');
+      if (delBtn) {
+        const row = delBtn.closest('.hr-settings-row');
+        if (row) await deleteItem(row);
+      }
     });
   }
 
   async function initHrSettingsPage() {
-    btnSaveSettings?.addEventListener('click', saveSettings);
-    btnAddWorkType?.addEventListener('click', () => createItem('type'));
-    btnAddWorkStatus?.addEventListener('click', () => createItem('status'));
-    bindCrudDelegation(workTypesList);
-    bindCrudDelegation(workStatusesList);
-    [
-      'standard_start_time',
-      'standard_end_time',
-      'break_1_start_time',
-      'break_1_end_time',
-      'break_2_start_time',
-      'break_2_end_time',
-      'break_3_start_time',
-      'break_3_end_time',
-      'break_4_start_time',
-      'break_4_end_time',
-      'lunch_start_time',
-      'lunch_end_time',
-      'overtime_start_time',
-      'overtime_end_time',
-      'monthly_work_days',
-      'time_deduction_hours',
-    ].forEach((id) => document.getElementById(id)?.addEventListener('input', recalcScheduleGrid));
-    DAY_KEYS.forEach((d) => document.getElementById(`wd_${d}`)?.addEventListener('change', recalcScheduleGrid));
-    document.getElementById('sunday_workable')?.addEventListener('change', (e) => {
-      const sunEl = document.getElementById('wd_sun');
-      if (sunEl) sunEl.checked = !!e.target.checked;
-      recalcScheduleGrid();
-    });
-    document.getElementById('wd_sun')?.addEventListener('change', (e) => {
-      const sunWork = document.getElementById('sunday_workable');
-      if (sunWork) sunWork.checked = !!e.target.checked;
-      recalcScheduleGrid();
-    });
-    document.addEventListener('click', (e) => {
-      const infoBtn = e.target.closest('.hr-formula-btn');
-      if (!infoBtn) return;
-      const txt = infoBtn.getAttribute('title') || '';
-      if (!txt) return;
-      if (window.appNotify?.info) {
-        window.appNotify.info(txt);
-      } else {
-        window.alert(txt);
-      }
-    });
+    if (!listenersBound) {
+      listenersBound = true;
+      btnSaveSettings?.addEventListener('click', saveSettings);
+      btnAddWorkType?.addEventListener('click', () => createItem('type'));
+      btnAddWorkStatus?.addEventListener('click', () => createItem('status'));
+      bindCrudDelegation(workTypesList);
+      bindCrudDelegation(workStatusesList);
+      [
+        'standard_start_time',
+        'standard_end_time',
+        'break_1_start_time',
+        'break_1_end_time',
+        'break_2_start_time',
+        'break_2_end_time',
+        'break_3_start_time',
+        'break_3_end_time',
+        'break_4_start_time',
+        'break_4_end_time',
+        'lunch_start_time',
+        'lunch_end_time',
+        'overtime_start_time',
+        'overtime_end_time',
+        'monthly_work_days',
+        'time_deduction_hours',
+      ].forEach((id) => document.getElementById(id)?.addEventListener('input', recalcScheduleGrid));
+      DAY_KEYS.forEach((d) => document.getElementById(`wd_${d}`)?.addEventListener('change', recalcScheduleGrid));
+      document.getElementById('sunday_workable')?.addEventListener('change', (e) => {
+        const sunEl = document.getElementById('wd_sun');
+        if (sunEl) sunEl.checked = !!e.target.checked;
+        recalcScheduleGrid();
+      });
+      document.getElementById('wd_sun')?.addEventListener('change', (e) => {
+        const sunWork = document.getElementById('sunday_workable');
+        if (sunWork) sunWork.checked = !!e.target.checked;
+        recalcScheduleGrid();
+      });
+    }
+    if (!formulaListenerBound) {
+      formulaListenerBound = true;
+      document.addEventListener('click', (e) => {
+        const targetEl = e.target;
+        if (!(targetEl instanceof Element)) return;
+        const infoBtn = targetEl.closest('.hr-formula-btn');
+        if (!infoBtn) return;
+        const txt = infoBtn.getAttribute('title') || '';
+        if (!txt) return;
+        if (window.appNotify?.info) {
+          window.appNotify.info(txt);
+        } else {
+          window.alert(txt);
+        }
+      });
+    }
     await loadBundle();
     window.i18n?.apply?.(document);
   }
