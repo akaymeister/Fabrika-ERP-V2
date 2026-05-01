@@ -26,11 +26,13 @@ function apiErr(data, fallbackKey) {
 
 function showError(msg) {
   const e = errEl();
+  if (!e) return;
   e.textContent = msg;
   e.style.display = 'block';
 }
 function clearError() {
   const e = errEl();
+  if (!e) return;
   e.style.display = 'none';
   e.textContent = '';
 }
@@ -273,22 +275,33 @@ function renderUserTable() {
       <div class="app-action-bar admin-users-actions">
       <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="active" data-id="${u.id}" data-active="${Number(u.is_active) ? 1 : 0}" title="${u.is_active ? t('admin.user.deactivate') : t('admin.user.activate')}">👁</button>
       <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="pass" data-id="${u.id}" title="${t('admin.user.password')}">✎</button>
-      <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="menu" data-id="${u.id}" title="menu">⋮</button>
       </div>
     </td>
   </tr>`
     )
     .join('');
-  body.querySelectorAll('select.js-user-role').forEach((sel) => {
-    sel.addEventListener('change', () => onRoleChange(+sel.getAttribute('data-id'), String(sel.value || '')));
+}
+
+function bindUserTableDelegation() {
+  const body = document.getElementById('userTableBody');
+  if (!body || body.dataset.bound === '1') return;
+  body.dataset.bound = '1';
+  body.addEventListener('change', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const sel = target.closest('select.js-user-role[data-id]');
+    if (!sel || !body.contains(sel)) return;
+    onRoleChange(+sel.getAttribute('data-id'), String(sel.value || ''));
   });
-  body.querySelectorAll('button[data-act]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const id = +btn.getAttribute('data-id');
-      const act = btn.getAttribute('data-act');
-      if (act === 'active') onToggleActive(id, +btn.getAttribute('data-active') === 1);
-      if (act === 'pass') onResetPassword(id);
-    });
+  body.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const btn = target.closest('button[data-act][data-id]');
+    if (!btn || !body.contains(btn)) return;
+    const id = +btn.getAttribute('data-id');
+    const act = btn.getAttribute('data-act');
+    if (act === 'active') onToggleActive(id, +btn.getAttribute('data-active') === 1);
+    if (act === 'pass') onResetPassword(id);
   });
 }
 
@@ -488,6 +501,7 @@ async function init() {
     if (tunnelCard) tunnelCard.style.display = '';
   }
   clearError();
+  bindUserTableDelegation();
   await loadCatalog();
   await loadPermissionSubjects();
   document.querySelectorAll('input[name="newAccountKind"]').forEach((inp) => {
