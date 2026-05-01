@@ -59,7 +59,7 @@
       href: '/projects.html',
       iconClass: 'mod-project',
       requiredRole: null,
-      requiredPermission: 'module.project',
+      requiredPermission: 'module.projects',
     },
     {
       moduleKey: 'hr',

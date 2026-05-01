@@ -3,7 +3,6 @@
  * Anahtarlar: home | new-user | users | perms | settings
  */
 const ADMIN_NAV_FALLBACK_TR = {
-  'nav.dashboard': 'Ana sayfa',
   'admin.title': 'Süper yönetim',
   'nav.admin.home': 'Süper yönetim',
   'nav.admin.newUser': 'Yeni kullanıcı ekle',
@@ -31,7 +30,6 @@ function adminModuleNavHTML(active) {
     { href: '/admin-settings.html', key: 'settings', i18n: 'nav.admin.settings' },
   ];
   return `<nav class="stock-nav app-sub-nav" aria-label="Admin">
-    <a href="/" class="${active === 'dashboard' ? 'active' : ''}" data-i18n="nav.dashboard">${tAdminNav('nav.dashboard')}</a>
     ${items
       .map(
         (i) =>
