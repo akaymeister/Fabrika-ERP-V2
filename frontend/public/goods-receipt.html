@@ -39,7 +39,7 @@
     <p id="msg" class="app-msg-slot" role="status"></p>
 
     <section class="card app-card">
-      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
+      <h3 class="app-card-title" data-i18n="purch.gr.blockOrders">GELEN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.gr.incomingWhSub">Kabul bekleyen veya kısmi satınalma siparişleri. Satıra tıklayıp aşağıda kabul formunu açın.</p>
       <div class="gr-po-scroll">
         <table class="gr-po-table app-table">
@@ -62,7 +62,7 @@
     </section>
 
     <section class="card app-card app-card-stack-mt">
-      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
+      <h3 class="app-card-title" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
       <p id="grDetailEmpty" class="muted" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
       <div id="grDetailBlock" hidden>
         <p id="grOrderMeta" class="display-upper gr-order-meta"></p>
@@ -86,13 +86,13 @@
           </table>
         </div>
         <div class="gr-action-row" role="group" aria-label="Mal kabul eylemleri">
-          <button type="button" class="version-btn" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
+          <button type="button" class="version-btn app-button app-button-secondary" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
           <button type="button" class="module-button app-button app-button-primary" id="grBtnSave" data-i18n="common.save">Kaydet</button>
         </div>
       </div>
     </section>
     <section class="card app-card app-card-stack-mt">
-      <h3 class="app-section-title-tight" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
+      <h3 class="app-card-title" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.gr.completedSub">Mal kabulü tamamlanan siparişler sadece inceleme amaçlı listelenir.</p>
       <div class="gr-po-scroll">
         <table class="gr-po-table app-table">
@@ -240,7 +240,7 @@
             ? '<span>' + esc(fmtQ(0)) + '</span><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>'
             : '<input type="number" class="gr-inp f-hsr" min="0" step="0.0001" value="0"/><div class="gr-meta-inline">' + esc(primaryUnit(it)) + '</div>';
           const noteInput = !canEdit
-            ? '<span style="color:#64748b">—</span>'
+            ? '<span class="gr-muted-dash">—</span>'
             : '<input type="text" class="gr-inp gr-inp-wide f-nt input-upper" />';
           tr.innerHTML =
             '<td><span class="gr-meta-inline">' +
@@ -284,7 +284,7 @@
         const { ok, data } = await stockApi('/api/purchasing/orders?openForReceipt=1');
         if (!ok || !data || !data.ok) {
           const errTxt = window.i18n && window.i18n.t ? window.i18n.t('purch.gr.ordersLoadError') : 'Liste yüklenemedi.';
-          poBody.innerHTML = '<tr><td colspan="5" style="color:#b91c1c">' + esc(errTxt) + '</td></tr>';
+          poBody.innerHTML = '<tr><td colspan="5" class="gr-po-load-err">' + esc(errTxt) + '</td></tr>';
           return;
         }
         ordersList = data.orders || [];

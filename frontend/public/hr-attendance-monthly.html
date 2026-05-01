@@ -5,58 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="hr.att.monthly.title">Aylık puantaj</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .attm-inline-5 { display:grid; grid-template-columns:1.1fr 1.4fr 1.2fr 1.2fr auto; gap:10px; align-items:end; }
-    .attm-inline-5 > * { min-width:0; }
-    .attm-month-row { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
-    .attm-live-cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap:8px; margin-bottom:14px; }
-    .attm-live-cards.hidden { display:none; }
-    .attm-live-card { border:1px solid #dbe4f0; border-radius:8px; padding:8px; background:#f8fafc; }
-    .attm-live-card .k { font-size:var(--font-size-meta); color:#475569; }
-    .attm-live-card .v { margin-top:4px; font-weight:700; font-size:var(--font-size-ui); color:#0f172a; }
-    .attm-summary-spacer { height:12px; }
-    .attm-daily-wrap { overflow-x:auto; margin-top:8px; }
-    .attm-daily-table { font-size:var(--font-size-ui); }
-    .attm-daily-table th, .attm-daily-table td { padding:4px 6px; vertical-align:middle; }
-    .attm-daily-table select, .attm-daily-table input { min-height:30px; font-size: var(--font-size-meta); }
-    .attm-daily-table th:nth-child(6), .attm-daily-table td:nth-child(6) { width: 82px; min-width: 82px; max-width: 82px; }
-    .attm-daily-table th:nth-child(7), .attm-daily-table td:nth-child(7) { width: 82px; min-width: 82px; max-width: 82px; }
-    .attm-daily-table th:last-child, .attm-daily-table td:last-child { width: 40px; min-width: 40px; max-width: 48px; text-align: center; }
-    .attm-icon-btn {
-      width: 28px; height: 28px; min-width: 28px; padding: 0; border-radius: 8px;
-      border: 1px solid #dbe4f0; background: #f8fafc; color: #334155;
-      display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-      vertical-align: middle;
-    }
-    .attm-icon-btn:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-    .attm-icon-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .attm-modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
-    .attm-modal-backdrop.attm-modal-open { display: flex; }
-    .attm-modal { background: #fff; border-radius: 12px; max-width: 440px; width: 100%; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; }
-    .attm-modal h3 { margin: 0 0 8px; font-size: 1.05rem; }
-    .attm-modal .attm-modal-help { margin: 0 0 12px; font-size: var(--font-size-meta); color: #64748b; }
-    .attm-modal label { display: block; font-size: var(--font-size-meta); margin-bottom: 6px; color: #334155; }
-    .attm-modal textarea { width: 100%; min-height: 88px; box-sizing: border-box; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px; font: inherit; resize: vertical; }
-    .attm-modal .attm-modal-err { min-height: 1.2em; margin-top: 8px; font-size: var(--font-size-meta); color: #b91c1c; }
-    .attm-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
-    @media (max-width: 1200px) {
-      .attm-daily-table th:nth-child(6), .attm-daily-table td:nth-child(6),
-      .attm-daily-table th:nth-child(7), .attm-daily-table td:nth-child(7) {
-        width: 72px;
-        min-width: 72px;
-        max-width: 72px;
-      }
-    }
-    @media (max-width: 768px) {
-      .attm-daily-table th:nth-child(6), .attm-daily-table td:nth-child(6),
-      .attm-daily-table th:nth-child(7), .attm-daily-table td:nth-child(7) {
-        width: 64px;
-        min-width: 64px;
-        max-width: 64px;
-      }
-    }
-    @media (max-width:980px) { .attm-inline-5 { grid-template-columns:1fr; } }
-  </style>
 </head>
 <body class="app-shell app-master-page app-ui-v3">
   <div class="container app-layout-v3">
@@ -72,24 +20,24 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="hr.att.monthly.title">Aylık puantaj</h1>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+        <h1 class="app-page-title" data-i18n="hr.att.monthly.title">Aylık puantaj</h1>
         <p class="subtitle" data-i18n="hr.att.monthly.sub">Ay bazında satır ve özet</p>
       </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
+        <div class="topbar-right app-toolbar-right">
+        <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
           <option value="en">English</option>
         </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">İK</a>
+        <a data-topbar-persist="1" href="/hr.html" class="version-btn app-button app-button-secondary" data-i18n="nav.hr.hub">İK</a>
 </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <section class="card">
+    <section class="card app-card">
       <div id="liveCards" class="attm-live-cards hidden">
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.totalNormal">Toplam normal çalışma</div><div class="v" id="kpiTotalNormal">0</div></div>
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.totalOvertime">Toplam mesai saat</div><div class="v" id="kpiTotalOvertime">0</div></div>
@@ -109,9 +57,10 @@
           <select id="mDayFilter" aria-label="day"><option value="" data-i18n="hr.att.monthly.allDays">Tüm günler</option></select>
         </div>
       </div>
-      <p class="muted" style="margin-top:10px" data-i18n="hr.emp.filtersTitle">Filtreler</p>
-      <div class="attm-inline-5" style="margin-top:6px">
-        <select id="mNatFilter" aria-label="nat">
+      <p class="muted attm-filter-title" data-i18n="hr.emp.filtersTitle">Filtreler</p>
+      <div class="app-page-toolbar attm-filter-toolbar">
+      <div class="app-toolbar-left attm-inline-5 app-filterbar">
+        <select id="mNatFilter" class="app-select" aria-label="nat">
           <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
           <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
           <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
@@ -119,17 +68,20 @@
           <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
           <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
         </select>
-        <input id="mNameFilter" type="text" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" />
-        <select id="mDepFilter" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
-        <select id="mPosFilter" aria-label="pos"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
-        <button type="button" id="btnLoadMonthly" class="version-btn" data-i18n="hr.att.monthly.load">Listele</button>
+        <input id="mNameFilter" class="app-input app-search-input" type="search" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" />
+        <select id="mDepFilter" class="app-select" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+        <select id="mPosFilter" class="app-select" aria-label="pos"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
       </div>
-      <p id="monthlyMsg" style="min-height:1.2em"></p>
+      <div class="app-toolbar-right">
+        <button type="button" id="btnLoadMonthly" class="version-btn app-button app-button-secondary" data-i18n="hr.att.monthly.load">Listele</button>
+      </div>
+      </div>
+      <p id="monthlyMsg" class="attm-msg-slot"></p>
       <h3 data-i18n="hr.att.monthly.summary">Personel özeti</h3>
-      <div style="overflow-x:auto"><table><thead><tr id="summaryHeadRow"></tr></thead><tbody id="summaryBody"></tbody></table></div>
+      <div class="attm-summary-table-wrap"><table class="app-table attm-summary-table"><thead><tr id="summaryHeadRow"></tr></thead><tbody id="summaryBody"></tbody></table></div>
       <div class="attm-summary-spacer"></div>
       <h3 data-i18n="hr.att.monthly.rows">Günlük satırlar</h3>
-      <div class="attm-daily-wrap"><table class="attm-daily-table"><thead><tr>
+      <div class="attm-daily-wrap"><table class="attm-daily-table app-table"><thead><tr>
         <th data-i18n="hr.att.colDate">Tarih</th><th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colProject">Proje</th>
         <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th><th data-i18n="hr.att.colNote">Not</th><th data-i18n="hr.emp.colAction">İşlem</th>
       </tr></thead><tbody id="monthlyBody"></tbody></table></div>
@@ -147,8 +99,8 @@
       <textarea id="attmEditReasonInput" autocomplete="off"></textarea>
       <p id="attmEditReasonErr" class="attm-modal-err" aria-live="polite"></p>
       <div class="attm-modal-actions">
-        <button type="button" id="attmEditCancel" class="logout-btn" data-i18n="hr.att.monthly.modalCancel">Vazgeç</button>
-        <button type="button" id="attmEditGo" class="version-btn" data-i18n="hr.att.monthly.openDailyEditor">Günlük ekrana git</button>
+        <button type="button" id="attmEditCancel" class="logout-btn app-button app-button-secondary" data-i18n="hr.att.monthly.modalCancel">Vazgeç</button>
+        <button type="button" id="attmEditGo" class="version-btn app-button app-button-primary" data-i18n="hr.att.monthly.openDailyEditor">Günlük ekrana git</button>
       </div>
     </div>
   </div>

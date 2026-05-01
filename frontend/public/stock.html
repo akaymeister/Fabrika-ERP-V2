@@ -21,11 +21,11 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-          <h1 data-i18n="stock.hub.title">Stok yönetimi</h1>
+          <h1 class="app-page-title" data-i18n="stock.hub.title">Stok yönetimi</h1>
           <p class="subtitle" data-i18n="stock.hub.sub">Ürün, marka, hareket ve depo temelli süreçler</p>
         </div>
         <div class="topbar-right">
-          <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+          <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
             <option value="ru">Русский</option>
@@ -36,46 +36,46 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+    <section class="hero-panel premium-hero stock-hub-hero">
       <div class="hero-text">
         <span class="hero-mini-badge" data-i18n="stock.hub.badge">Modül 4</span>
-        <h2 data-i18n="stock.hub.panel">Stok paneli</h2>
+        <h2 class="app-card-title" data-i18n="stock.hub.panel">Stok paneli</h2>
         <p data-i18n="stock.hub.desc">Marka ve ürün tanımları, otomatik ürün kodu (STK-00001), stok giriş/çıkış ve hareket geçmişi bu modülde toplanır.</p>
       </div>
     </section>
 
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))">
-      <a class="dashboard-card" href="/stock-brands.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.brands">Markalar</h3>
+    <div class="dashboard-grid stock-hub-grid">
+      <a class="dashboard-card stock-hub-dash-link" href="/stock-brands.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.brands">Markalar</h3>
         <p data-i18n="stock.hub.cardBrands">Marka ekle / listele</p>
       </a>
-      <a class="dashboard-card" href="/stock-warehouses.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.warehouses">Depolar</h3>
+      <a class="dashboard-card stock-hub-dash-link" href="/stock-warehouses.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.warehouses">Depolar</h3>
         <p data-i18n="stock.hub.cardWarehouses">Ana depo + alt kategori</p>
       </a>
-      <a class="dashboard-card primary-card" href="/stock-products.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.products">Ürünler</h3>
+      <a class="dashboard-card primary-card stock-hub-dash-link" href="/stock-products.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.products">Ürünler</h3>
         <p data-i18n="stock.hub.cardProducts">Kayıt, ad + ölçü; marka isteğe bağlı</p>
       </a>
       <a
-        class="dashboard-card"
+        class="dashboard-card stock-hub-dash-link"
         id="stockPanelLinkIn"
         href="/stock-in.html"
-        style="text-decoration: none; color: inherit; display: none"
+        style="display: none"
       >
-        <h3 data-i18n="nav.stock.in">Stok giriş</h3>
+        <h3 class="app-card-title" data-i18n="nav.stock.in">Stok giriş</h3>
         <p data-i18n="stock.hub.cardInSuper">Manuel giriş / düzeltme (süper yönetici)</p>
       </a>
-      <a class="dashboard-card" href="/stock-out.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.out">Stok çıkış</h3>
+      <a class="dashboard-card stock-hub-dash-link" href="/stock-out.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.out">Stok çıkış</h3>
         <p data-i18n="stock.hub.cardOut">Çıkış; yetersiz stok kontrolü</p>
       </a>
-      <a class="dashboard-card" href="/goods-receipt.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.receipt">Mal kabul</h3>
+      <a class="dashboard-card stock-hub-dash-link" href="/goods-receipt.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.receipt">Mal kabul</h3>
         <p data-i18n="stock.hub.cardReceipt">Siparişe göre kabul, depo girişi</p>
       </a>
-      <a class="dashboard-card" href="/stock-movements.html" style="text-decoration: none; color: inherit">
-        <h3 data-i18n="nav.stock.mov">Hareketler</h3>
+      <a class="dashboard-card stock-hub-dash-link" href="/stock-movements.html">
+        <h3 class="app-card-title" data-i18n="nav.stock.mov">Hareketler</h3>
         <p data-i18n="stock.hub.cardMov">Tüm stok hareketleri</p>
       </a>
     </div>

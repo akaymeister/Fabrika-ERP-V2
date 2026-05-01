@@ -2280,8 +2280,8 @@ body.admin-users-page {
 }
 
 .admin-users-table-wrap {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-x: visible;
+  overflow-y: visible;
   border: 1px solid #e6ebf3;
   border-radius: 12px;
   background: #ffffff;
@@ -2293,7 +2293,7 @@ body.admin-users-page {
   margin-top: 0;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 820px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -3841,6 +3841,8 @@ body.app-ui-v3 .app-action-button.app-action-disable {
 
 body.app-ui-v3 table.app-table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--font-size-ui);
 }
@@ -3854,12 +3856,48 @@ body.app-ui-v3 table.app-table thead th {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   border-bottom: 1px solid var(--app-color-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 body.app-ui-v3 table.app-table tbody td {
   padding: var(--app-table-cell-y) var(--app-table-cell-x);
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Form / aksiyon hücreleri: ellipsis uygulanmaz */
+body.app-ui-v3 table.app-table tbody td:has(input),
+body.app-ui-v3 table.app-table tbody td:has(select),
+body.app-ui-v3 table.app-table tbody td:has(textarea),
+body.app-ui-v3 table.app-table tbody td:has(button),
+body.app-ui-v3 table.app-table tbody td:has(.table-actions),
+body.app-ui-v3 table.app-table tbody td:has(.app-action-bar),
+body.app-ui-v3 table.app-table tbody td.app-table-cell-wrap {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+body.app-ui-v3 table.app-table thead th.app-table-col-num,
+body.app-ui-v3 table.app-table thead th.app-table-col-date,
+body.app-ui-v3 table.app-table tbody td.app-table-col-num,
+body.app-ui-v3 table.app-table tbody td.app-table-col-date {
+  width: 100px;
+  max-width: 100px;
+  text-align: right;
+}
+
+body.app-ui-v3 table.app-table thead th.app-table-col-action,
+body.app-ui-v3 table.app-table tbody td.app-table-col-action {
+  width: 112px;
+  max-width: 120px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 body.app-ui-v3 table.app-table tbody tr:hover td {
@@ -4023,6 +4061,51 @@ body.app-ui-v3 .app-filterbar select.app-select {
   min-width: 180px;
 }
 
+/* --- Faz 3B: toolbar (başlık / filtre sol — aksiyonlar sağ) --- */
+body.app-ui-v3 .app-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--app-btn-height);
+}
+
+body.app-ui-v3 .app-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+body.app-ui-v3 .app-toolbar-right {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+body.app-ui-v3 .app-toolbar-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+body.app-ui-v3 input.app-search-input {
+  min-height: var(--app-btn-height);
+  min-width: 140px;
+  max-width: 320px;
+  flex: 1 1 160px;
+}
+
 body.app-ui-v3 .app-msg-slot {
   min-height: 1.2em;
   margin: 8px 0;
@@ -4032,8 +4115,12 @@ body.app-ui-v3 .app-card-stack-mt {
   margin-top: 16px;
 }
 
+/* Faz 3B/3C: yatay kaydırma yok; tablo sayfaya sığar (fixed layout + ellipsis) */
 body.app-ui-v3 .app-table-scroll {
-  overflow-x: auto;
+  overflow-x: visible;
+  overflow: visible;
+  max-width: 100%;
+  width: 100%;
 }
 
 body.app-ui-v3 .app-form-row-narrow {
@@ -4071,42 +4158,6 @@ body.app-ui-v3 .app-mov-refresh-btn {
 body.app-ui-v3 .app-stock-form-actions .module-button {
   width: auto;
   padding: 10px 16px;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-slate {
-  background: #475569;
-  border: none;
-  color: #fff;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-teal {
-  background: #0d9488;
-  border: none;
-  color: #fff;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-green {
-  background: #16a34a;
-  border: none;
-  color: #fff;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-blue {
-  background: #2563eb;
-  border: none;
-  color: #fff;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-amber {
-  background: #b45309;
-  border: none;
-  color: #fff;
-}
-
-body.app-ui-v3 .version-btn.v3-tone-danger {
-  background: #b91c1c;
-  border: none;
-  color: #fff;
 }
 
 body.app-ui-v3 .module-button.v3-stock-out-submit {
@@ -4164,6 +4215,59 @@ body.app-ui-v3 table.att-table.app-table thead th {
 body.app-ui-v3 table.admin-users-table.app-table thead th {
   text-transform: none;
   letter-spacing: normal;
+}
+
+body.app-ui-v3 table.admin-users-table.app-table thead th.app-table-col-action,
+body.app-ui-v3 table.admin-users-table.app-table tbody td.app-table-col-action {
+  width: 136px;
+  max-width: 140px;
+}
+
+body.app-ui-v3 .admin-users-role-select {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  font-size: 13px;
+}
+
+body.app-ui-v3 .admin-role-meta-code {
+  font-size: 11px;
+  color: #64748b;
+}
+
+body.app-ui-v3 .admin-users-legacy-warn {
+  font-size: 11px;
+  color: #b45309;
+  font-weight: 600;
+}
+
+body.app-ui-v3 .admin-users-actions.app-action-bar {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+body.app-ui-v3 .admin-permissions-err {
+  display: none;
+  margin: 0 0 12px;
+  color: #b91c1c;
+}
+
+body.app-ui-v3.admin-permissions-page .admin-permissions-field-narrow {
+  max-width: 360px;
+}
+
+body.app-ui-v3.admin-permissions-page .admin-permissions-save-actions {
+  margin-top: 16px;
+}
+
+body.app-ui-v3.project-costs-page .project-placeholder-card,
+body.app-ui-v3.project-quotes-page .project-placeholder-card {
+  max-width: 720px;
+}
+
+body.app-ui-v3.project-costs-page .project-placeholder-title,
+body.app-ui-v3.project-quotes-page .project-placeholder-title {
+  margin-top: 12px;
 }
 
 body.app-ui-v3 .admin-users-err {
@@ -4286,6 +4390,434 @@ body.app-ui-v3 .stock-mov-table-wrap {
   margin-top: 12px;
 }
 
+/* --- Stok modülü hub (stock.html) --- */
+body.app-ui-v3 .stock-hub-hero {
+  margin-bottom: 24px;
+}
+
+body.app-ui-v3 .stock-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+body.app-ui-v3 .stock-hub-dash-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* --- Stok depolar (stock-warehouses.html; önceki sayfa <style>) --- */
+body.app-ui-v3 .wh-top-forms {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  body.app-ui-v3 .wh-top-forms {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  body.app-ui-v3 #fSub.product-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+body.app-ui-v3 form#fSub.stock-wh-fsub-grid {
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+}
+
+body.app-ui-v3 .wh-top-forms .card {
+  max-width: none;
+  margin-bottom: 0;
+}
+
+body.app-ui-v3 .wh-sub-list {
+  list-style: none;
+  margin: 0.75rem 0 0 0;
+  padding: 0;
+}
+
+body.app-ui-v3 .wh-sub-edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+body.app-ui-v3 .wh-sub-inp {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-sm);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+body.app-ui-v3 .wh-sub-inp:read-only {
+  background: #f8fafc;
+  cursor: default;
+}
+
+body.app-ui-v3 .wh-block--editing .wh-sub-inp,
+body.app-ui-v3 .wh-block--editing .wh-main-inp {
+  background: #fff;
+}
+
+body.app-ui-v3 .wh-sub-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+body.app-ui-v3 .wh-sub-actions > button {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+body.app-ui-v3 .wh-sub-actions .secondary-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 36px;
+  box-shadow: none;
+}
+
+body.app-ui-v3 .wh-sub-id {
+  color: #94a3b8;
+  font-size: 0.85em;
+}
+
+body.app-ui-v3 .wh-main-block {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-sm);
+}
+
+body.app-ui-v3 .wh-main-line {
+  width: 100%;
+}
+
+body.app-ui-v3 .wh-main-inp {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-sm);
+  font: inherit;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+body.app-ui-v3 .wh-main-inp:read-only {
+  background: #f8fafc;
+  cursor: default;
+}
+
+body.app-ui-v3 .wh-main-meta {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.85em;
+}
+
+body.app-ui-v3 .wh-block-footer {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--app-color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+body.app-ui-v3 .wh-block-footer > button {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  font-size: 13px;
+  min-height: 38px;
+}
+
+body.app-ui-v3 .wh-empty-msg {
+  color: var(--app-color-muted);
+}
+
+body.app-ui-v3 .wh-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+body.app-ui-v3 .wh-form-field-grow {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+body.app-ui-v3 .wh-list-slot {
+  margin-top: 12px;
+}
+
+body.app-ui-v3 .stock-wh-pmsg {
+  display: none;
+  margin-top: 10px;
+  color: #b91c1c;
+}
+
+/* --- Stok ürünler yardımcı mesaj sınıfları --- */
+body.app-ui-v3 .stock-products-edit-code-line {
+  display: none;
+  font-size: 13px;
+  color: var(--app-color-muted);
+  margin: 0 0 4px;
+}
+
+body.app-ui-v3 .stock-products-wh-link-line {
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+body.app-ui-v3 .stock-products-preview-name {
+  color: #475569;
+  font-size: 14px;
+}
+
+body.app-ui-v3 .stock-products-form-hint-full {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--app-color-muted);
+  margin: 0;
+}
+
+body.app-ui-v3 .stock-products-form-actions-full {
+  grid-column: 1 / -1;
+}
+
+body.app-ui-v3 .stock-products-msg {
+  display: none;
+  margin-top: 10px;
+  color: #b91c1c;
+}
+
+body.app-ui-v3 .stock-products-msg-pre {
+  display: none;
+  margin-top: 8px;
+  color: #b91c1c;
+  white-space: pre-wrap;
+}
+
+body.app-ui-v3 .stock-products-excel-hint {
+  font-size: 13px;
+  color: var(--app-color-muted);
+  margin: 0 0 10px;
+}
+
+body.app-ui-v3 .stock-products-import-msg {
+  display: none;
+  margin-top: 10px;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+body.app-ui-v3 .stock-brands-inline-err {
+  display: none;
+  margin-top: 10px;
+  color: #b91c1c;
+}
+
+body.app-ui-v3 .stock-in-dd-empty-li {
+  cursor: default;
+  color: #64748b;
+  padding: 10px;
+}
+
+body.app-ui-v3 .stock-in-mov-err-row {
+  color: #b91c1c;
+}
+
+body.app-ui-v3 .stock-out-dd-empty-li {
+  cursor: default;
+  color: #64748b;
+  padding: 10px;
+}
+
+body.app-ui-v3 .stock-out-pcode-margin {
+  margin-left: 6px;
+}
+
+body.app-ui-v3 .stock-out-mov-err-row {
+  color: #b91c1c;
+}
+
+body.app-ui-v3 .stock-brands-form-grid {
+  grid-template-columns: 1fr;
+}
+
+body.app-ui-v3 .stock-brands-sys-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* --- Personel listesi (hr-employees.html; önceki sayfa <style>) --- */
+body.app-ui-v3.hr-employees-page .emp-table-wrap {
+  width: 100%;
+  overflow-x: visible;
+  border: 1px solid var(--app-color-border);
+  border-radius: var(--app-radius-md);
+  background: var(--app-color-surface);
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-wrap table.app-table {
+  table-layout: fixed;
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-wrap th,
+body.app-ui-v3.hr-employees-page .emp-table-wrap td {
+  font-size: 12px;
+  line-height: 1.15;
+  padding: 6px;
+  vertical-align: middle;
+  border: 1px solid #eef2f7;
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-wrap th {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: left;
+  background: #fafcff;
+  font-weight: 700;
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-wrap td:not(:has(.table-actions)):not(:has(.emp-photo-cell)) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.app-ui-v3.hr-employees-page .emp-photo-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+body.app-ui-v3.hr-employees-page .emp-photo-code {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.app-ui-v3.hr-employees-page .table-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  grid-auto-rows: 28px;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
+}
+
+body.app-ui-v3.hr-employees-page .table-actions .emp-status-row {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+body.app-ui-v3.hr-employees-page .table-actions .emp-status-text {
+  font-size: 10px;
+  color: #475569;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.app-ui-v3.hr-employees-page .emp-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid #dbe4f0;
+  background: #1d4ed8;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0;
+  line-height: 1;
+}
+
+body.app-ui-v3.hr-employees-page .emp-icon-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.app-ui-v3.hr-employees-page .emp-icon-btn.emp-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+body.app-ui-v3.hr-employees-page .table-actions .emp-mini-toggle {
+  transform: scale(0.78);
+  transform-origin: center;
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-wrap th:last-child,
+body.app-ui-v3.hr-employees-page .emp-table-wrap td:last-child {
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+}
+
+body.app-ui-v3.hr-employees-page .emp-filter-toolbar .emp-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  align-items: end;
+  flex: 1;
+  min-width: 0;
+}
+
+body.app-ui-v3.hr-employees-page .emp-list-msg {
+  margin-top: 10px;
+}
+
+body.app-ui-v3.hr-employees-page .emp-table-card {
+  padding: 12px;
+  margin-top: 12px;
+}
+
+body.app-ui-v3.hr-employees-page .emp-filter-actions {
+  gap: 10px;
+}
+
+body.app-ui-v3.hr-employees-page a.emp-new-link {
+  text-decoration: none;
+  text-align: center;
+  line-height: var(--app-btn-height);
+}
+
+body.app-ui-v3 .hr-structure-msg {
+  margin: 10px 0;
+}
+
 /* --- HR yapı (hr-structure.html; Faz 3 — düzenle nötr, aktifleştir yeşil, pasifleştir uyarı) --- */
 body.app-ui-v3 .hr-structure-grid {
   display: grid;
@@ -4312,8 +4844,7 @@ body.app-ui-v3 .hr-structure-panel {
 body.app-ui-v3 .hr-structure-table-wrap {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: visible;
   margin-top: 12px;
   border: 1px solid var(--app-color-border);
   border-radius: var(--app-radius-md);
@@ -4343,8 +4874,14 @@ body.app-ui-v3 .hr-structure-table-wrap td {
   padding: 8px 6px;
   vertical-align: middle;
   border: 1px solid #eef2f7;
-  word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.app-ui-v3 .hr-structure-table-wrap td:has(.table-actions) {
+  overflow: visible;
+  white-space: normal;
 }
 
 body.app-ui-v3 .hr-structure-table-wrap th {
@@ -4469,6 +5006,11 @@ body.app-ui-v3 .pur-list-actions {
   gap: 10px;
   margin-bottom: 12px;
   align-items: center;
+}
+
+body.app-ui-v3 .pur-list-actions a {
+  text-decoration: none;
+  display: inline-block;
 }
 
 body.app-ui-v3 .pr-act-buttons {
@@ -4684,6 +5226,322 @@ body.app-ui-v3 .proc-help-footer {
   margin-top: 10px;
 }
 
+/* --- Satınalma hub (purchasing.html) --- */
+body.app-ui-v3 .purch-hub-hero {
+  margin-bottom: 24px;
+}
+
+body.app-ui-v3 .purch-hub-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+body.app-ui-v3 .purch-hub-dash-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+body.app-ui-v3 .purch-hub-cards h3 {
+  text-transform: capitalize;
+}
+
+body.app-ui-v3 .purch-hub-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 860px;
+}
+
+body.app-ui-v3 .purch-hub-kpi {
+  border: 1px solid #dbe6f5;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+body.app-ui-v3 .purch-hub-kpi span {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+body.app-ui-v3 .purch-hub-kpi strong {
+  font-size: 18px;
+  color: #0f172a;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  body.app-ui-v3 .purch-hub-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Talep aç — geniş satır tablosu (purchase-requisition-open.html) */
+body.app-ui-v3.pur-req-open-page .pur-req-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-req-top label {
+  display: block;
+  font-size: var(--font-size-ui);
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table {
+  min-width: 1280px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-wh {
+  min-width: 140px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-sc {
+  min-width: 130px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-pr {
+  min-width: 280px;
+  max-width: 400px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-stock-cell {
+  min-width: 120px;
+  max-width: 200px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-qty {
+  min-width: 100px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-unit {
+  min-width: 100px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-note {
+  min-width: 180px;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-line-table .r-imgprev {
+  max-height: 40px;
+  max-width: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+body.app-ui-v3.pur-req-open-page .r-file-input {
+  max-width: 110px;
+  font-size: var(--font-size-ui);
+}
+
+body.app-ui-v3.pur-req-open-page .r-note-input {
+  min-width: 140px;
+}
+
+body.app-ui-v3.pur-req-open-page .copy-row-btn {
+  width: auto;
+  padding: 6px 10px;
+  font-size: var(--font-size-ui);
+}
+
+body.app-ui-v3.pur-req-open-page .pur-req-btns {
+  text-align: left;
+}
+
+body.app-ui-v3.pur-req-open-page .pur-req-btns-row {
+  justify-content: flex-start;
+}
+
+body.app-ui-v3 .purch-code-preview {
+  font-weight: 700;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  min-width: 130px;
+}
+
+body.app-ui-v3 .purch-req-title-field {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+
+body.app-ui-v3 .purch-req-note-block {
+  margin-bottom: 12px;
+}
+
+body.app-ui-v3 .purch-project-select {
+  min-width: 260px;
+}
+
+body.app-ui-v3 .purch-msg-api {
+  min-height: 1.2em;
+  margin: 8px 0;
+  color: #0f766e;
+}
+
+/* Tedarikçiler (suppliers.html) */
+body.app-ui-v3 .sup-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+body.app-ui-v3 .sup-form .full {
+  grid-column: 1 / -1;
+}
+
+body.app-ui-v3 .sup-filter {
+  margin-bottom: 10px;
+}
+
+body.app-ui-v3 .sup-filter .app-input {
+  min-width: 220px;
+}
+
+body.app-ui-v3 .sup-actions-bar {
+  text-align: right;
+  margin: 0;
+}
+
+body.app-ui-v3 .sup-list-card {
+  margin-top: 16px;
+}
+
+body.app-ui-v3 .sup-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Yönetici onayları mesaj + liste */
+body.app-ui-v3 .pur-appr-msg {
+  min-height: 1.2em;
+  margin: 8px 0;
+  color: #0f766e;
+}
+
+body.app-ui-v3 .pur-appr-actions-bar {
+  margin-bottom: 16px;
+}
+
+body.app-ui-v3 .appr-line-hint {
+  max-width: 360px;
+  font-size: var(--font-size-ui);
+}
+
+/* Talep listesi workflow (purchase-requests-workflow.js) */
+body.app-ui-v3 .pr-row.pr-row-clickable {
+  cursor: pointer;
+}
+
+body.app-ui-v3 .pr-det-img-thumb {
+  max-height: 56px;
+  max-width: 80px;
+}
+
+body.app-ui-v3 .pr-det-revision-note {
+  color: #b45309;
+}
+
+body.app-ui-v3 .pr-det-edit-link {
+  text-decoration: none;
+}
+
+body.app-ui-v3 .pr-det-proc-extra {
+  color: #0369a1;
+}
+
+body.app-ui-v3 .pr-act {
+  margin-top: 12px;
+}
+
+body.app-ui-v3 .pr-act-hidden {
+  display: none;
+}
+
+body.app-ui-v3 .pr-act-note-input {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  display: block;
+  margin-top: 8px;
+}
+
+body.app-ui-v3 .proc-cancel-line-textarea {
+  margin-top: 4px;
+}
+
+/* Satınalma işleme — JS şablonları (purchase-processing.js) */
+body.app-ui-v3 tr.po-row {
+  cursor: pointer;
+}
+
+body.app-ui-v3 .proc-qty-helper-meta {
+  color: #64748b;
+}
+
+body.app-ui-v3 .proc-cancel-reason-text {
+  color: #991b1b;
+  margin-top: 6px;
+  max-width: 220px;
+}
+
+body.app-ui-v3 .proc-product-code-muted {
+  color: #64748b;
+}
+
+body.app-ui-v3 .pur-inp.po-line-supsearch {
+  width: 150px;
+  margin-bottom: 4px;
+}
+
+body.app-ui-v3 .pur-inp.po-line-price {
+  width: 120px;
+}
+
+body.app-ui-v3 .pur-inp.po-line-total[readonly] {
+  width: 130px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body.app-ui-v3 .pur-inp.po-line-cur {
+  width: 88px;
+}
+
+body.app-ui-v3 .pur-inp.po-line-fx {
+  width: 110px;
+}
+
+body.app-ui-v3 .po-line-actions-cell {
+  white-space: nowrap;
+}
+
+body.app-ui-v3 .po-line-cancel.app-button {
+  padding: 6px 10px;
+}
+
+/* Mal kabul — JS (goods-receipt.html) */
+body.app-ui-v3 .gr-muted-dash {
+  color: #64748b;
+}
+
+body.app-ui-v3 .gr-po-load-err {
+  color: #b91c1c;
+}
+
 /* --- goods-receipt.html (önceki <style>) --- */
 body.app-ui-v3 .gr-po-scroll {
   max-width: 100%;
@@ -4801,6 +5659,254 @@ body.app-ui-v3 .gr-order-meta {
 
 body.app-ui-v3 .gr-hint-spaced {
   margin: 0 0 8px;
+}
+
+/* --- hr-attendance-monthly.html (önceki sayfa <style>; Faz 3B — yatay kaydırma yok) --- */
+body.app-ui-v3 .attm-inline-5 {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.2fr 1.2fr;
+  gap: 10px;
+  align-items: end;
+}
+
+body.app-ui-v3 .attm-inline-5 > * {
+  min-width: 0;
+}
+
+body.app-ui-v3 .attm-filter-toolbar .attm-inline-5 {
+  flex: 1;
+  min-width: 0;
+}
+
+body.app-ui-v3 .attm-month-row {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+body.app-ui-v3 .attm-live-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+body.app-ui-v3 .attm-live-cards.hidden {
+  display: none;
+}
+
+body.app-ui-v3 .attm-live-card {
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+body.app-ui-v3 .attm-live-card .k {
+  font-size: var(--font-size-meta);
+  color: #475569;
+}
+
+body.app-ui-v3 .attm-live-card .v {
+  margin-top: 4px;
+  font-weight: 700;
+  font-size: var(--font-size-ui);
+  color: #0f172a;
+}
+
+body.app-ui-v3 .attm-summary-spacer {
+  height: 12px;
+}
+
+body.app-ui-v3 .attm-filter-title {
+  margin-top: 10px;
+}
+
+body.app-ui-v3 .attm-msg-slot {
+  min-height: 1.2em;
+}
+
+body.app-ui-v3 .attm-summary-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
+  margin-top: 8px;
+}
+
+body.app-ui-v3 .attm-summary-table-wrap table.app-table {
+  table-layout: fixed;
+}
+
+body.app-ui-v3 .attm-daily-wrap {
+  overflow-x: visible;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 100%;
+}
+
+body.app-ui-v3 .attm-daily-table {
+  font-size: var(--font-size-ui);
+  width: 100%;
+  table-layout: fixed;
+}
+
+body.app-ui-v3 .attm-daily-table th,
+body.app-ui-v3 .attm-daily-table td {
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+body.app-ui-v3 .attm-daily-table select,
+body.app-ui-v3 .attm-daily-table input {
+  min-height: 30px;
+  font-size: var(--font-size-meta);
+}
+
+body.app-ui-v3 .attm-daily-table th:nth-child(6),
+body.app-ui-v3 .attm-daily-table td:nth-child(6) {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+}
+
+body.app-ui-v3 .attm-daily-table th:nth-child(7),
+body.app-ui-v3 .attm-daily-table td:nth-child(7) {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+}
+
+body.app-ui-v3 .attm-daily-table th:last-child,
+body.app-ui-v3 .attm-daily-table td:last-child {
+  width: 48px;
+  min-width: 40px;
+  max-width: 48px;
+  text-align: center;
+}
+
+body.app-ui-v3 .attm-icon-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #dbe4f0;
+  background: #f8fafc;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+body.app-ui-v3 .attm-icon-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+body.app-ui-v3 .attm-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body.app-ui-v3 .attm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+body.app-ui-v3 .attm-modal-backdrop.attm-modal-open {
+  display: flex;
+}
+
+body.app-ui-v3 .attm-modal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 440px;
+  width: 100%;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+}
+
+body.app-ui-v3 .attm-modal h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+body.app-ui-v3 .attm-modal .attm-modal-help {
+  margin: 0 0 12px;
+  font-size: var(--font-size-meta);
+  color: #64748b;
+}
+
+body.app-ui-v3 .attm-modal label {
+  display: block;
+  font-size: var(--font-size-meta);
+  margin-bottom: 6px;
+  color: #334155;
+}
+
+body.app-ui-v3 .attm-modal textarea {
+  width: 100%;
+  min-height: 88px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  font: inherit;
+  resize: vertical;
+}
+
+body.app-ui-v3 .attm-modal .attm-modal-err {
+  min-height: 1.2em;
+  margin-top: 8px;
+  font-size: var(--font-size-meta);
+  color: #b91c1c;
+}
+
+body.app-ui-v3 .attm-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1200px) {
+  body.app-ui-v3 .attm-daily-table th:nth-child(6),
+  body.app-ui-v3 .attm-daily-table td:nth-child(6),
+  body.app-ui-v3 .attm-daily-table th:nth-child(7),
+  body.app-ui-v3 .attm-daily-table td:nth-child(7) {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+  }
+}
+
+@media (max-width: 768px) {
+  body.app-ui-v3 .attm-daily-table th:nth-child(6),
+  body.app-ui-v3 .attm-daily-table td:nth-child(6),
+  body.app-ui-v3 .attm-daily-table th:nth-child(7),
+  body.app-ui-v3 .attm-daily-table td:nth-child(7) {
+    width: 64px;
+    min-width: 64px;
+    max-width: 64px;
+  }
+}
+
+@media (max-width: 980px) {
+  body.app-ui-v3 .attm-inline-5 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --- hr-attendance.html (önceki <style>) --- */
@@ -4953,6 +6059,17 @@ body.app-ui-v3 .att-inline-5 {
   grid-template-columns: 1.1fr 1.1fr 1.5fr auto auto;
   gap: 10px;
   align-items: end;
+}
+
+/* Günlük puantaj: filtre sol — Listele/Kaydet sağ */
+body.app-ui-v3 .att-toolbar-row {
+  align-items: flex-end;
+}
+
+body.app-ui-v3 .att-toolbar-row .att-inline-5 {
+  grid-template-columns: 1.1fr 1.1fr 1.5fr;
+  flex: 1;
+  min-width: 0;
 }
 
 body.app-ui-v3 .att-inline-5 > * {

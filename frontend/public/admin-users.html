@@ -20,11 +20,11 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
           <h1 class="app-page-title" data-i18n="admin.users">Kullanıcılar</h1>
           <p class="subtitle" data-i18n="admin.usersSub">Sistem kullanıcıları — rol atama, pasif, şifre sıfırlama</p>
         </div>
-        <div class="topbar-right">
+        <div class="topbar-right app-toolbar-right">
           <select id="languageSelect" aria-label="Language" class="admin-users-lang app-select app-topbar-lang">
             <option value="tr">Türkçe</option>
             <option value="uz">O‘zbekcha</option>
@@ -46,13 +46,17 @@
           </div>
           <p id="adminErr" class="login-error app-error-state admin-users-err"></p>
           <section class="card admin-section admin-users-card app-card" id="userSection">
-            <div class="admin-users-toolbar app-filterbar">
-              <input type="text" class="app-input admin-users-search-input" placeholder="Kullanıcı ara..." aria-label="search users" />
-              <button type="button" class="secondary-btn app-button app-button-secondary admin-users-filter-btn">Filtrele</button>
-              <a href="/admin-user-new.html" class="module-button admin-users-new-btn app-button app-button-primary" data-i18n="admin.newUserBtn">+ Yeni kullanıcı</a>
+            <div class="app-page-toolbar admin-users-toolbar-wrap">
+              <div class="app-toolbar-left app-filterbar admin-users-toolbar">
+                <input type="search" class="app-input app-search-input admin-users-search-input" placeholder="Kullanıcı ara..." aria-label="search users" />
+                <button type="button" class="secondary-btn app-button app-button-secondary admin-users-filter-btn">Filtrele</button>
+              </div>
+              <div class="app-toolbar-right">
+                <a href="/admin-user-new.html" class="module-button admin-users-new-btn app-button app-button-primary" data-i18n="admin.newUserBtn">+ Yeni kullanıcı</a>
+              </div>
             </div>
 
-            <div class="admin-users-table-wrap app-table-scroll">
+            <div class="admin-users-table-wrap admin-users-table-panel">
               <table class="admin-users-table app-table">
                 <thead>
                   <tr>
@@ -61,7 +65,7 @@
                     <th>E-Posta</th>
                     <th>Rol</th>
                     <th>Durum</th>
-                    <th>İşlemler</th>
+                    <th class="app-table-col-action">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody id="userTableBody"></tbody>

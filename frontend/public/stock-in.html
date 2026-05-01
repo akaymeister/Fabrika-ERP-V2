@@ -21,7 +21,7 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="stock.in.title">Stok giriş</h1>
+        <h1 class="app-page-title" data-i18n="stock.in.title">Stok giriş</h1>
         <p class="subtitle" data-i18n="stock.in.superOnlySub">Süper yönetici — manuel stok (başlangıç, düzeltme, sayım, acil giriş)</p>
       </div>
         <div class="topbar-right">
@@ -44,7 +44,7 @@
       <form id="f">
         <div class="form-row-2 app-form-row-narrow">
           <div class="form-field">
-            <label for="movementSource" data-i18n="stock.in.sourceType">Giriş türü</label>
+            <label class="app-label" for="movementSource" data-i18n="stock.in.sourceType">Giriş türü</label>
             <select id="movementSource" class="app-select app-fill-block">
               <option value="MANUAL_STOCK_IN" data-i18n="stock.in.src.manual">Manuel stok girişi</option>
               <option value="STOCK_ADJUSTMENT" data-i18n="stock.in.src.adjust">Sayım fazlası</option>
@@ -55,23 +55,23 @@
         </div>
         <div class="form-stock-in-r1">
           <div class="form-field">
-            <label for="projectId" data-i18n="stock.in.project">Proje</label>
+            <label class="app-label" for="projectId" data-i18n="stock.in.project">Proje</label>
             <select id="projectId" required class="app-select">
               <option value="" data-i18n="stock.in.projectPick">Proje seçin</option>
             </select>
           </div>
           <div class="form-field">
-            <label for="wid" data-i18n="stock.in.selectWh">Depo</label>
+            <label class="app-label" for="wid" data-i18n="stock.in.selectWh">Depo</label>
             <select id="wid" required class="app-select"></select>
           </div>
           <div class="form-field">
-            <label for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
+            <label class="app-label" for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
             <select id="scid" required disabled class="app-select"></select>
           </div>
         </div>
         <div class="form-stock-in-r2">
           <div class="form-field product-pick">
-            <label for="productQ" data-i18n="common.product">Ürün</label>
+            <label class="app-label" for="productQ" data-i18n="common.product">Ürün</label>
             <div class="product-dd-wrap">
               <input
                 type="text"
@@ -85,7 +85,7 @@
             </div>
           </div>
           <div class="form-field">
-            <label for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
+            <label class="app-label" for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
             <div class="qty-inline">
               <input type="number" id="qtyInput" min="0.0001" step="any" required class="app-input" />
               <span id="qtyUnitBadge" class="unit-badge">—</span>
@@ -102,27 +102,27 @@
         </div>
         <div class="form-stock-in-r3">
           <div class="form-field">
-            <label for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPricePerProductUnit">Birim fiyat (sistem para / ürün birimi)</label>
+            <label class="app-label" for="unitPriceSysM2" id="unitPriceLabel" data-i18n="stock.in.unitPricePerProductUnit">Birim fiyat (sistem para / ürün birimi)</label>
             <input type="number" id="unitPriceSysM2" min="0" step="0.0001" required class="app-input" />
           </div>
           <div class="form-field">
-            <label for="fxUzsInput" data-i18n="stock.in.fxInputLabel">Güncel kur (1 USD = … UZS)</label>
+            <label class="app-label" for="fxUzsInput" data-i18n="stock.in.fxInputLabel">Güncel kur (1 USD = … UZS)</label>
             <input type="number" id="fxUzsInput" min="1" step="1" required class="app-input" />
           </div>
           <div class="form-field">
-            <label for="lineUzs" data-i18n="stock.in.totalUzs">Toplam (sistem parası)</label>
+            <label class="app-label" for="lineUzs" data-i18n="stock.in.totalUzs">Toplam (sistem parası)</label>
             <input type="number" id="lineUzs" class="line-uzs-readonly app-input" min="0" step="0.01" required readonly />
             <p id="lineUsdReadout" class="product-unit-hint" data-i18n="stock.in.lineUsdReadout" aria-live="polite">—</p>
           </div>
         </div>
-        <div id="editReasonBlock" class="form-field form-field-wide" style="display: none" hidden>
-          <label for="actionReason" data-i18n="stock.in.actionReasonLabel">Düzenleme açıklaması (zorunlu)</label>
-          <textarea id="actionReason" class="input-upper" rows="2"></textarea>
+        <div id="editReasonBlock" class="form-field form-field-wide" hidden>
+          <label class="app-label" for="actionReason" data-i18n="stock.in.actionReasonLabel">Düzenleme açıklaması (zorunlu)</label>
+          <textarea id="actionReason" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
         </div>
         <input type="hidden" id="editingMovId" value="" />
         <div class="form-field form-field-wide">
-          <label for="note" data-i18n="common.note">Not</label>
-          <textarea id="note" class="input-upper" rows="2"></textarea>
+          <label class="app-label" for="note" data-i18n="common.note">Not</label>
+          <textarea id="note" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
         </div>
         <div class="form-actions-row app-stock-form-actions">
           <button type="submit" id="btnSubmit" class="module-button app-button app-button-primary" data-i18n="stock.in.btnSave">Kaydet</button>
@@ -143,7 +143,7 @@
     <dialog id="voidReasonDlg" class="stock-dialog">
       <h4 class="stock-dialog-title" data-i18n="stock.in.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
       <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.in.voidDlgHint">Bu kayıt silinecek; stok geri alınır.</p>
-      <textarea id="voidReasonText" class="input-upper app-input app-fill-block" rows="3"></textarea>
+      <textarea id="voidReasonText" class="input-upper app-input app-textarea app-fill-block" rows="3"></textarea>
       <div class="app-dialog-actions">
         <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="voidDlgCancel" data-i18n="common.cancel">İptal</button>
         <button type="button" class="module-button app-button app-button-danger" id="voidDlgOk" data-i18n="stock.in.voidDlgConfirm">Sil</button>
@@ -151,16 +151,16 @@
     </dialog>
 
     <div class="card stock-in-mov-card app-card">
-      <h3 class="app-section-title-tight" data-i18n="stock.in.movSectionTitle">Stok hareketleri (giriş)</h3>
+      <h3 class="app-card-title" data-i18n="stock.in.movSectionTitle">Stok hareketleri (giriş)</h3>
       <div class="mov-filters app-filterbar">
         <div class="form-field">
-          <label for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
+          <label class="app-label" for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
           <select id="movFilterProject" class="app-select">
             <option value="" data-i18n="stock.in.movAllProjects">Tümü</option>
           </select>
         </div>
         <div class="form-field">
-          <label for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
+          <label class="app-label" for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
           <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" class="app-input" />
         </div>
         <button type="button" class="module-button app-button app-button-secondary app-mov-refresh-btn" id="btnMovRefresh" data-i18n="stock.in.movRefresh">Yenile</button>
@@ -282,7 +282,7 @@
         const empty = window.i18n
           ? window.i18n.t('stock.in.emptySubProducts')
           : 'Bu alt kategoride eşleşen ürün yok';
-        ul.innerHTML = '<li style="cursor:default;color:#64748b;padding:10px">' + empty + '</li>';
+        ul.innerHTML = '<li class="stock-in-dd-empty-li">' + empty + '</li>';
         ul.hidden = false;
         return;
       }
@@ -792,7 +792,7 @@
         const em =
           (data && (data.message || (data.error && (data.error + (data.message || ''))))) || 'Hata';
         tb.innerHTML =
-          '<tr><td colspan="14" style="color:#b91c1c">' + escMov(String(em)) + '</td></tr>';
+          '<tr><td colspan="14" class="stock-in-mov-err-row">' + escMov(String(em)) + '</td></tr>';
         return;
       }
       const rows = data.movements || [];
@@ -863,12 +863,12 @@
             escMov(m.user_username || '—') +
             '</td>' +
             '<td class="mov-actions-cell">' +
-            '<button type="button" class="btn-mov btn-mov-edit" data-mov-act="edit" data-mid="' +
+            '<button type="button" class="btn-mov btn-mov-edit app-button app-button-secondary" data-mov-act="edit" data-mid="' +
             mid +
             '">' +
             escMov(btnEditL) +
             '</button> ' +
-            '<button type="button" class="btn-mov btn-mov-del" data-mov-act="void" data-mid="' +
+            '<button type="button" class="btn-mov btn-mov-del app-button app-button-danger" data-mov-act="void" data-mid="' +
             mid +
             '">' +
             escMov(btnDelL) +
@@ -883,7 +883,7 @@
       document.getElementById('editingMovId').value = '';
       const erb = document.getElementById('editReasonBlock');
       if (erb) {
-        erb.style.display = 'none';
+        erb.setAttribute('hidden', '');
       }
       const ar = document.getElementById('actionReason');
       if (ar) {
@@ -925,7 +925,6 @@
       document.getElementById('editingMovId').value = String(m.id);
       const erb = document.getElementById('editReasonBlock');
       if (erb) {
-        erb.style.display = 'block';
         erb.removeAttribute('hidden');
       }
       const ar = document.getElementById('actionReason');

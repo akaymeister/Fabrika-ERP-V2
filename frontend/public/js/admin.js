@@ -227,7 +227,7 @@ function userSubjectMetaText(user) {
 function legacyRoleWarnHtml(user) {
   const roleSlug = String(user?.role_slug || '').toLowerCase();
   if (SYSTEM_ROLE_SLUGS.has(roleSlug)) return '';
-  return '<div style="font-size:11px;color:#b45309;font-weight:600">Legacy rol algilandi (eski model).</div>';
+  return '<div class="admin-users-legacy-warn">Legacy rol algılandı (eski model).</div>';
 }
 
 function userSubjectOptionsHtml(user) {
@@ -253,26 +253,28 @@ function renderUserTable() {
   body.innerHTML = users
     .map(
       (u) => `<tr>
-    <td>
+    <td title="${esc(u.username)}">
       <div class="admin-user-name-cell">
         <span class="admin-user-avatar">${esc(String(u.username || '?').slice(0, 2).toUpperCase())}</span>
         <strong>${esc(u.username)}</strong>
       </div>
     </td>
-    <td class="display-upper">${esc(u.full_name)}</td>
-    <td>${esc(u.email || '-')}</td>
+    <td class="display-upper" title="${esc(u.full_name)}">${esc(u.full_name)}</td>
+    <td title="${esc(u.email || '')}">${esc(u.email || '-')}</td>
     <td>
       <div class="admin-role-wrap">
-        <select class="js-user-role" data-id="${u.id}" style="min-width: 180px; font-size: 13px">${userSubjectOptionsHtml(u)}</select>
-        <div><code style="font-size: 11px; color: #64748b">${esc(userSubjectMetaText(u))}</code></div>
+        <select class="js-user-role app-select admin-users-role-select" data-id="${u.id}">${userSubjectOptionsHtml(u)}</select>
+        <div><code class="admin-role-meta-code">${esc(userSubjectMetaText(u))}</code></div>
       </div>
       ${legacyRoleWarnHtml(u)}
     </td>
     <td><span class="admin-status-badge ${u.is_active ? 'is-active' : 'is-passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></td>
-    <td class="user-actions">
-      <button type="button" class="secondary-btn admin-action-btn" data-act="active" data-id="${u.id}" data-active="${Number(u.is_active) ? 1 : 0}" title="${u.is_active ? t('admin.user.deactivate') : t('admin.user.activate')}">👁</button>
-      <button type="button" class="secondary-btn admin-action-btn" data-act="pass" data-id="${u.id}" title="${t('admin.user.password')}">✎</button>
-      <button type="button" class="secondary-btn admin-action-btn" data-act="menu" data-id="${u.id}" title="menu">⋮</button>
+    <td class="user-actions app-table-col-action">
+      <div class="app-action-bar admin-users-actions">
+      <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="active" data-id="${u.id}" data-active="${Number(u.is_active) ? 1 : 0}" title="${u.is_active ? t('admin.user.deactivate') : t('admin.user.activate')}">👁</button>
+      <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="pass" data-id="${u.id}" title="${t('admin.user.password')}">✎</button>
+      <button type="button" class="secondary-btn admin-action-btn app-button app-button-secondary" data-act="menu" data-id="${u.id}" title="menu">⋮</button>
+      </div>
     </td>
   </tr>`
     )

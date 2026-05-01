@@ -55,7 +55,7 @@
   }
 
   function renderRow(r) {
-    return `<tr data-id="${r.id}" class="pr-row" style="cursor:pointer"><td>${esc(r.request_code || r.id)}</td><td>${esc(
+    return `<tr data-id="${r.id}" class="pr-row pr-row-clickable"><td>${esc(r.request_code || r.id)}</td><td>${esc(
       r.project_code || '—'
     )}</td><td>${esc(r.requester_name || '—')}</td><td>${stLabel(r.pr_status)}</td><td>${esc(procLabel(r.procurement_state))}</td><td>${esc(
       r.created_at || ''
@@ -66,7 +66,7 @@
     if (!url) {
       return '—';
     }
-    return `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="" class="pr-det-img" style="max-height:56px;max-width:80px" /></a>`;
+    return `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="" class="pr-det-img pr-det-img-thumb" /></a>`;
   }
 
   function renderDetail() {
@@ -87,17 +87,17 @@
       )
       .join('');
     const canAct = scope.canApprove && r.pr_status === 'pending';
-    const note = r.status_message ? `<p style="color:#b45309"><strong>${tKey('purch.wf.lastNote')}</strong> ${esc(r.status_message)}</p>` : '';
+    const note = r.status_message ? `<p class="pr-det-revision-note"><strong>${tKey('purch.wf.lastNote')}</strong> ${esc(r.status_message)}</p>` : '';
     const appr = r.approver_name ? `<p>${tKey('purch.wf.approver')}: ${esc(r.approver_name)}</p>` : '';
     const editL =
       r.pr_status === 'revision_requested' || r.pr_status === 'draft'
-        ? `<p><a class="version-btn" href="/purchase-requisition-open.html?id=${r.id}" style="text-decoration:none">${tKey('purch.wf.editReq')}</a></p>`
+        ? `<p><a class="version-btn app-button app-button-secondary pr-det-edit-link" href="/purchase-requisition-open.html?id=${r.id}">${tKey('purch.wf.editReq')}</a></p>`
         : '';
     const procExtra = r.procurement_state
-      ? `<p class="text-ui" style="color:#0369a1"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
+      ? `<p class="text-ui pr-det-proc-extra"><strong>${tKey('purch.wf.colProcure')}:</strong> ${esc(procLabel(r.procurement_state))}</p>`
       : '';
     det.innerHTML = `
-      <h4>${esc(r.request_code || r.id)}</h4>
+      <h4 class="app-card-title">${esc(r.request_code || r.id)}</h4>
       <p>${tKey('purch.wf.project')}: <strong>${esc(r.project_code || '—')}</strong> — ${esc(r.project_name || '')}</p>
       <p>${tKey('purch.wf.requester')}: ${esc(r.requester_name || '—')}</p>
       <p>${tKey('purch.req.lColStatus')}: <strong>${stLabel(r.pr_status)}</strong></p>
@@ -105,8 +105,8 @@
       ${note}${appr}
       ${editL}
       <p>${tKey('purch.req.note')}: ${esc(r.note || '—')}</p>
-      <div style="overflow-x:auto">
-        <table class="pr-det-table">
+      <div class="app-table-scroll">
+        <table class="pr-det-table app-table">
           <thead><tr>
             <th>${tKey('purch.req.colProd')}</th>
             <th>${tKey('purch.req.colQty')} / ${tKey('purch.req.colUnit')}</th>
@@ -117,13 +117,13 @@
           <tbody>${it || '<tr><td colspan="5">—</td></tr>'}</tbody>
         </table>
       </div>
-      <div class="pr-act" style="margin-top:12px;${canAct ? '' : 'display:none'}">
-        <label for="actNote">${tKey('purch.wf.actionNote')}</label>
-        <textarea id="actNote" rows="2" style="width:100%;max-width:480px;border-radius:8px;padding:8px;box-sizing:border-box;display:block"></textarea>
+      <div class="pr-act${canAct ? '' : ' pr-act-hidden'}">
+        <label class="app-label" for="actNote">${tKey('purch.wf.actionNote')}</label>
+        <textarea id="actNote" class="app-input app-textarea pr-act-note-input" rows="2"></textarea>
         <div class="pr-act-buttons" role="group" aria-label="${esc(tKey('purch.req.lColAction'))}">
-          <button type="button" class="version-btn" id="btnAp">${tKey('purch.req.approve')}</button>
-          <button type="button" class="version-btn" style="background:#b91c1c;border:none" id="btnRj">${tKey('purch.req.reject')}</button>
-          <button type="button" class="version-btn" style="background:#b45309;border:none" id="btnRv">${tKey('purch.wf.requestRevision')}</button>
+          <button type="button" class="version-btn app-button app-button-success" id="btnAp">${tKey('purch.req.approve')}</button>
+          <button type="button" class="version-btn app-button app-button-danger" id="btnRj">${tKey('purch.req.reject')}</button>
+          <button type="button" class="version-btn app-button app-button-warning" id="btnRv">${tKey('purch.wf.requestRevision')}</button>
         </div>
       </div>
     `;

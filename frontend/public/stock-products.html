@@ -40,47 +40,47 @@
 
     <div class="card app-card">
       <h3 id="formCardTitle" class="app-card-title" data-i18n="stock.product.formNew">Yeni ürün</h3>
-      <p id="editCodeLine" style="display: none; font-size: 13px; color: #64748b; margin: 0 0 4px">Düzenlenen kod: —</p>
-      <p style="font-size:13px;margin:0 0 8px">
+      <p id="editCodeLine" class="stock-products-edit-code-line">Düzenlenen kod: —</p>
+      <p class="stock-products-wh-link-line">
         <a href="/stock-warehouses.html" data-i18n="stock.product.manageWarehouses">Depo / kategori yönetimi</a>
       </p>
-      <p id="previewName" style="color:#475569;font-size:14px"><span data-i18n="stock.product.sysname">Sistem adı</span>: —</p>
+      <p id="previewName" class="stock-products-preview-name"><span data-i18n="stock.product.sysname">Sistem adı</span>: —</p>
       <form id="fProd" class="product-form-grid">
         <div class="product-form-warehouse-row">
           <div class="form-field">
-            <label for="warehouseId" data-i18n="stock.product.warehouse">Depo</label>
+            <label class="app-label" for="warehouseId" data-i18n="stock.product.warehouse">Depo</label>
             <select id="warehouseId" class="app-select" required></select>
           </div>
           <div class="form-field">
-            <label for="warehouseSubId" data-i18n="stock.product.subcategory">Alt kategori</label>
+            <label class="app-label" for="warehouseSubId" data-i18n="stock.product.subcategory">Alt kategori</label>
             <select id="warehouseSubId" class="app-select" required></select>
           </div>
         </div>
         <div class="product-form-warehouse-row">
           <div class="form-field">
-            <label for="materialLabel" data-i18n="stock.product.material">Malzeme</label>
-            <input type="text" id="materialLabel" class="input-upper" required maxlength="280" data-i18n-placeholder="stock.product.material" />
+            <label class="app-label" for="materialLabel" data-i18n="stock.product.material">Malzeme</label>
+            <input type="text" id="materialLabel" class="input-upper app-input" required maxlength="280" data-i18n-placeholder="stock.product.material" />
           </div>
           <div class="form-field">
-            <label for="pbrand" data-i18n="stock.product.brand">Marka</label>
+            <label class="app-label" for="pbrand" data-i18n="stock.product.brand">Marka</label>
             <select id="pbrand" class="app-select"><option value="" data-i18n="stock.product.brandNone">— Markasız —</option></select>
           </div>
         </div>
         <div class="product-form-dims-row">
           <div class="form-field">
-            <label for="widthMm" data-i18n="stock.product.width">En (mm)</label>
-            <input type="number" id="widthMm" min="0" step="1" placeholder="2100" />
+            <label class="app-label" for="widthMm" data-i18n="stock.product.width">En (mm)</label>
+            <input type="number" id="widthMm" class="app-input" min="0" step="1" placeholder="2100" />
           </div>
           <div class="form-field">
-            <label for="heightMm" data-i18n="stock.product.height">Boy (mm)</label>
-            <input type="number" id="heightMm" min="0" step="1" placeholder="2800" />
+            <label class="app-label" for="heightMm" data-i18n="stock.product.height">Boy (mm)</label>
+            <input type="number" id="heightMm" class="app-input" min="0" step="1" placeholder="2800" />
           </div>
           <div class="form-field">
-            <label for="depthMm" data-i18n="stock.product.depth">Yükseklik / derinlik (mm)</label>
-            <input type="number" id="depthMm" min="0" step="1" placeholder="18" />
+            <label class="app-label" for="depthMm" data-i18n="stock.product.depth">Yükseklik / derinlik (mm)</label>
+            <input type="number" id="depthMm" class="app-input" min="0" step="1" placeholder="18" />
           </div>
           <div class="form-field">
-            <label for="unitId" data-i18n="stock.product.unit">Birim</label>
+            <label class="app-label" for="unitId" data-i18n="stock.product.unit">Birim</label>
             <select id="unitId" class="app-select" required></select>
           </div>
           <div class="form-field form-field-unit-btn">
@@ -88,22 +88,22 @@
             <button type="button" class="secondary-btn app-button app-button-secondary" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
           </div>
         </div>
-        <p class="form-hint" style="grid-column:1/-1;font-size:13px;color:#64748b;margin:0" data-i18n="stock.product.priceOnStockIn">
+        <p class="form-hint stock-products-form-hint-full" data-i18n="stock.product.priceOnStockIn">
           Birim fiyat ve USD/UZS dönüşümü stok giriş ekranındadır.
         </p>
-        <div class="form-field form-field-wide form-actions app-form-actions" style="grid-column: 1 / -1">
+        <div class="form-field form-field-wide form-actions app-form-actions stock-products-form-actions-full">
           <button type="submit" id="btnSaveProduct" class="module-button app-button app-button-primary" data-i18n="stock.product.save">Kaydet</button>
           <button type="button" id="btnCancelEdit" class="secondary-btn app-button app-button-secondary stock-products-cancel-edit" data-i18n="stock.product.cancelEdit">Vazgeç</button>
         </div>
       </form>
-      <p id="unitListMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="status"></p>
-      <p id="apiDataMsg" class="login-error" style="display: none; margin-top: 8px; color: #b91c1c; white-space: pre-wrap" role="alert"></p>
-      <p id="pmsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c"></p>
+      <p id="unitListMsg" class="login-error stock-products-msg" role="status"></p>
+      <p id="apiDataMsg" class="login-error stock-products-msg-pre" role="alert"></p>
+      <p id="pmsg" class="login-error stock-products-msg"></p>
     </div>
 
     <div class="card app-card stock-products-excel-card">
       <h3 class="app-card-title" data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
-      <p style="font-size: 13px; color: #64748b; margin: 0 0 10px" data-i18n="stock.product.excelHint">
+      <p class="stock-products-excel-hint" data-i18n="stock.product.excelHint">
         Şablonu indirin; depo, alt kategori, birim ve marka adları sistemdekilerle aynı olsun. En fazla 500 satır.
       </p>
       <div class="product-excel-bar">
@@ -113,7 +113,7 @@
           Yükle ve içe aktar
         </button>
       </div>
-      <p id="importMsg" style="display: none; margin-top: 10px; font-size: 14px; white-space: pre-wrap" role="status"></p>
+      <p id="importMsg" class="stock-products-import-msg" role="status"></p>
     </div>
 
     <div class="card app-card stock-products-list-card">

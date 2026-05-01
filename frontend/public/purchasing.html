@@ -5,44 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.hub.title">Satınalma yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .purch-hub-cards h3 {
-      text-transform: capitalize;
-    }
-    .purch-hub-kpis {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 12px;
-      max-width: 860px;
-    }
-    .purch-hub-kpi {
-      border: 1px solid #dbe6f5;
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 10px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    .purch-hub-kpi span {
-      font-size: 12px;
-      color: #475569;
-      font-weight: 600;
-    }
-    .purch-hub-kpi strong {
-      font-size: 18px;
-      color: #0f172a;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-    @media (max-width: 900px) {
-      .purch-hub-kpis {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 <body class="app-shell app-master-page app-ui-v3">
   <div class="container app-layout-v3">
@@ -59,11 +21,11 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="purch.hub.title">Satınalma yönetimi</h1>
+        <h1 class="app-page-title" data-i18n="purch.hub.title">Satınalma yönetimi</h1>
         <p class="subtitle" data-i18n="purch.hub.sub">Dört adım: talep → onay → sipariş → mal kabul (stok)</p>
       </div>
         <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px" title="Language">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -75,10 +37,10 @@
         <main class="app-master-main">
 
 
-    <section class="hero-panel premium-hero" style="margin-bottom: 24px">
+    <section class="hero-panel premium-hero purch-hub-hero">
       <div class="hero-text">
         <span class="hero-mini-badge" data-i18n="purch.hub.badge">Modül</span>
-        <h2 data-i18n="nav.purch.hub">Satınalma</h2>
+        <h2 class="app-card-title" data-i18n="nav.purch.hub">Satınalma</h2>
         <p data-i18n="purch.hub.subLong">1) Talep aç 2) Talepler & onay 3) Satınalma işleme (fiyat) 4) Mal kabul ayrıca Stok modülünde. Stok sadece kabulle artar.</p>
         <div class="purch-hub-kpis">
           <div class="purch-hub-kpi">
@@ -97,21 +59,21 @@
       </div>
     </section>
 
-    <div class="dashboard-grid purch-hub-cards" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))">
-      <a class="dashboard-card primary-card" href="/purchase-requisition-open.html" style="text-decoration: none; color: inherit" id="linkOpenReq">
-        <h3 data-i18n="purch.hub.step1">Talep aç</h3>
+    <div class="dashboard-grid purch-hub-cards purch-hub-grid">
+      <a class="dashboard-card primary-card purch-hub-dash-link" href="/purchase-requisition-open.html" id="linkOpenReq">
+        <h3 class="app-card-title" data-i18n="purch.hub.step1">Talep aç</h3>
         <p data-i18n="purch.hub.cardOpenReq">Proje, satırlar, taslak; fiyat yok</p>
       </a>
-      <a class="dashboard-card" href="/purchase-requests.html" style="text-decoration: none; color: inherit" id="linkReq">
-        <h3 data-i18n="purch.hub.step2">Talepler & onay</h3>
+      <a class="dashboard-card purch-hub-dash-link" href="/purchase-requests.html" id="linkReq">
+        <h3 class="app-card-title" data-i18n="purch.hub.step2">Talepler & onay</h3>
         <p data-i18n="purch.hub.cardReq">Liste, detay, onay / red / revizyon</p>
       </a>
-      <a class="dashboard-card" href="/purchase-processing.html" style="text-decoration: none; color: inherit" id="linkProc">
-        <h3 data-i18n="purch.hub.step3">Satınalma işleme</h3>
+      <a class="dashboard-card purch-hub-dash-link" href="/purchase-processing.html" id="linkProc">
+        <h3 class="app-card-title" data-i18n="purch.hub.step3">Satınalma işleme</h3>
         <p data-i18n="purch.hub.cardProc">Sipariş, fiyat, yazdır; stok artmaz</p>
       </a>
-      <a class="dashboard-card" href="/suppliers.html" style="text-decoration: none; color: inherit" id="linkSup">
-        <h3 data-i18n="nav.purch.suppliers">Tedarikçiler</h3>
+      <a class="dashboard-card purch-hub-dash-link" href="/suppliers.html" id="linkSup">
+        <h3 class="app-card-title" data-i18n="nav.purch.suppliers">Tedarikçiler</h3>
         <p data-i18n="purch.hub.cardSup">Tedarikçi ekle, liste; ileride cari işlemler</p>
       </a>
     </div>

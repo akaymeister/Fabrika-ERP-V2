@@ -21,7 +21,7 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="stock.out.title">Stok çıkış</h1>
+        <h1 class="app-page-title" data-i18n="stock.out.title">Stok çıkış</h1>
         <p class="subtitle" data-i18n="stock.out.sub">Proje, depo, ürün; önce proje stoku, sonra genel, sonra diğer (FIFO)</p>
       </div>
         <div class="topbar-right">
@@ -41,23 +41,23 @@
       <form id="f">
         <div class="form-stock-out-r1">
           <div class="form-field">
-            <label for="projectId" data-i18n="stock.in.project">Proje</label>
+            <label class="app-label" for="projectId" data-i18n="stock.in.project">Proje</label>
             <select id="projectId" required class="app-select">
               <option value="" data-i18n="stock.in.projectPick">Proje seçin</option>
             </select>
           </div>
           <div class="form-field">
-            <label for="wid" data-i18n="stock.in.selectWh">Depo</label>
+            <label class="app-label" for="wid" data-i18n="stock.in.selectWh">Depo</label>
             <select id="wid" required class="app-select"></select>
           </div>
           <div class="form-field">
-            <label for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
+            <label class="app-label" for="scid" data-i18n="stock.in.selectSub">Alt kategori</label>
             <select id="scid" required disabled class="app-select"></select>
           </div>
         </div>
         <div class="form-stock-out-r2">
           <div class="form-field product-pick">
-            <label for="productQ" data-i18n="common.product">Ürün</label>
+            <label class="app-label" for="productQ" data-i18n="common.product">Ürün</label>
             <div class="product-dd-wrap">
               <input
                 type="text"
@@ -71,12 +71,12 @@
             </div>
           </div>
           <div class="form-field">
-            <label data-i18n="stock.out.colStockM2" class="stock-out-stock-label">Güncel stok</label>
+            <label class="app-label stock-out-stock-label" data-i18n="stock.out.colStockM2">Güncel stok</label>
             <div id="currentStockM2" class="stock-now-box" role="status">—</div>
             <p class="product-unit-hint stock-m2-sub" id="stockM2Sub" data-i18n="stock.out.colStockHint"></p>
           </div>
           <div class="form-field">
-            <label for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
+            <label class="app-label" for="qtyInput" data-i18n="stock.in.qty">Miktar</label>
             <div class="qty-inline">
               <input type="number" id="qtyInput" min="0.0001" step="any" required class="app-input" />
               <span id="qtyUnitBadge" class="unit-badge">—</span>
@@ -90,14 +90,14 @@
           <p id="productUnitHint" class="product-unit-hint" data-i18n="stock.in.productUnitHint">—</p>
         </div>
         <div class="form-field form-field-wide">
-          <label for="note" data-i18n="common.note">Not</label>
-          <textarea id="note" class="input-upper app-input app-fill-block" rows="2"></textarea>
+          <label class="app-label" for="note" data-i18n="common.note">Not</label>
+          <textarea id="note" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
         </div>
         <div class="form-actions-row stock-out-form-actions">
           <button
             type="submit"
             id="btnSubmit"
-            class="module-button app-button v3-stock-out-submit"
+            class="module-button app-button app-button-primary v3-stock-out-submit"
             data-i18n="stock.out.submit"
           >
             Çıkış kaydet
@@ -111,10 +111,10 @@
     <dialog id="outVoidDialog" class="stock-dialog">
       <h4 class="stock-dialog-title" data-i18n="stock.out.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
       <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.out.voidDlgHint">Hareket silinir; stok ve maliyet geri yüklenir.</p>
-      <textarea id="outVoidReason" class="input-upper app-input app-fill-block" rows="3"></textarea>
+      <textarea id="outVoidReason" class="input-upper app-input app-textarea app-fill-block" rows="3"></textarea>
       <div class="app-dialog-actions">
         <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="module-button app-button v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
+        <button type="button" class="module-button app-button app-button-danger v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
       </div>
     </dialog>
 
@@ -122,19 +122,19 @@
       <h4 class="stock-out-edit-title" data-i18n="stock.out.editDlgTitle">Hareketi düzenle</h4>
       <p class="product-unit-hint stock-dialog-lead" data-i18n="stock.out.editDlgHint">Önce açıklama, sonra yeni değerler. Eski hareket iptal, yeni çıkış kaydedilir.</p>
       <div class="form-field stock-out-edit-field">
-        <label for="outEditReason" data-i18n="stock.out.editReasonLabel">Düzenleme açıklaması (zorunlu)</label>
-        <textarea id="outEditReason" class="input-upper app-input app-fill-block" rows="2"></textarea>
+        <label class="app-label" for="outEditReason" data-i18n="stock.out.editReasonLabel">Düzenleme açıklaması (zorunlu)</label>
+        <textarea id="outEditReason" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
       </div>
       <div class="form-field stock-out-edit-field">
-        <label for="outEditProductId" data-i18n="stock.out.editProductId">Ürün ID</label>
+        <label class="app-label" for="outEditProductId" data-i18n="stock.out.editProductId">Ürün ID</label>
         <input type="number" id="outEditProductId" min="1" step="1" class="input-upper app-input app-fill-block" />
       </div>
       <div class="form-field stock-out-edit-field">
-        <label for="outEditProjectId" data-i18n="stock.in.project">Proje</label>
+        <label class="app-label" for="outEditProjectId" data-i18n="stock.in.project">Proje</label>
         <select id="outEditProjectId" class="app-select app-fill-block"></select>
       </div>
       <div class="form-field stock-out-edit-field">
-        <label for="outEditQty" data-i18n="stock.in.qty">Miktar</label>
+        <label class="app-label" for="outEditQty" data-i18n="stock.in.qty">Miktar</label>
         <div class="qty-inline">
           <input type="number" id="outEditQty" min="0.0001" step="any" class="input-upper app-input stock-out-edit-qty-inp" />
           <span id="outEditQtyUnit" class="unit-badge">—</span>
@@ -144,8 +144,8 @@
         <input type="hidden" id="outEditM2p" value="0" />
       </div>
       <div class="form-field stock-out-edit-field">
-        <label for="outEditNote" data-i18n="common.note">Not</label>
-        <textarea id="outEditNote" class="input-upper app-input app-fill-block" rows="2"></textarea>
+        <label class="app-label" for="outEditNote" data-i18n="common.note">Not</label>
+        <textarea id="outEditNote" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
       </div>
       <div class="app-dialog-actions">
         <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
@@ -154,16 +154,16 @@
     </dialog>
 
     <div class="card stock-out-mov-card app-card">
-      <h3 class="app-section-title-tight" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
+      <h3 class="app-card-title" data-i18n="stock.out.movSectionTitle">Stok hareketleri (çıkış)</h3>
       <div class="mov-filters app-filterbar">
         <div class="form-field">
-          <label for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
+          <label class="app-label" for="movFilterProject" data-i18n="stock.in.movFilterProject">Proje</label>
           <select id="movFilterProject" class="app-select">
             <option value="" data-i18n="stock.in.movAllProjects">Tümü</option>
           </select>
         </div>
         <div class="form-field">
-          <label for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
+          <label class="app-label" for="movFilterProductId" data-i18n="stock.in.movFilterProduct">Ürün ID</label>
           <input type="number" id="movFilterProductId" min="1" step="1" placeholder="—" class="app-input" />
         </div>
         <button
@@ -353,7 +353,7 @@
       const rows = mergeProductView(inProducts, v);
       if (!rows.length) {
         const empty = window.i18n ? window.i18n.t('stock.in.emptySubProducts') : 'Bu alt kategoride eşleşen ürün yok';
-        ul.innerHTML = '<li style="cursor:default;color:#64748b;padding:10px">' + empty + '</li>';
+        ul.innerHTML = '<li class="stock-out-dd-empty-li">' + empty + '</li>';
         ul.hidden = false;
         return;
       }
@@ -370,7 +370,7 @@
             (row.p.product_code || '') +
             '</span> ' +
             (row.p.name || '') +
-            '<span class="pcode" style="margin-left:6px">| ' +
+            '<span class="pcode stock-out-pcode-margin">| ' +
             tLoc('stock.out.dropdownStockPrefix', 'stok:') +
             ' ' +
             formatStockInEntryUnit(row.p) +
@@ -646,7 +646,7 @@
         const em =
           (data && (data.message || (data.error && (data.error + (data.message || ''))))) || 'Hata';
         movOutById.clear();
-        tb.innerHTML = '<tr><td colspan="9" style="color:#b91c1c">' + escMov(String(em)) + '</td></tr>';
+        tb.innerHTML = '<tr><td colspan="9" class="stock-out-mov-err-row">' + escMov(String(em)) + '</td></tr>';
         return;
       }
       const rows = data.movements || [];
@@ -685,11 +685,11 @@
             escMov(m.note || '—') +
             '</td><td>' +
             escMov(m.user_username || '—') +
-            '</td><td class="mov-actions"><button type="button" class="mov-btn mov-btn-edit" data-mid="' +
+            '</td><td class="mov-actions"><button type="button" class="mov-btn mov-btn-edit app-button app-button-secondary" data-mid="' +
             mid +
             '" data-mov-act="edit">' +
             escMov(lblEdit) +
-            '</button><button type="button" class="mov-btn mov-btn-del" data-mid="' +
+            '</button><button type="button" class="mov-btn mov-btn-del app-button app-button-danger" data-mid="' +
             mid +
             '" data-mov-act="delete">' +
             escMov(lblDel) +

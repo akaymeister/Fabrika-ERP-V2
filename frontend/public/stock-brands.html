@@ -41,7 +41,7 @@
     <div class="grid">
       <div class="card app-card">
         <h3 id="formCardTitle" class="app-card-title" data-i18n="stock.brands.new">Yeni marka</h3>
-        <form id="fBrand" class="product-form-grid" style="grid-template-columns: 1fr">
+        <form id="fBrand" class="product-form-grid stock-brands-form-grid">
           <input type="hidden" id="editBrandId" value="" />
           <div class="form-field">
             <label class="app-label" for="brandName" data-i18n="stock.brands.name">Marka adı</label>
@@ -52,8 +52,8 @@
             <button type="button" id="btnBrandCancel" class="secondary-btn app-button app-button-secondary stock-brands-cancel" data-i18n="stock.brands.cancel">Vazgeç</button>
           </div>
         </form>
-        <p id="brandMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="alert"></p>
-        <p id="brandLoadMsg" class="login-error" style="display: none; margin-top: 10px; color: #b91c1c" role="alert"></p>
+        <p id="brandMsg" class="login-error stock-brands-inline-err" role="alert"></p>
+        <p id="brandLoadMsg" class="login-error stock-brands-inline-err" role="alert"></p>
       </div>
     </div>
 
@@ -171,7 +171,7 @@
         .map((b) => {
           const isSys = b.slug === 'unbranded';
           const nameCell = isSys
-            ? `<strong>${esc(b.name)}</strong> <span style="font-size:12px;color:#64748b">(${esc(sysL)})</span>`
+            ? `<strong>${esc(b.name)}</strong> <span class="stock-brands-sys-meta">(${esc(sysL)})</span>`
             : `<strong>${esc(b.name)}</strong>`;
           const actions = isSys
             ? `<div class="table-actions app-action-bar"><button type="button" class="secondary-btn btn-edit app-button app-button-secondary app-action-button app-action-edit" data-action="edit" data-id="${b.id}">${esc(

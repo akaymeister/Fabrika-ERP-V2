@@ -6,7 +6,7 @@
   <title>Rol yetkileri — Fabrika ERP V2</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body class="app-shell app-master-page app-ui-v3" data-admin-nav="perms">
+<body class="app-shell app-master-page app-ui-v3 admin-permissions-page" data-admin-nav="perms">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -20,69 +20,72 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1>Rol yetkileri / kullanıcı ek yetkileri</h1>
-        <p class="subtitle">Rol bazlı izinler ve kullanıcıya özel ek izinler</p>
-      </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <a data-topbar-persist="1" href="/admin.html" class="version-btn">Süper yönetim</a>
-</div>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title">Rol yetkileri / kullanıcı ek yetkileri</h1>
+          <p class="subtitle app-muted-text">Rol bazlı izinler ve kullanıcıya özel ek izinler</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/admin.html" class="version-btn app-button app-button-secondary">Süper yönetim</a>
+        </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="adminErr" class="login-error" style="display:none;margin:0 0 12px;color:#b91c1c"></p>
+          <p id="adminErr" class="login-error app-error-state admin-permissions-err"></p>
 
-    <div class="admin-grid">
-      <section class="card admin-section">
-        <div class="section-header">
-          <h3>Yetki konusu izinleri</h3>
-          <p>Sistem rolleri ve IK pozisyonlari icin izin yonetimi.</p>
-        </div>
-        <div class="form-field" style="max-width:360px">
-          <label for="roleSelect">Yetki konusu</label>
-          <select id="roleSelect"></select>
-        </div>
-        <div class="perm-list" id="rolePermList"></div>
-        <div class="form-actions" style="margin-top:16px">
-          <button type="button" class="module-button" id="btnSaveRolePerms" style="width:auto;padding:10px 16px">
-            Yetki konusu izinlerini kaydet
-          </button>
-        </div>
-      </section>
+          <div class="admin-grid">
+            <section class="card admin-section app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title">Yetki konusu izinleri</h3>
+                <p class="app-muted-text">Sistem rolleri ve İK pozisyonları için izin yönetimi.</p>
+              </div>
+              <div class="app-card-body">
+                <div class="form-field admin-permissions-field-narrow">
+                  <label class="app-label" for="roleSelect">Yetki konusu</label>
+                  <select id="roleSelect" class="app-select"></select>
+                </div>
+                <div class="perm-list" id="rolePermList"></div>
+                <div class="app-form-actions admin-permissions-save-actions">
+                  <button type="button" class="module-button app-button app-button-primary" id="btnSaveRolePerms">
+                    Yetki konusu izinlerini kaydet
+                  </button>
+                </div>
+              </div>
+            </section>
 
-      <section class="card admin-section">
-        <div class="section-header">
-          <h3>Kullanıcı ek yetkileri</h3>
-          <p>Rol dışında ek izin; kümülatif.</p>
-        </div>
-        <div class="form-field" style="max-width:360px">
-          <label for="userSelectExtra">Kullanıcı</label>
-          <select id="userSelectExtra"></select>
-        </div>
-        <div class="perm-list" id="userPermList"></div>
-        <div class="form-actions" style="margin-top:16px">
-          <button type="button" class="module-button" id="btnSaveUserPerms" style="width:auto;padding:10px 16px">
-            Ek yetkileri kaydet
-          </button>
-        </div>
-      </section>
-    </div>
-      
+            <section class="card admin-section app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title">Kullanıcı ek yetkileri</h3>
+                <p class="app-muted-text">Rol dışında ek izin; kümülatif.</p>
+              </div>
+              <div class="app-card-body">
+                <div class="form-field admin-permissions-field-narrow">
+                  <label class="app-label" for="userSelectExtra">Kullanıcı</label>
+                  <select id="userSelectExtra" class="app-select"></select>
+                </div>
+                <div class="perm-list" id="userPermList"></div>
+                <div class="app-form-actions admin-permissions-save-actions">
+                  <button type="button" class="module-button app-button app-button-primary" id="btnSaveUserPerms">
+                    Ek yetkileri kaydet
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+
         </main>
       </div>
     </div>
   </div>
-<script src="/js/i18n.js" defer></script>
+  <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/admin-common.js" defer></script>
   <script src="/js/admin.js" defer></script>
 </body>
 </html>
-

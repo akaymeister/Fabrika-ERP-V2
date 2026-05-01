@@ -188,7 +188,7 @@
 
   function helperLineHtml(labelKey, value) {
     if (value == null) return '';
-    return `<div class="text-meta" style="color:#64748b">${esc(tK(labelKey))}: ${esc(fmtQty(value))}</div>`;
+    return `<div class="text-meta proc-qty-helper-meta">${esc(tK(labelKey))}: ${esc(fmtQty(value))}</div>`;
   }
 
   function qtyCellHtml(item, qty) {
@@ -412,7 +412,7 @@
       .map((row) => {
         const id = row.id;
         const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
-        return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
+        return `<tr data-oid="${esc(id)}" class="po-row${sel}">
           <td>${esc(fmtDisplayUpper(row.order_code || row.id))}</td>
           <td>${esc(fmtDisplayUpper(row.project_code || row.project_label || '—'))}</td>
           <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
@@ -459,7 +459,7 @@
       .map((row) => {
         const id = row.id;
         const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
-        return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
+        return `<tr data-oid="${esc(id)}" class="po-row${sel}">
           <td>${esc(fmtDisplayUpper(row.order_code || row.id))}</td>
           <td>${esc(fmtDisplayUpper(row.project_code || row.project_label || '—'))}</td>
           <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
@@ -495,7 +495,7 @@
       .map((row) => {
         const id = row.id;
         const sel = prevSelectedId != null && Number(id) === Number(prevSelectedId) ? ' po-row-sel' : '';
-        return `<tr data-oid="${esc(id)}" class="po-row${sel}" style="cursor:pointer">
+        return `<tr data-oid="${esc(id)}" class="po-row${sel}">
           <td>${esc(fmtDisplayUpper(row.order_code || row.id))}</td>
           <td>${esc(fmtDisplayUpper(row.project_code || row.project_label || '—'))}</td>
           <td>${esc(statusLabel('receipt', row.receipt_status || row.status))}</td>
@@ -556,27 +556,27 @@
         const rowCls = cancelled ? ' class="po-line-cancelled"' : '';
         const cancelReasonHtml =
           cancelled && it.cancel_reason
-            ? `<div class="proc-cancel-badge">${esc(tK('purch.proc.lineCancelledBadge'))}</div><div class="text-meta" style="color:#991b1b;margin-top:6px;max-width:220px"><strong>${esc(tK('purch.proc.cancelReasonPrefix'))}</strong> ${esc(it.cancel_reason)}</div>`
+            ? `<div class="proc-cancel-badge">${esc(tK('purch.proc.lineCancelledBadge'))}</div><div class="text-meta proc-cancel-reason-text"><strong>${esc(tK('purch.proc.cancelReasonPrefix'))}</strong> ${esc(it.cancel_reason)}</div>`
             : '';
         const recv = Number(it.qty_received) || 0;
         const canCancel = !cancelled && recv <= 0.0001;
         const cancelBtn = cancelled
           ? '—'
-          : `<button type="button" class="logout-btn po-line-cancel text-ui" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'} style="padding:6px 10px">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+          : `<button type="button" class="logout-btn po-line-cancel text-ui app-button app-button-danger" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
         return `<tr${rowCls}>
-          <td><span class="text-meta" style="color:#64748b">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
+          <td><span class="text-meta proc-product-code-muted">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
           <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
           <td>
-            <input class="pur-inp po-line-supsearch" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" style="width:150px;margin-bottom:4px" ${cancelled ? 'disabled' : ''} />
-            <select class="pur-inp po-line-sup" data-i="${i}" ${cancelled ? 'disabled' : ''}>${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
+            <input class="pur-inp po-line-supsearch app-input" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" ${cancelled ? 'disabled' : ''} />
+            <select class="pur-inp po-line-sup app-select" data-i="${i}" ${cancelled ? 'disabled' : ''}>${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
           </td>
-          <td><input type="number" class="pur-inp po-line-price" data-i="${i}" min="0" step="0.0001" value="${esc(fmtUnitPriceInputValue(it.unit_price))}" title="${esc(fmtMoneyDisplay(it.unit_price))}" style="width:120px" ${cancelled ? 'disabled' : ''} /></td>
-          <td><input type="text" class="pur-inp po-line-total" data-i="${i}" value="${esc(fmtMoneyDisplay((Number(it.qty_ordered) || 0) * (Number(it.unit_price) || 0)))}" readonly style="width:130px;background:#f8fafc;color:#0f172a" /></td>
-          <td><select class="pur-inp po-line-cur" data-i="${i}" style="width:88px" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
-          <td><input type="number" class="pur-inp po-line-fx" data-i="${i}" min="0" step="0.0001" value="${esc(fmtFxInputValue(fxRate))}" style="width:110px" ${cancelled ? 'disabled' : ''} /></td>
-          <td style="white-space:nowrap">${cancelBtn}</td>
+          <td><input type="number" class="pur-inp po-line-price app-input" data-i="${i}" min="0" step="0.0001" value="${esc(fmtUnitPriceInputValue(it.unit_price))}" title="${esc(fmtMoneyDisplay(it.unit_price))}" ${cancelled ? 'disabled' : ''} /></td>
+          <td><input type="text" class="pur-inp po-line-total app-input" data-i="${i}" value="${esc(fmtMoneyDisplay((Number(it.qty_ordered) || 0) * (Number(it.unit_price) || 0)))}" readonly /></td>
+          <td><select class="pur-inp po-line-cur app-select" data-i="${i}" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
+          <td><input type="number" class="pur-inp po-line-fx app-input" data-i="${i}" min="0" step="0.0001" value="${esc(fmtFxInputValue(fxRate))}" ${cancelled ? 'disabled' : ''} /></td>
+          <td class="po-line-actions-cell">${cancelBtn}</td>
         </tr>`;
       })
       .join('');

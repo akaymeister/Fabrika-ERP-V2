@@ -5,117 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="hr.emp.list.title">Personeller</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .emp-table-wrap {
-      width: 100%;
-      overflow-x: hidden;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      background: #fff;
-    }
-    .emp-table-wrap table {
-      width: 100%;
-      table-layout: fixed;
-      border-collapse: collapse;
-    }
-    .emp-table-wrap th,
-    .emp-table-wrap td {
-      font-size: 12px;
-      line-height: 1.15;
-      padding: 6px 6px;
-      vertical-align: middle;
-      border: 1px solid #eef2f7;
-    }
-    .emp-table-wrap th {
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      text-align: left;
-      background: #fafcff;
-      font-weight: 700;
-    }
-    .emp-table-wrap td {
-      white-space: normal;
-      overflow: visible;
-      text-overflow: clip;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-    .emp-photo-cell {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-    }
-    .emp-photo-code {
-      font-size: 10px;
-      color: #94a3b8;
-      font-weight: 600;
-      line-height: 1;
-      white-space: nowrap;
-    }
-    .table-actions {
-      display: grid;
-      grid-template-columns: repeat(3, 28px);
-      grid-auto-rows: 28px;
-      gap: 5px;
-      justify-content: center;
-      align-items: center;
-    }
-    .table-actions .emp-status-row {
-      grid-column: 1 / -1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .table-actions .emp-status-text {
-      font-size: 10px;
-      color: #475569;
-      font-weight: 600;
-      line-height: 1;
-      white-space: nowrap;
-    }
-    .emp-icon-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 7px;
-      border: 1px solid #dbe4f0;
-      background: #1d4ed8;
-      color: #fff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      font-size: 0;
-      line-height: 1;
-    }
-    .emp-icon-btn svg {
-      width: 15px;
-      height: 15px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-    .emp-icon-btn.emp-danger {
-      background: #dc2626;
-      border-color: #dc2626;
-    }
-    .table-actions .emp-mini-toggle {
-      transform: scale(0.78);
-      transform-origin: center;
-    }
-    .emp-table-wrap th:last-child,
-    .emp-table-wrap td:last-child {
-      width: 118px;
-      min-width: 118px;
-    }
-  </style>
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 hr-employees-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -129,77 +20,79 @@
     </div>
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
-        <div class="topbar-left">
-        <h1 data-i18n="hr.emp.list.title">Personeller</h1>
-        <p class="subtitle" data-i18n="hr.emp.list.sub">Liste</p>
-      </div>
-        <div class="topbar-right">
-        <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
-          <option value="tr">Türkçe</option>
-          <option value="uz">O‘zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-        <a data-topbar-persist="1" href="/hr.html" class="version-btn" data-i18n="nav.hr.hub">IK</a>
-</div>
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title" data-i18n="hr.emp.list.title">Personeller</h1>
+          <p class="subtitle" data-i18n="hr.emp.list.sub">Liste</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/hr.html" class="version-btn app-button app-button-secondary" data-i18n="nav.hr.hub">IK</a>
+        </div>
       </header>
       <div class="app-content">
         <main class="app-master-main">
 
-    <div class="card">
-      <h2 data-i18n="hr.emp.list.title">Personel listesi</h2>
-      <p class="muted" data-i18n="hr.emp.filtersTitle">Filtreler</p>
-      <div class="emp-filter-grid">
-        <select id="statusFilter">
-          <option value="" data-i18n="hr.emp.allStatus">Tüm durumlar</option>
-          <option value="active" data-i18n="hr.emp.status.active">Aktif</option>
-          <option value="passive" data-i18n="hr.emp.status.passive">Pasif</option>
-          <option value="terminated" data-i18n="hr.emp.status.terminated">İşten ayrıldı</option>
-        </select>
-        <select id="natFilter">
-          <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
-          <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
-          <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
-          <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
-          <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
-          <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
-        </select>
-        <select id="countryFilter">
-          <option value="" data-i18n="hr.emp.filterCountry">Ülke</option>
-          <option value="TR" data-i18n="hr.emp.country.tr">Türkiye</option>
-          <option value="UZ" data-i18n="hr.emp.country.uz">Özbekistan</option>
-        </select>
-        <select id="regionFilter" disabled>
-          <option value="" data-i18n="hr.emp.filterRegion">İl / bölge</option>
-        </select>
-        <select id="departmentFilter"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
-        <select id="positionFilter"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
-        <input id="searchInput" class="emp-filter-search" data-i18n-placeholder="hr.emp.search" placeholder="Ara" />
+    <div class="card app-card">
+      <h2 class="app-card-title" data-i18n="hr.emp.list.title">Personel listesi</h2>
+      <p class="muted app-muted-text" data-i18n="hr.emp.filtersTitle">Filtreler</p>
+      <div class="app-page-toolbar emp-filter-toolbar">
+        <div class="app-toolbar-left app-filterbar emp-filter-grid">
+          <select id="statusFilter" class="app-select">
+            <option value="" data-i18n="hr.emp.allStatus">Tüm durumlar</option>
+            <option value="active" data-i18n="hr.emp.status.active">Aktif</option>
+            <option value="passive" data-i18n="hr.emp.status.passive">Pasif</option>
+            <option value="terminated" data-i18n="hr.emp.status.terminated">İşten ayrıldı</option>
+          </select>
+          <select id="natFilter" class="app-select">
+            <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
+            <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+            <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+            <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+            <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+            <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+          </select>
+          <select id="countryFilter" class="app-select">
+            <option value="" data-i18n="hr.emp.filterCountry">Ülke</option>
+            <option value="TR" data-i18n="hr.emp.country.tr">Türkiye</option>
+            <option value="UZ" data-i18n="hr.emp.country.uz">Özbekistan</option>
+          </select>
+          <select id="regionFilter" class="app-select" disabled>
+            <option value="" data-i18n="hr.emp.filterRegion">İl / bölge</option>
+          </select>
+          <select id="departmentFilter" class="app-select"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+          <select id="positionFilter" class="app-select"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
+          <input id="searchInput" type="search" class="app-input app-search-input emp-filter-search" data-i18n-placeholder="hr.emp.search" placeholder="Ara" />
+        </div>
+        <div class="app-toolbar-right emp-filter-actions">
+          <button id="btnSearch" type="button" class="version-btn app-button app-button-primary" data-i18n="hr.emp.filter">Filtrele</button>
+          <a href="/hr-employee-form.html" class="version-btn app-button app-button-primary emp-new-link" data-i18n="hr.emp.new">Yeni personel</a>
+        </div>
       </div>
-      <div class="emp-filter-actions">
-        <button id="btnSearch" type="button" class="version-btn" data-i18n="hr.emp.filter">Filtrele</button>
-        <a href="/hr-employee-form.html" class="version-btn" style="text-align:center;line-height:20px;text-decoration:none" data-i18n="hr.emp.new">Yeni personel</a>
-      </div>
-      <div id="msg" class="muted" style="margin-top:10px"></div>
-      <div class="card" style="padding:12px;margin-top:12px">
+      <p id="msg" class="muted emp-list-msg"></p>
+      <div class="card app-card emp-table-card">
         <div class="emp-table-wrap">
-        <table>
-          <thead>
-            <tr id="empHeadRow">
-              <th data-i18n="hr.emp.colPhoto">Foto</th>
-              <th data-i18n="hr.emp.colName">Ad soyad</th>
-              <th data-i18n="hr.emp.colDept">Departman</th>
-              <th data-i18n="hr.emp.colPos">Pozisyon</th>
-              <th data-i18n="hr.emp.colUser">Kullanıcı</th>
-              <th data-i18n="hr.emp.colAction">İşlem</th>
-            </tr>
-          </thead>
-          <tbody id="empBody"><tr><td colspan="6" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
-        </table>
+          <table class="app-table">
+            <thead>
+              <tr id="empHeadRow">
+                <th data-i18n="hr.emp.colPhoto">Foto</th>
+                <th data-i18n="hr.emp.colName">Ad soyad</th>
+                <th data-i18n="hr.emp.colDept">Departman</th>
+                <th data-i18n="hr.emp.colPos">Pozisyon</th>
+                <th data-i18n="hr.emp.colUser">Kullanıcı</th>
+                <th class="app-table-col-action" data-i18n="hr.emp.colAction">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="empBody"><tr><td colspan="6" data-i18n="hr.att.loading">Yükleniyor…</td></tr></tbody>
+          </table>
         </div>
       </div>
     </div>
-      
+
         </main>
       </div>
     </div>
@@ -226,4 +119,3 @@
   </script>
 </body>
 </html>
-

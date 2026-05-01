@@ -5,17 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="suppliers.title">Tedarikçiler</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .sup-form { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:14px; }
-    .sup-form input, .sup-form textarea { min-height:40px; padding:6px 10px; border:1px solid #e2e8f0; border-radius:8px; font:inherit; width:100%; box-sizing:border-box; }
-    .sup-form .full { grid-column:1 / -1; }
-    .sup-list { width:100%; border-collapse:collapse; }
-    .sup-list th, .sup-list td { border:1px solid #e2e8f0; padding:8px 10px; font-size:13px; }
-    .sup-list th { background:#f8fafc; text-align:left; }
-    .sup-muted { color:#64748b; font-size:12px; }
-    .sup-filter { margin-bottom:10px; }
-    .sup-filter input { padding:8px 10px; border-radius:8px; border:1px solid #e2e8f0; min-width:220px; font:inherit; }
-  </style>
 </head>
 <body class="app-shell app-master-page app-ui-v3">
   <div class="container pur-wide app-layout-v3">
@@ -32,11 +21,11 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="suppliers.title">Tedarikçiler</h1>
+        <h1 class="app-page-title" data-i18n="suppliers.title">Tedarikçiler</h1>
         <p class="subtitle" data-i18n="suppliers.sub">Tedarikçi listesi, yeni tedarikçi ekleme. Sipariş işleme ekranında bu liste kullanılır.</p>
       </div>
         <div class="topbar-right">
-        <select id="languageSelect" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+        <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -48,31 +37,31 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="msg" style="min-height:1.2em;margin:8px 0" role="status"></p>
+    <p id="msg" class="purch-msg-api" role="status"></p>
 
-    <section class="card">
-      <h3 data-i18n="suppliers.addH">Yeni tedarikçi</h3>
+    <section class="card app-card">
+      <h3 class="app-card-title" data-i18n="suppliers.addH">Yeni tedarikçi</h3>
       <div class="sup-form">
-        <div><input id="sName" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.name" /></div>
-        <div><input id="sPhone" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.phone" /></div>
-        <div><input id="sEmail" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.email" /></div>
-        <div><input id="sTax" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.tax" /></div>
-        <div class="full"><input id="sAddress" maxlength="500" placeholder="" data-i18n-placeholder="suppliers.address" /></div>
-        <div class="full"><textarea id="sNote" rows="2" placeholder="" data-i18n-placeholder="suppliers.note"></textarea></div>
+        <div><input id="sName" class="app-input" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.name" /></div>
+        <div><input id="sPhone" class="app-input" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.phone" /></div>
+        <div><input id="sEmail" class="app-input" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.email" /></div>
+        <div><input id="sTax" class="app-input" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.tax" /></div>
+        <div class="full"><input id="sAddress" class="app-input" maxlength="500" placeholder="" data-i18n-placeholder="suppliers.address" /></div>
+        <div class="full"><textarea id="sNote" class="app-input app-textarea" rows="2" placeholder="" data-i18n-placeholder="suppliers.note"></textarea></div>
       </div>
-      <p style="text-align:right;margin:0">
-        <button type="button" class="logout-btn" id="btnAdd" style="background:#1d4ed8;border:none" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
+      <p class="sup-actions-bar">
+        <button type="button" class="logout-btn app-button app-button-primary" id="btnAdd" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
       </p>
       <p class="sup-muted" data-i18n="suppliers.futureNote">İleride: cari hesap, borç/alacak, bakiye ekranları bu modül altında açılacak.</p>
     </section>
 
-    <section class="card" style="margin-top:16px">
-      <h3 data-i18n="suppliers.listH">Tedarikçi listesi</h3>
+    <section class="card app-card sup-list-card">
+      <h3 class="app-card-title" data-i18n="suppliers.listH">Tedarikçi listesi</h3>
       <div class="sup-filter">
-        <input id="q" placeholder="" data-i18n-placeholder="suppliers.filterPh" />
+        <input id="q" class="app-input" placeholder="" data-i18n-placeholder="suppliers.filterPh" />
       </div>
-      <div style="overflow-x:auto">
-        <table class="sup-list">
+      <div class="app-table-scroll">
+        <table class="sup-list app-table">
           <thead>
             <tr>
               <th data-i18n="suppliers.colName">Ad</th>

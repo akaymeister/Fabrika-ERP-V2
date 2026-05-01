@@ -34,7 +34,7 @@
           <div class="proc-top-print-wrap" data-topbar-persist="1">
             <button type="button" class="version-btn app-button app-button-secondary" id="btnPrint" disabled data-i18n="purch.proc.btnPrint">Yazdır</button>
           </div>
-          <a href="/purchasing.html" class="version-btn" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
+          <a href="/purchasing.html" class="version-btn app-button app-button-secondary" data-i18n="nav.purch.hub" data-topbar-persist="1">Satınalma</a>
         </div>
       </header>
       <div class="app-content">
@@ -42,7 +42,7 @@
     <p id="msg" class="app-msg-slot" role="status"></p>
 
     <section class="card app-card">
-      <h3 data-i18n="purch.proc.blockIncoming">GELEN SİPARİŞLER</h3>
+      <h3 class="app-card-title" data-i18n="purch.proc.blockIncoming">GELEN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.incomingSub">Yalnız fiyat bekleyen veya kısmen fiyatlanmış satınalma siparişleri listelenir.</p>
       <div class="pur-line-scroll">
         <table class="pur-line-table app-table">
@@ -61,7 +61,7 @@
     </section>
 
     <section class="card app-card app-card-stack-mt">
-      <h3 data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
+      <h3 class="app-card-title" data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
       <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
       <div id="orderFormBlock" hidden>
         <p id="orderMeta" class="proc-order-meta"></p>
@@ -99,7 +99,7 @@
     </section>
 
     <section class="card app-card app-card-stack-mt">
-      <h3 data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>
+      <h3 class="app-card-title" data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.activeSub">İşleme alınmış fakat tamamlanmamış siparişler. Satıra tıklayarak yukarıda düzenleyin.</p>
       <div class="pur-line-scroll">
         <table class="pur-line-table app-table">
@@ -119,7 +119,7 @@
     </section>
 
     <section class="card app-card app-card-stack-mt">
-      <h3 data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
+      <h3 class="app-card-title" data-i18n="purch.proc.blockCompleted">TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.proc.completedSub">Satınalmacı süreci tamamlanan siparişler. Satıra tıklayarak yukarıda inceleyebilirsiniz.</p>
       <div class="pur-line-scroll">
         <table class="pur-line-table app-table">
@@ -145,9 +145,9 @@
     <div class="proc-modal">
       <h3 id="cancelLineTitle" data-i18n="purch.proc.cancelLineTitle">Sipariş kalemini iptal et</h3>
       <label for="cancelLineReason" class="proc-cancel-label" data-i18n="purch.proc.cancelReasonLabel">İptal açıklaması (zorunlu)</label>
-      <textarea id="cancelLineReason" maxlength="1900" data-i18n-placeholder="purch.proc.cancelReasonPh" placeholder=""></textarea>
+      <textarea id="cancelLineReason" class="app-input app-textarea proc-cancel-line-textarea" maxlength="1900" data-i18n-placeholder="purch.proc.cancelReasonPh" placeholder=""></textarea>
       <div class="proc-modal-actions">
-        <button type="button" class="logout-btn" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
+        <button type="button" class="logout-btn app-button app-button-secondary" id="cancelLineDismiss" data-i18n="purch.proc.cancelDismiss">Vazgeç</button>
         <button type="button" class="version-btn app-button app-button-danger" id="cancelLineConfirm" data-i18n="purch.proc.cancelConfirm">İptali onayla</button>
       </div>
     </div>

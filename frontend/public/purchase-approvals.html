@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.appr.title">Yönetici onayları</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .pur-list-actions a { text-decoration: none; display: inline-block; }
-    .appr-line-hint { max-width: 360px; font-size: var(--font-size-ui); }
-  </style>
 </head>
 <body class="app-shell app-master-page app-ui-v3">
   <div class="container pur-wide app-layout-v3">
@@ -25,11 +21,11 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="purch.appr.title">Yönetici onayları</h1>
+        <h1 class="app-page-title" data-i18n="purch.appr.title">Yönetici onayları</h1>
         <p class="subtitle" data-i18n="purch.appr.sub">Onay veya ret — yalnız onay bekleyen talepler</p>
       </div>
         <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" class="app-select app-topbar-lang" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -41,15 +37,15 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="msg" style="min-height:1.2em;margin:8px 0;color:#0f766e" role="status"></p>
-    <div class="pur-list-actions" style="margin-bottom:16px">
-      <a class="version-btn" href="/purchase-requisition-open.html" data-i18n="purch.open.title">Satınalma siparişi aç</a>
-      <a class="version-btn" href="/purchase-requests.html" data-i18n="nav.purch.requests">Talep listesi</a>
+    <p id="msg" class="pur-appr-msg" role="status"></p>
+    <div class="pur-list-actions pur-appr-actions-bar">
+      <a class="version-btn app-button app-button-secondary" href="/purchase-requisition-open.html" data-i18n="purch.open.title">Satınalma siparişi aç</a>
+      <a class="version-btn app-button app-button-secondary" href="/purchase-requests.html" data-i18n="nav.purch.requests">Talep listesi</a>
     </div>
-    <section class="card">
-      <h3 data-i18n="purch.appr.queue">Onay kuyruğu</h3>
-      <div style="overflow-x:auto">
-        <table>
+    <section class="card app-card">
+      <h3 class="app-card-title" data-i18n="purch.appr.queue">Onay kuyruğu</h3>
+      <div class="app-table-scroll">
+        <table class="app-table">
           <thead>
             <tr>
               <th data-i18n="purch.req.lColCode">Talep no</th>
@@ -89,7 +85,7 @@
       }
       body.innerHTML = list.map((r) => {
         const lineHint = (r.items || []).map((i) => i.product_name || '').filter(Boolean).join('; ').slice(0, 120);
-        return '<tr data-rid="' + r.id + '"><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td class="appr-line-hint">' + (lineHint || '—') + '</td><td><button type="button" class="a-ok" data-id="' + r.id + '">' + tKey('purch.req.approve') + '</button> <button type="button" class="a-no" data-id="' + r.id + '">' + tKey('purch.req.reject') + '</button></td></tr>';
+        return '<tr data-rid="' + r.id + '"><td>' + (r.request_code || r.id) + '</td><td>' + (r.project_code || '—') + '</td><td>' + (r.requester_name || '—') + '</td><td class="appr-line-hint">' + (lineHint || '—') + '</td><td><button type="button" class="a-ok app-button app-button-success" data-id="' + r.id + '">' + tKey('purch.req.approve') + '</button> <button type="button" class="a-no app-button app-button-danger" data-id="' + r.id + '">' + tKey('purch.req.reject') + '</button></td></tr>';
       }).join('');
       body.querySelectorAll('.a-ok').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'approved')));
       body.querySelectorAll('.a-no').forEach((b) => b.addEventListener('click', () => setS(b.getAttribute('data-id'), 'rejected')));

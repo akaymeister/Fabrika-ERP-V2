@@ -192,19 +192,19 @@
     const tr = document.createElement('tr');
     tr.dataset.rid = String(lineCounter);
     tr.innerHTML = `
-      <td><select class="r-wh pur-inp"></select></td>
-      <td><select class="r-sc pur-inp" disabled></select></td>
-      <td><select class="r-pr pur-inp" disabled><option value="">—</option></select></td>
+      <td><select class="r-wh pur-inp app-select"></select></td>
+      <td><select class="r-sc pur-inp app-select" disabled></select></td>
+      <td><select class="r-pr pur-inp app-select" disabled><option value="">—</option></select></td>
       <td class="r-stock-cell"><span class="r-stock">—</span></td>
-      <td><input type="number" class="r-qty pur-inp" min="0" step="any" /></td>
-      <td><select class="r-unit pur-inp"></select></td>
+      <td><input type="number" class="r-qty pur-inp app-input" min="0" step="any" /></td>
+      <td><select class="r-unit pur-inp app-select"></select></td>
       <td>
         <input type="file" accept="image/*" class="r-file-img r-file-input" />
         <div class="r-imgbox"><img class="r-imgprev" alt="" style="display:none" /></div>
       </td>
       <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf r-file-input" /></td>
-      <td><input type="text" class="r-note pur-inp r-note-input" /></td>
-      <td><button type="button" class="copy-row-btn" data-i18n="purch.req.copyRow">Kopya</button></td>`;
+      <td><input type="text" class="r-note pur-inp r-note-input app-input" /></td>
+      <td><button type="button" class="copy-row-btn app-button app-button-secondary" data-i18n="purch.req.copyRow">Kopya</button></td>`;
     const tbody = document.getElementById('linesBody');
     if (anchorTr && anchorTr.parentNode === tbody) {
       anchorTr.insertAdjacentElement('afterend', tr);
@@ -376,19 +376,19 @@
     const tr = document.createElement('tr');
     tr.dataset.rid = String(lineCounter);
     tr.innerHTML = `
-      <td><select class="r-wh pur-inp"></select></td>
-      <td><select class="r-sc pur-inp" disabled></select></td>
-      <td><select class="r-pr pur-inp" disabled><option value="">—</option></select></td>
+      <td><select class="r-wh pur-inp app-select"></select></td>
+      <td><select class="r-sc pur-inp app-select" disabled></select></td>
+      <td><select class="r-pr pur-inp app-select" disabled><option value="">—</option></select></td>
       <td class="r-stock-cell"><span class="r-stock">—</span></td>
-      <td><input type="number" class="r-qty pur-inp" min="0" step="any" /></td>
-      <td><select class="r-unit pur-inp"></select></td>
+      <td><input type="number" class="r-qty pur-inp app-input" min="0" step="any" /></td>
+      <td><select class="r-unit pur-inp app-select"></select></td>
       <td>
         <input type="file" accept="image/*" class="r-file-img r-file-input" />
         <div class="r-imgbox"><img class="r-imgprev" alt="" style="display:none" /></div>
       </td>
       <td><input type="file" accept="application/pdf,.pdf" class="r-file-pdf r-file-input" /></td>
-      <td><input type="text" class="r-note pur-inp r-note-input" /></td>
-      <td><button type="button" class="copy-row-btn" data-i18n="purch.req.copyRow">Kopya</button></td>`;
+      <td><input type="text" class="r-note pur-inp r-note-input app-input" /></td>
+      <td><button type="button" class="copy-row-btn app-button app-button-secondary" data-i18n="purch.req.copyRow">Kopya</button></td>`;
     const tbody = document.getElementById('linesBody');
     tbody.appendChild(tr);
     fillWh(tr.querySelector('.r-wh'), null);

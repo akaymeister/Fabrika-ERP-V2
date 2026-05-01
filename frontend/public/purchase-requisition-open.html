@@ -5,58 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.open.title">Satınalma siparişi aç</title>
   <link rel="stylesheet" href="/style.css" />
-  <style>
-    .pur-req-top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
-    .pur-req-top label { display: block; font-size: var(--font-size-ui); color: #475569; margin-bottom: 4px; }
-    /* Tablo geniş: kaydırma sadece bu kutuda; kart genişliğini zorlamasın (min-width:0) */
-    .pur-line-scroll {
-      max-width: 100%;
-      min-width: 0;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-    .pur-line-table { min-width: 1280px; width: 100%; }
-    .pur-line-table th, .pur-line-table td { font-size: var(--font-size-ui); vertical-align: middle; padding: 8px 10px; }
-    .pur-line-table th { white-space: nowrap; background: #f8fafc; }
-    .pur-line-table .r-wh { min-width: 140px; }
-    .pur-line-table .r-sc { min-width: 130px; }
-    .pur-line-table .r-pr { min-width: 280px; max-width: 400px; }
-    .pur-line-table .r-stock-cell { min-width: 120px; max-width: 200px; }
-    .pur-line-table .r-qty { min-width: 100px; }
-    .pur-line-table .r-unit { min-width: 100px; }
-    .pur-line-table .r-note { min-width: 180px; }
-    .pur-inp { min-height: 40px; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; font: inherit; }
-    select.pur-inp { min-height: 40px; }
-    .pur-line-table .r-imgprev { max-height: 40px; max-width: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0; }
-    .r-file-input { max-width: 110px; font-size: var(--font-size-ui); }
-    .r-note-input { min-width: 140px; }
-    .r-stock { font-variant-numeric: tabular-nums; font-weight: 600; }
-    .copy-row-btn { width: auto; padding: 6px 10px; font-size: var(--font-size-ui); }
-    /* Global style.css tüm button { width:100% } — yan yana 3 butonu şişirip ekran taşır; burada sıfırla */
-    .pur-req-btns {
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 16px;
-      text-align: left;
-    }
-    .pur-req-btns-row {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-    }
-    .pur-req-btns .version-btn, .pur-req-btns .logout-btn {
-      width: auto;
-      min-width: 0;
-      flex: 0 0 auto;
-    }
-  </style>
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 pur-req-open-page">
   <div class="container pur-wide app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -71,11 +21,11 @@
     <div class="app-main-wrap">
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
-        <h1 data-i18n="purch.open.title">Satınalma siparişi aç</h1>
+        <h1 class="app-page-title" data-i18n="purch.open.title">Satınalma siparişi aç</h1>
         <p class="subtitle" data-i18n="purch.open.sub">Proje ve satırlar; taslak veya onaya gönderim</p>
       </div>
         <div class="topbar-right">
-        <select id="languageSelect" data-i18n-placeholder="lang.label" style="max-width:120px;padding:8px;border-radius:8px" aria-label="Language">
+        <select id="languageSelect" data-i18n-placeholder="lang.label" class="app-select app-topbar-lang" aria-label="Language">
           <option value="tr">Türkçe</option>
           <option value="uz">O‘zbekcha</option>
           <option value="ru">Русский</option>
@@ -87,31 +37,31 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <p id="msg" class="api-msg" style="min-height:1.2em;margin:8px 0;color:#0f766e" role="status"></p>
+    <p id="msg" class="api-msg purch-msg-api" role="status"></p>
 
-    <section class="card">
-      <h3 class="section-header" data-i18n="purch.open.formH">Talep / sipariş satırları</h3>
+    <section class="card app-card">
+      <h3 class="app-card-title" data-i18n="purch.open.formH">Talep / sipariş satırları</h3>
       <div class="pur-req-top">
         <div>
-          <label for="fProject" data-i18n="purch.req.project">Proje (aktif)</label>
-          <select id="fProject" class="pur-inp" style="min-width:260px"></select>
+          <label class="app-label" for="fProject" data-i18n="purch.req.project">Proje (aktif)</label>
+          <select id="fProject" class="pur-inp app-select purch-project-select"></select>
         </div>
         <div>
-          <label data-i18n="purch.req.nextCode">Sonraki talep no</label>
-          <div id="codePreview" style="font-weight:700;padding:10px 14px;background:#f1f5f9;border-radius:8px;min-width:130px">—</div>
+          <label class="app-label" data-i18n="purch.req.nextCode">Sonraki talep no</label>
+          <div id="codePreview" class="purch-code-preview">—</div>
         </div>
-        <div style="flex:1;min-width:220px;max-width:420px">
-          <label for="fTitle" data-i18n="purch.req.titleField">Başlık (isteğe bağlı)</label>
-          <input id="fTitle" type="text" class="pur-inp" style="width:100%" />
+        <div class="purch-req-title-field">
+          <label class="app-label" for="fTitle" data-i18n="purch.req.titleField">Başlık (isteğe bağlı)</label>
+          <input id="fTitle" type="text" class="pur-inp app-input app-fill-block" />
         </div>
       </div>
-      <div style="margin-bottom: 12px">
-        <label for="fNote" data-i18n="purch.req.note">Genel not</label>
-        <textarea id="fNote" rows="2" class="pur-inp" style="width:100%;max-width:900px"></textarea>
+      <div class="purch-req-note-block">
+        <label class="app-label" for="fNote" data-i18n="purch.req.note">Genel not</label>
+        <textarea id="fNote" rows="2" class="pur-inp app-input app-textarea app-fill-block"></textarea>
       </div>
 
       <div class="pur-line-scroll">
-        <table class="pur-line-table">
+        <table class="pur-line-table app-table">
           <thead>
             <tr>
               <th data-i18n="purch.req.colWh">Depo</th>
@@ -131,9 +81,9 @@
       </div>
       <div class="pur-req-btns">
         <div class="pur-req-btns-row" role="group" aria-label="Talep eylemleri">
-          <button type="button" id="addLine" class="version-btn" data-i18n="purch.req.addLine">Satır ekle</button>
-          <button type="button" id="submitReq" class="logout-btn" style="background:#1d4ed8;border:none" data-i18n="purch.req.submit">Talep oluştur</button>
-          <button type="button" id="saveDraft" class="version-btn" data-i18n="purch.req.saveDraft" style="background:#64748b;color:#fff;border:none">Taslak kaydet</button>
+          <button type="button" id="addLine" class="version-btn app-button app-button-secondary" data-i18n="purch.req.addLine">Satır ekle</button>
+          <button type="button" id="submitReq" class="logout-btn app-button app-button-primary" data-i18n="purch.req.submit">Talep oluştur</button>
+          <button type="button" id="saveDraft" class="version-btn app-button app-button-secondary" data-i18n="purch.req.saveDraft">Taslak kaydet</button>
         </div>
       </div>
     </section>
