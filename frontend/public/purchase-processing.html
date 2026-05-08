@@ -60,43 +60,66 @@
       </div>
     </section>
 
-    <section class="card app-card erp-card app-card-stack-mt">
-      <h3 class="app-card-title" data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
-      <p id="detailEmpty" class="muted" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
-      <div id="orderFormBlock" hidden>
-        <p id="orderMeta" class="proc-order-meta"></p>
-        <div id="orderBadges" class="proc-meta"></div>
-        <div class="pur-line-scroll">
-          <table class="pur-line-table app-table">
-            <thead>
-              <tr>
-                <th data-i18n="purch.proc.colProductName">Ürün adı</th>
-                <th data-i18n="purch.gr.colOrderQty">Sipariş miktarı</th>
-                <th data-i18n="purch.proc.colReceivedQty">Gelen miktar</th>
-                <th data-i18n="purch.proc.colRemainingQty">Kalan miktar</th>
-                <th data-i18n="purch.col.supplier">Tedarikçi</th>
-                <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
-                <th data-i18n="purch.proc.colLineTotal">Toplam</th>
-                <th data-i18n="purch.cur">Para birimi</th>
-                <th data-i18n="purch.proc.colFxRate">Kur</th>
-                <th data-i18n="purch.proc.colActions">İşlem</th>
-              </tr>
-            </thead>
-            <tbody id="linesDetailBody"></tbody>
-          </table>
+    <p id="detailEmpty" class="muted proc-detail-empty" data-i18n="purch.proc.selectPo">Gelen siparişlerden bir satıra tıklayın.</p>
+
+    <dialog id="procDlg" class="proc-dlg">
+      <div class="proc-dlg-header">
+        <h3 class="proc-dlg-title" data-i18n="purch.proc.blockProcessing">SİPARİŞ İŞLEME</h3>
+        <div class="proc-dlg-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnPrintDlg" data-i18n="purch.proc.btnPrint">Yazdır</button>
+          <button type="button" class="proc-dlg-close" id="procDlgClose" aria-label="Kapat" data-i18n-aria-label="common.close" title="Kapat" data-i18n-title="common.close">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="proc-icon-svg"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+          </button>
         </div>
-        <div class="pur-req-btns" role="group" aria-label="Sipariş eylemleri">
-          <div class="pur-req-btns-row">
-            <button type="button" class="btn btn-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-            <button type="button" class="btn btn-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
-            <button type="button" class="btn btn-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
-            <button type="button" class="btn btn-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
-          </div>
-        </div>
-        <p id="procLockHint" class="proc-lock-hint" data-i18n="purch.proc.lockedHint">Fiyat, tedarikçi, para birimi ve kur alanları sipariş işleme alınmadan düzenlenemez.</p>
-      <p class="muted text-meta proc-help-footer" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
       </div>
-    </section>
+      <div class="proc-dlg-body">
+        <div id="orderFormBlock">
+          <p id="orderMeta" class="proc-order-meta"></p>
+          <div id="orderBadges" class="proc-meta"></div>
+          <div class="app-table-scroll proc-line-scroll">
+            <table class="proc-line-table app-table">
+              <colgroup>
+                <col class="proc-c-prod" />
+                <col class="proc-c-qty" />
+                <col class="proc-c-qty" />
+                <col class="proc-c-qty" />
+                <col class="proc-c-sup" />
+                <col class="proc-c-price" />
+                <col class="proc-c-total" />
+                <col class="proc-c-cur" />
+                <col class="proc-c-fx" />
+                <col class="proc-c-act" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th data-i18n="purch.proc.colProductName">Ürün adı</th>
+                  <th data-i18n="purch.gr.colOrderQty">Sipariş miktarı</th>
+                  <th data-i18n="purch.proc.colReceivedQty">Gelen miktar</th>
+                  <th data-i18n="purch.proc.colRemainingQty">Kalan miktar</th>
+                  <th data-i18n="purch.col.supplier">Tedarikçi</th>
+                  <th data-i18n="purch.col.unitPrice">Birim fiyat</th>
+                  <th data-i18n="purch.proc.colLineTotal">Toplam</th>
+                  <th data-i18n="purch.cur">Para birimi</th>
+                  <th data-i18n="purch.proc.colFxRate">Kur</th>
+                  <th data-i18n="purch.proc.colActions">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="linesDetailBody"></tbody>
+            </table>
+          </div>
+          <p id="procLockHint" class="proc-lock-hint" data-i18n="purch.proc.lockedHint">Fiyat, tedarikçi, para birimi ve kur alanları sipariş işleme alınmadan düzenlenemez.</p>
+          <p class="muted text-meta proc-help-footer" data-i18n="purch.proc.helpFooter">Bu ekranda yalnız tedarikçi, birim fiyat, para birimi ve kur güncellenir. Mal kabul miktarı ve stok hareketleri sadece bilgi amaçlı gösterilir; fiziksel stok artışı yapılmaz.</p>
+        </div>
+      </div>
+      <div class="proc-dlg-footer">
+        <div class="pur-req-btns-row">
+          <button type="button" class="btn btn-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
+          <button type="button" class="btn btn-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
+          <button type="button" class="btn btn-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
+          <button type="button" class="btn btn-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
+        </div>
+      </div>
+    </dialog>
 
     <section class="card app-card erp-card app-card-stack-mt">
       <h3 class="app-card-title" data-i18n="purch.proc.blockActive">AKTİF SİPARİŞLER</h3>

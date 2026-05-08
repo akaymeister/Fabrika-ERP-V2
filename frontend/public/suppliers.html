@@ -42,12 +42,30 @@
     <section class="card app-card erp-card">
       <h3 class="app-card-title" data-i18n="suppliers.addH">Yeni tedarikçi</h3>
       <div class="sup-form">
-        <div><input id="sName" class="app-input" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.name" /></div>
-        <div><input id="sPhone" class="app-input" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.phone" /></div>
-        <div><input id="sEmail" class="app-input" maxlength="191" placeholder="" data-i18n-placeholder="suppliers.email" /></div>
-        <div><input id="sTax" class="app-input" maxlength="64" placeholder="" data-i18n-placeholder="suppliers.tax" /></div>
-        <div class="full"><input id="sAddress" class="app-input" maxlength="500" placeholder="" data-i18n-placeholder="suppliers.address" /></div>
-        <div class="full"><textarea id="sNote" class="app-input app-textarea" rows="2" placeholder="" data-i18n-placeholder="suppliers.note"></textarea></div>
+        <div class="form-field">
+          <label class="app-label" for="sName" data-i18n="suppliers.name">Tedarikçi adı (zorunlu)</label>
+          <input id="sName" type="text" class="app-input input-upper" maxlength="191" required />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="sPhone" data-i18n="suppliers.phone">Telefon</label>
+          <input id="sPhone" type="text" class="app-input" maxlength="64" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="sEmail" data-i18n="suppliers.email">E-posta</label>
+          <input id="sEmail" type="email" class="app-input" maxlength="191" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="sTax" data-i18n="suppliers.tax">Vergi numarası</label>
+          <input id="sTax" type="text" class="app-input" maxlength="64" />
+        </div>
+        <div class="form-field full">
+          <label class="app-label" for="sAddress" data-i18n="suppliers.address">Adres</label>
+          <input id="sAddress" type="text" class="app-input" maxlength="500" />
+        </div>
+        <div class="form-field full">
+          <label class="app-label" for="sNote" data-i18n="suppliers.note">Not (isteğe bağlı)</label>
+          <textarea id="sNote" class="app-input app-textarea" rows="2" maxlength="2000"></textarea>
+        </div>
       </div>
       <p class="sup-actions-bar">
         <button type="button" class="btn btn-primary" id="btnAdd" data-i18n="suppliers.btnAdd">Tedarikçi ekle</button>
@@ -61,21 +79,68 @@
         <input id="q" class="app-input" placeholder="" data-i18n-placeholder="suppliers.filterPh" />
       </div>
       <div class="app-table-scroll">
-        <table class="sup-list app-table">
+        <table class="sup-list app-table sup-list-fixed">
+          <colgroup>
+            <col class="sup-col-no" />
+            <col class="sup-col-name" />
+            <col class="sup-col-phone" />
+            <col class="sup-col-email" />
+            <col class="sup-col-tax" />
+            <col class="sup-col-address" />
+            <col class="sup-col-note" />
+            <col class="sup-col-action" />
+          </colgroup>
           <thead>
             <tr>
+              <th data-i18n="suppliers.colNo">Tedarikçi no</th>
               <th data-i18n="suppliers.colName">Ad</th>
               <th data-i18n="suppliers.colPhone">Telefon</th>
               <th data-i18n="suppliers.colEmail">E-posta</th>
               <th data-i18n="suppliers.colTax">Vergi no</th>
               <th data-i18n="suppliers.colAddress">Adres</th>
               <th data-i18n="suppliers.colNote">Not</th>
+              <th data-i18n="suppliers.colAction">İşlem</th>
             </tr>
           </thead>
-          <tbody id="tb"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+          <tbody id="tb"><tr><td colspan="8" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
         </table>
       </div>
     </section>
+
+    <dialog id="supEditDlg" class="stock-dialog sup-edit-dlg wide">
+      <h4 class="stock-dialog-title" data-i18n="suppliers.editTitle">Tedarikçi düzenle</h4>
+      <input type="hidden" id="supEditId" value="" />
+      <div class="sup-edit-fields">
+        <div class="form-field">
+          <label class="app-label" for="supEditName" data-i18n="suppliers.name">Tedarikçi adı</label>
+          <input id="supEditName" type="text" class="app-input input-upper" maxlength="191" required />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="supEditPhone" data-i18n="suppliers.phone">Telefon</label>
+          <input id="supEditPhone" type="text" class="app-input" maxlength="64" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="supEditEmail" data-i18n="suppliers.email">E-posta</label>
+          <input id="supEditEmail" type="text" class="app-input" maxlength="191" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="supEditTax" data-i18n="suppliers.tax">Vergi numarası</label>
+          <input id="supEditTax" type="text" class="app-input" maxlength="64" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="supEditAddress" data-i18n="suppliers.address">Adres</label>
+          <input id="supEditAddress" type="text" class="app-input" maxlength="500" />
+        </div>
+        <div class="form-field">
+          <label class="app-label" for="supEditNote" data-i18n="suppliers.note">Not</label>
+          <textarea id="supEditNote" class="app-input app-textarea" rows="2" maxlength="2000"></textarea>
+        </div>
+      </div>
+      <div class="app-dialog-actions">
+        <button type="button" class="btn btn-secondary" id="supEditCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="btn btn-primary" id="supEditSave" data-i18n="common.save">Kaydet</button>
+      </div>
+    </dialog>
       
         </main>
       </div>
@@ -89,31 +154,83 @@
       const msg = document.getElementById('msg');
       const tb = document.getElementById('tb');
       const q = document.getElementById('q');
+      const dlg = document.getElementById('supEditDlg');
       let all = [];
-      function tK(k) { return (window.i18n && window.i18n.t) ? window.i18n.t(k) : k; }
-      function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-      function showMsg(t, err) { if (!msg) return; msg.textContent = t; msg.style.color = err ? '#b91c1c' : '#0f766e'; }
+      const svgEdit =
+        '<svg class="pur-icon-svg sup-edit-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path></svg>';
+      function tK(k) {
+        return window.i18n && window.i18n.t ? window.i18n.t(k) : k;
+      }
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function showMsg(t, err) {
+        if (!msg) return;
+        msg.textContent = t;
+        msg.classList.remove('is-err', 'is-ok');
+        msg.classList.add(err ? 'is-err' : 'is-ok');
+      }
       function render() {
-        const f = String(q.value || '').trim().toLowerCase();
-        const rows = !f ? all : all.filter((r) => (
-          String(r.name || '').toLowerCase().includes(f) ||
-          String(r.phone || '').toLowerCase().includes(f) ||
-          String(r.email || '').toLowerCase().includes(f) ||
-          String(r.tax_number || '').toLowerCase().includes(f)
-        ));
-        if (!rows.length) { tb.innerHTML = '<tr><td colspan="6">—</td></tr>'; return; }
-        tb.innerHTML = rows.map((r) => `<tr>
+        const f = String(q.value || '')
+          .trim()
+          .toLowerCase();
+        const rows = !f
+          ? all
+          : all.filter((r) => {
+              const blob = [
+                r.supplier_no,
+                r.name,
+                r.phone,
+                r.email,
+                r.tax_number,
+                r.tax_id,
+              ]
+                .map((x) => String(x || '').toLowerCase())
+                .join(' ');
+              return blob.includes(f);
+            });
+        if (!rows.length) {
+          tb.innerHTML = '<tr><td colspan="8">—</td></tr>';
+          return;
+        }
+        const editLab = esc(tK('suppliers.editAria'));
+        tb.innerHTML = rows
+          .map((r) => {
+            const sid = r.id;
+            const sno = r.supplier_no ? esc(r.supplier_no) : '—';
+            return `<tr>
+          <td class="sup-cell-no">${sno}</td>
           <td>${esc(r.name || '')}</td>
           <td>${esc(r.phone || '—')}</td>
           <td>${esc(r.email || '—')}</td>
-          <td>${esc(r.tax_number || '—')}</td>
+          <td>${esc(r.tax_number || r.tax_id || '—')}</td>
           <td>${esc(r.address || '—')}</td>
           <td>${esc(r.note || '—')}</td>
-        </tr>`).join('');
+          <td class="sup-cell-action">
+            <button type="button" class="btn btn-icon sup-row-edit" data-sup-id="${sid}" title="${editLab}" aria-label="${editLab}">${svgEdit}</button>
+          </td>
+        </tr>`;
+          })
+          .join('');
+      }
+      function openEdit(id) {
+        const r = all.find((x) => String(x.id) === String(id));
+        if (!r || !dlg) return;
+        document.getElementById('supEditId').value = String(r.id);
+        document.getElementById('supEditName').value = r.name || '';
+        document.getElementById('supEditPhone').value = r.phone || '';
+        document.getElementById('supEditEmail').value = r.email || '';
+        document.getElementById('supEditTax').value = r.tax_number || r.tax_id || '';
+        document.getElementById('supEditAddress').value = r.address || '';
+        document.getElementById('supEditNote').value = r.note || '';
+        if (typeof dlg.showModal === 'function') dlg.showModal();
       }
       async function load() {
         const { ok, data } = await window.purApi('/api/purchasing/suppliers');
-        if (!ok || !data || !data.ok) { tb.innerHTML = '<tr><td colspan="6">—</td></tr>'; return; }
+        if (!ok || !data || !data.ok) {
+          tb.innerHTML = '<tr><td colspan="8">—</td></tr>';
+          return;
+        }
         all = data.suppliers || [];
         render();
       }
@@ -126,14 +243,51 @@
           address: document.getElementById('sAddress').value,
           note: document.getElementById('sNote').value,
         };
-        if (!body.name || !body.name.trim()) { showMsg(tK('suppliers.errName'), true); return; }
+        if (!body.name || !body.name.trim()) {
+          showMsg(tK('suppliers.errName'), true);
+          return;
+        }
         const { ok, data } = await window.purApi('/api/purchasing/suppliers', {
-          method: 'POST', body: JSON.stringify(body),
+          method: 'POST',
+          body: JSON.stringify(body),
         });
-        if (!ok) { showMsg((data && (data.message || data.messageKey)) || tK('api.error.unknown'), true); return; }
+        if (!ok) {
+          showMsg((data && (data.message || data.messageKey)) || tK('api.error.unknown'), true);
+          return;
+        }
         showMsg(tK('suppliers.okAdded'));
-        ['sName','sPhone','sEmail','sTax','sAddress','sNote'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
+        ['sName', 'sPhone', 'sEmail', 'sTax', 'sAddress', 'sNote'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
         load();
+      }
+      async function saveEdit() {
+        const id = document.getElementById('supEditId')?.value;
+        const name = document.getElementById('supEditName')?.value?.trim();
+        if (!id || !name) {
+          showMsg(tK('suppliers.errName'), true);
+          return;
+        }
+        const body = {
+          name,
+          phone: document.getElementById('supEditPhone').value || null,
+          email: document.getElementById('supEditEmail').value || null,
+          tax_number: document.getElementById('supEditTax').value || null,
+          address: document.getElementById('supEditAddress').value || null,
+          note: document.getElementById('supEditNote').value || null,
+        };
+        const { ok, data } = await window.purApi('/api/purchasing/suppliers/' + encodeURIComponent(id), {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        });
+        if (!ok || !data || !data.ok) {
+          showMsg((data && (data.message || data.messageKey)) || tK('api.error.unknown'), true);
+          return;
+        }
+        dlg.close();
+        showMsg(tK('suppliers.okUpdated'));
+        await load();
       }
       document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -143,9 +297,14 @@
       });
       document.getElementById('btnAdd').addEventListener('click', add);
       q.addEventListener('input', render);
+      tb.addEventListener('click', (ev) => {
+        const b = ev.target.closest('button[data-sup-id]');
+        if (!b) return;
+        openEdit(b.getAttribute('data-sup-id'));
+      });
+      document.getElementById('supEditCancel')?.addEventListener('click', () => dlg?.close());
+      document.getElementById('supEditSave')?.addEventListener('click', () => void saveEdit());
 
-      /* defer scriptler (i18n, navigation, purchasing-common) DOMContentLoaded öncesinde çalışır;
-         inline script sırası yüzünden burada purApi / initPurchasingPageNav henüz yoktu. */
       document.addEventListener('DOMContentLoaded', async () => {
         try {
           if (typeof window.initPurchasingPageNav === 'function') {
@@ -157,7 +316,8 @@
           console.error(err);
           if (msg) {
             msg.textContent = err && err.message ? err.message : String(err);
-            msg.style.color = '#b91c1c';
+            msg.classList.remove('is-ok');
+            msg.classList.add('is-err');
           }
         }
       });

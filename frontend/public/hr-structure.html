@@ -98,7 +98,28 @@
         </div>
       </section>
     </div>
-      
+
+    <dialog id="posEditDlg" class="stock-dialog hr-pos-dlg wide">
+      <h4 class="stock-dialog-title" data-i18n="hr.structure.posEditTitle">Pozisyon düzenle</h4>
+      <input type="hidden" id="posEditId" value="" />
+      <div class="form-field">
+        <label class="app-label" for="posEditName" data-i18n="hr.structure.posNamePlaceholder">Pozisyon adı</label>
+        <input id="posEditName" type="text" class="app-input input-upper" required />
+      </div>
+      <div class="form-field">
+        <label class="app-label" for="posEditDept" data-i18n="hr.emp.colDept">Departman</label>
+        <select id="posEditDept" class="app-select" required></select>
+      </div>
+      <div class="form-field">
+        <label class="app-label" for="posEditCode" data-i18n="hr.structure.posCodePlaceholder">Kod (isteğe bağlı)</label>
+        <input id="posEditCode" type="text" class="app-input input-upper" />
+      </div>
+      <div class="app-dialog-actions">
+        <button type="button" class="btn btn-secondary" id="posEditCancel" data-i18n="common.cancel">İptal</button>
+        <button type="button" class="btn btn-primary" id="posEditSave" data-i18n="common.save">Kaydet</button>
+      </div>
+    </dialog>
+
         </main>
       </div>
     </div>

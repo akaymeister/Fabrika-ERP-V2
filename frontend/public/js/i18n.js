@@ -88,10 +88,22 @@
         n.textContent = v;
       }
     });
+    el.querySelectorAll('[data-i18n-title]').forEach((n) => {
+      const k = n.getAttribute('data-i18n-title');
+      if (k) {
+        n.setAttribute('title', t(k));
+      }
+    });
     el.querySelectorAll('[data-i18n-placeholder]').forEach((n) => {
       const k = n.getAttribute('data-i18n-placeholder');
       if (k) {
         n.setAttribute('placeholder', t(k));
+      }
+    });
+    el.querySelectorAll('[data-i18n-aria-label]').forEach((n) => {
+      const k = n.getAttribute('data-i18n-aria-label');
+      if (k) {
+        n.setAttribute('aria-label', t(k));
       }
     });
     normalizeUiTitles(el);

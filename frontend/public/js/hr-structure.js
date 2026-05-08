@@ -141,6 +141,47 @@
     return true;
   }
 
+  function fillPosEditDeptSelect(selectedId) {
+    const sel = document.getElementById('posEditDept');
+    if (!sel) return;
+    const active = departments.filter((d) => Number(d.is_active) === 1);
+    if (!active.length) {
+      sel.innerHTML = `<option value="">${escAttr(t('hr.structure.noDeptForPos'))}</option>`;
+      return;
+    }
+    sel.innerHTML = active.map((d) => `<option value="${d.id}">${escAttr(d.name || '')}</option>`).join('');
+    if (selectedId != null && String(selectedId).trim() !== '') {
+      sel.value = String(selectedId);
+    }
+  }
+
+  async function savePosEdit() {
+    const id = document.getElementById('posEditId')?.value;
+    const name = document.getElementById('posEditName')?.value?.trim();
+    const department_id = document.getElementById('posEditDept')?.value;
+    const codeRaw = document.getElementById('posEditCode')?.value;
+    const code = codeRaw != null && String(codeRaw).trim() !== '' ? String(codeRaw).trim() : null;
+    if (!id || !name) {
+      showMsg(t('hr.structure.msg.posNameBlank'), false);
+      return;
+    }
+    if (!department_id) {
+      showMsg(t('hr.structure.noDeptForPos'), false);
+      return;
+    }
+    const { ok, data } = await window.hrApi(`/api/hr/positions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name, department_id, code }),
+    });
+    if (!ok || !data?.ok) {
+      showMsg(apiErr(data, 'hr.structure.msg.posUpdFail'), false);
+      return;
+    }
+    document.getElementById('posEditDlg')?.close();
+    await loadPositions();
+    showMsg(t('hr.structure.msg.posUpdOk'));
+  }
+
   function renderPositions() {
     if (!positions.length) {
       posBody.innerHTML = `<tr><td colspan="5">${t('hr.structure.noPos')}</td></tr>`;
@@ -249,19 +290,17 @@
     if (act === 'edit-pos') {
       const row = positions.find((p) => String(p.id) === String(id));
       if (!row) return;
-      const name = window.prompt(t('hr.structure.prompt.posName'), row.name || '');
-      if (name == null) return;
-      const code = window.prompt(t('hr.structure.prompt.posCode'), row.code || '') ?? row.code;
-      const depId = window.prompt(t('hr.structure.prompt.depId'), String(row.department_id || ''));
-      const payload = { name, code };
-      if (depId != null && String(depId).trim() !== '') payload.department_id = depId;
-      const { ok, data } = await window.hrApi(`/api/hr/positions/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
-      if (!ok || !data?.ok) return showMsg(apiErr(data, 'hr.structure.msg.posUpdFail'), false);
-      await loadPositions();
-      return showMsg(t('hr.structure.msg.posUpdOk'));
+      const dlg = document.getElementById('posEditDlg');
+      const idEl = document.getElementById('posEditId');
+      const nmEl = document.getElementById('posEditName');
+      const cdEl = document.getElementById('posEditCode');
+      if (!dlg || !idEl || !nmEl) return;
+      idEl.value = String(row.id);
+      nmEl.value = row.name || '';
+      if (cdEl) cdEl.value = row.code || '';
+      fillPosEditDeptSelect(row.department_id);
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+      return;
     }
   }
 
@@ -272,6 +311,12 @@
     posForm?.addEventListener('submit', submitPosition);
     depBody?.addEventListener('click', handleActions);
     posBody?.addEventListener('click', handleActions);
+    document.getElementById('posEditCancel')?.addEventListener('click', () => {
+      document.getElementById('posEditDlg')?.close();
+    });
+    document.getElementById('posEditSave')?.addEventListener('click', () => {
+      void savePosEdit();
+    });
     if (depSubmitBtn) depSubmitBtn.innerHTML = svgPlus;
     if (posSubmitBtn) posSubmitBtn.innerHTML = svgPlus;
     await loadDepartments();

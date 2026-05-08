@@ -56,11 +56,12 @@
     const n = toFiniteNumber(value);
     try {
       return new Intl.NumberFormat(resolveUiLocale(), {
-        minimumFractionDigits: 2,
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(n);
     } catch {
-      return n.toFixed(2);
+      const r = Math.round(n * 100) / 100;
+      return String(r);
     }
   }
 

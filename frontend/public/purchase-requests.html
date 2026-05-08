@@ -41,47 +41,67 @@
       <a class="btn btn-secondary" href="/purchase-requisition-open.html" data-i18n="nav.purch.requisitionOpen">Talep aç</a>
       <a class="btn btn-primary" href="/purchase-processing.html" data-i18n="nav.purch.processing">Satınalma işleme</a>
     </div>
-    <div class="pr-layout">
-      <section class="card app-card erp-card">
-        <div class="app-filterbar">
-          <label class="app-label" for="fFilter" data-i18n="purch.wf.filter">Durum</label>
-          <select id="fFilter" class="app-select">
-            <option value="" data-i18n="purch.wf.filterAll">Tümü</option>
-            <option value="draft" data-i18n="purch.status.reqV2.draft">Taslak</option>
-            <option value="pending" data-i18n="purch.status.req.pending">Onay bekliyor</option>
-            <option value="approved" data-i18n="purch.status.req.approved">Onaylandı</option>
-            <option value="rejected" data-i18n="purch.status.req.rejected">Reddedildi</option>
-            <option value="revision_requested" data-i18n="purch.status.reqV2.revision">Revizyon</option>
-            <option value="ordered" data-i18n="purch.status.reqV2.ordered">Satınalmaya aktarıldı</option>
-            <option value="partial" data-i18n="purch.status.req.partial">Kısmi</option>
-            <option value="cancelled" data-i18n="purch.status.ord.cancelled">İptal</option>
-          </select>
+    <section class="card app-card erp-card pr-filter-card">
+      <div class="app-filterbar">
+        <label class="app-label" for="fFilter" data-i18n="purch.wf.filter">Durum</label>
+        <select id="fFilter" class="app-select">
+          <option value="" data-i18n="purch.wf.filterAll">Tümü</option>
+          <option value="draft" data-i18n="purch.status.reqV2.draft">Taslak</option>
+          <option value="pending" data-i18n="purch.status.req.pending">Onay bekliyor</option>
+          <option value="approved" data-i18n="purch.status.req.approved">Onaylandı</option>
+          <option value="rejected" data-i18n="purch.status.req.rejected">Reddedildi</option>
+          <option value="revision_requested" data-i18n="purch.status.reqV2.revision">Revizyon</option>
+          <option value="ordered" data-i18n="purch.status.reqV2.ordered">Satınalmaya aktarıldı</option>
+          <option value="partial" data-i18n="purch.status.req.partial">Kısmi</option>
+          <option value="cancelled" data-i18n="purch.status.ord.cancelled">İptal</option>
+        </select>
+        <p class="muted text-meta pr-filter-hint" data-i18n="purch.wf.filterHint">Filtre yalnızca seçim yapıldığında uygulanır. Aşağıda son açılan talepler görünür.</p>
+      </div>
+    </section>
+    <section class="card app-card erp-card pr-recent-card">
+      <h3 class="app-card-title" data-i18n="purch.wf.recentReqsTitle">Son Açılan Talepler</h3>
+      <div class="app-table-scroll">
+        <table class="app-table pr-recent-table">
+          <thead>
+            <tr>
+              <th data-i18n="purch.wf.colDate">Tarih</th>
+              <th data-i18n="purch.req.lColCode">Talep no</th>
+              <th data-i18n="purch.req.lColProject">Proje</th>
+              <th data-i18n="purch.req.lColUser">Talep eden</th>
+              <th data-i18n="purch.req.lColStatus">Durum</th>
+              <th data-i18n="purch.wf.colProcure">Tedarik</th>
+              <th class="pr-col-view" data-i18n="purch.req.lColAction">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="reqBody"><tr><td colspan="7" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card app-card erp-card pr-detail-fallback-card" id="detailPanel" hidden>
+      <p class="muted" data-i18n="purch.wf.selectRow">Bir satır seçin…</p>
+    </section>
+    <div id="prPendingExtras" class="pr-pending-extras" hidden></div>
+
+    <dialog id="prViewDlg" class="pr-view-dlg">
+      <div class="pr-view-header">
+        <h3 class="pr-view-title" id="prViewTitle">—</h3>
+        <div class="pr-view-header-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="prViewPrint" data-i18n="purch.print.btnForm">Formu yazdır</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="prViewPrintAttach" data-i18n="purch.print.btnAttach" hidden>Ek yazdır</button>
+          <button type="button" class="pr-view-close" id="prViewClose" aria-label="Kapat" data-i18n-aria-label="common.close" title="Kapat" data-i18n-title="common.close">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="pr-icon-svg"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+          </button>
         </div>
-        <div class="app-table-scroll">
-          <table class="app-table">
-            <thead>
-              <tr>
-                <th data-i18n="purch.req.lColCode">Talep no</th>
-                <th data-i18n="purch.req.lColProject">Proje</th>
-                <th data-i18n="purch.req.lColUser">Talep eden</th>
-                <th data-i18n="purch.req.lColStatus">Durum</th>
-                <th data-i18n="purch.wf.colProcure">Tedarik</th>
-                <th data-i18n="purch.wf.colDate">Tarih</th>
-              </tr>
-            </thead>
-            <tbody id="reqBody"><tr><td colspan="6" data-i18n="purch.req.loading">Yükleniyor…</td></tr></tbody>
-          </table>
-        </div>
-      </section>
-      <section class="card app-card erp-card" id="detailPanel">
-        <p class="muted" data-i18n="purch.wf.selectRow">Bir satır seçin…</p>
-      </section>
-    </div>
+      </div>
+      <div class="pr-view-body" id="prViewBody"></div>
+      <div class="pr-view-footer" id="prViewFooter"></div>
+    </dialog>
         </main>
       </div>
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
+  <script src="/js/ui-format.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/purchasing-common.js" defer></script>
   <script src="/js/purchase-requests-workflow.js" defer></script>

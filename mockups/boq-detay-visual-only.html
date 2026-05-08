@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOQ Detay Görsel Mockup</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --line: #dfe7f2;
+      --text: #1a2433;
+      --muted: #6a778a;
+      --blue: #2f80ff;
+      --green: #17a566;
+      --orange: #f29d38;
+      --red: #db4c4c;
+      --gray: #8b96a8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .title-wrap h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+    }
+    .title-wrap p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .chip {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .chip b { display: block; font-size: 20px; margin-top: 4px; }
+    .toolbar, .layout {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .toolbar {
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    select, input, button {
+      border: 1px solid #ccd7e7;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      min-height: 560px;
+      overflow: hidden;
+    }
+    .table-wrap {
+      overflow: auto;
+      border-right: 1px solid var(--line);
+    }
+    table {
+      border-collapse: collapse;
+      min-width: 1300px;
+      width: 100%;
+      font-size: 13px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f9fbff;
+      z-index: 2;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+    th, td {
+      border-bottom: 1px solid #edf1f7;
+      padding: 9px 10px;
+      vertical-align: middle;
+    }
+    .status, .phase {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #fff;
+      font-weight: 600;
+    }
+    .s-wait { background: var(--gray); }
+    .s-work { background: var(--blue); }
+    .s-done { background: var(--green); }
+    .s-delay { background: var(--red); }
+    .s-rev { background: var(--orange); }
+    .progress {
+      width: 120px;
+      height: 8px;
+      border-radius: 999px;
+      background: #e6edf8;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      background: var(--blue);
+    }
+    .aside {
+      padding: 14px;
+      background: #fcfdff;
+    }
+    .aside h3 { margin: 0 0 12px; }
+    .kv {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .k { color: var(--muted); }
+    .timeline {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+    .timeline-item {
+      border-left: 2px solid #d9e4f5;
+      padding: 0 0 10px 10px;
+      margin-left: 3px;
+      font-size: 12px;
+    }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="head">
+      <div class="title-wrap">
+        <h1>BOQ Detay - Revizyon 2 (Görsel Mockup)</h1>
+        <p>Bu dosya sadece tasarım örneğidir. Sisteme entegre değildir.</p>
+      </div>
+      <button class="btn-primary">Yeni İş Kalemi</button>
+    </div>
+
+    <section class="chips">
+      <div class="chip">Toplam İş Kalemi<b>248</b></div>
+      <div class="chip">Devam Eden<b>63</b></div>
+      <div class="chip">Geciken<b>14</b></div>
+      <div class="chip">Tamamlanan<b>171</b></div>
+    </section>
+
+    <section class="toolbar">
+      <select><option>Proje: AHK Otel</option></select>
+      <select><option>Durum: Tümü</option></select>
+      <select><option>Departman: Tümü</option></select>
+      <input type="text" value="Sorumlu veya ürün ara" />
+      <button>Operasyon Görünümü</button>
+      <button>Tüm Kolonlar</button>
+      <button>Dışa Aktar</button>
+    </section>
+
+    <section class="layout">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SN</th>
+              <th>Ürün</th>
+              <th>Mahal</th>
+              <th>Sorumlu</th>
+              <th>Durum</th>
+              <th>İlerleme</th>
+              <th>Röleve</th>
+              <th>Çizim</th>
+              <th>Malzeme Siparişi</th>
+              <th>Üretim</th>
+              <th>Boya</th>
+              <th>Sevk</th>
+              <th>Montaj</th>
+              <th>Termin</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>12</td>
+              <td>Dekoratif Panel</td>
+              <td>1-002 / Entrance Hall</td>
+              <td>Ahmet Yılmaz</td>
+              <td><span class="status s-work">Devam</span></td>
+              <td><span class="progress"><span style="width: 64%"></span></span>64%</td>
+              <td><span class="phase s-done">Tamam</span></td>
+              <td><span class="phase s-work">Devam</span></td>
+              <td><span class="phase s-work">Devam</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td>2026-05-25</td>
+              <td><button>İşlemler</button></td>
+            </tr>
+            <tr>
+              <td>13</td>
+              <td>Dolap Kapak Seti</td>
+              <td>1-014 / Dressing</td>
+              <td>Elif Kara</td>
+              <td><span class="status s-delay">Gecikti</span></td>
+              <td><span class="progress"><span style="width: 32%"></span></span>32%</td>
+              <td><span class="phase s-done">Tamam</span></td>
+              <td><span class="phase s-done">Tamam</span></td>
+              <td><span class="phase s-delay">Gecikti</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td>2026-05-20</td>
+              <td><button>İşlemler</button></td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>Resepsiyon Tezgahı</td>
+              <td>2-001 / Hall</td>
+              <td>Mehmet Demir</td>
+              <td><span class="status s-rev">Revizyon</span></td>
+              <td><span class="progress"><span style="width: 78%"></span></span>78%</td>
+              <td><span class="phase s-done">Tamam</span></td>
+              <td><span class="phase s-rev">Revizyon</span></td>
+              <td><span class="phase s-work">Devam</span></td>
+              <td><span class="phase s-work">Devam</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td><span class="phase s-wait">Bekliyor</span></td>
+              <td>2026-06-02</td>
+              <td><button>İşlemler</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="aside">
+        <h3>İş Kalemi Detayı</h3>
+        <div class="kv"><div class="k">Ürün</div><div>Dekoratif Panel</div></div>
+        <div class="kv"><div class="k">Mahal</div><div>1-002 / Entrance Hall</div></div>
+        <div class="kv"><div class="k">Sorumlu</div><div>Ahmet Yılmaz</div></div>
+        <div class="kv"><div class="k">Durum</div><div><span class="status s-work">Devam</span></div></div>
+        <div class="kv"><div class="k">Not</div><div class="muted">Malzeme tedarik onayı bekleniyor.</div></div>
+
+        <div class="timeline">
+          <h3 style="font-size:14px; margin:0 0 10px;">Geçmiş</h3>
+          <div class="timeline-item">
+            <b>Durum güncellendi</b><br />
+            06.05.2026 15:20 - Burak Ç.
+          </div>
+          <div class="timeline-item">
+            <b>Atama değişti</b><br />
+            06.05.2026 14:10 - Elif K.
+          </div>
+          <div class="timeline-item">
+            <b>İş kalemi oluşturuldu</b><br />
+            05.05.2026 11:42 - Sistem
+          </div>
+        </div>
+      </aside>
+    </section>
+  </div>
+</body>
+</html>

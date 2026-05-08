@@ -117,7 +117,12 @@ function fmtMoney(n) {
 }
 
 function fmtQty(n) {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(Number(n) || 0);
+  const x = Number(n) || 0;
+  try {
+    return new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(x);
+  } catch {
+    return String(Math.round(x * 100) / 100);
+  }
 }
 
 function fmtUsd(n) {

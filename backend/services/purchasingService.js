@@ -220,7 +220,7 @@ async function listProductOptions() {
 
 async function supplierExtraCols() {
   const extras = {};
-  for (const c of ['phone', 'email', 'address', 'note', 'tax_number']) {
+  for (const c of ['phone', 'email', 'address', 'note', 'tax_number', 'supplier_no']) {
     extras[c] = await hasCol('suppliers', c);
   }
   return extras;
@@ -229,6 +229,7 @@ async function supplierExtraCols() {
 async function listSuppliers() {
   const ex = await supplierExtraCols();
   const cols = ['id', 'name', 'contact', 'tax_id'];
+  if (ex.supplier_no) cols.splice(1, 0, 'supplier_no');
   if (ex.phone) cols.push('phone');
   if (ex.email) cols.push('email');
   if (ex.address) cols.push('address');
@@ -245,16 +246,112 @@ async function createSupplier({ name, contact, taxId, phone, email, address, not
     return err('Tedarikçi adı gerekli', 'api.pur.supplier_name_required');
   }
   const ex = await supplierExtraCols();
-  const cols = ['name', 'contact', 'tax_id'];
-  const vals = [n, contact || null, taxId || tax_number || null];
-  if (ex.phone) { cols.push('phone'); vals.push(phone || null); }
-  if (ex.email) { cols.push('email'); vals.push(email || null); }
-  if (ex.address) { cols.push('address'); vals.push(address || null); }
-  if (ex.note) { cols.push('note'); vals.push(note || null); }
-  if (ex.tax_number) { cols.push('tax_number'); vals.push(tax_number || null); }
-  const ph = cols.map(() => '?').join(',');
-  const [r] = await pool.query(`INSERT INTO suppliers (${cols.join(',')}) VALUES (${ph})`, vals);
-  return { id: r.insertId, name: n };
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    let supplierNo = null;
+    if (ex.supplier_no) {
+      await conn.query("SELECT GET_LOCK('fabrika_supplier_no', 15) AS lk");
+      try {
+        const [[{ mx }]] = await conn.query(
+          `SELECT COALESCE(MAX(CAST(SUBSTRING(supplier_no, 5) AS UNSIGNED)), 0) AS mx
+           FROM suppliers WHERE supplier_no REGEXP '^SUP-[0-9]+$'`
+        );
+        const next = (Number(mx) || 0) + 1;
+        supplierNo = `SUP-${String(next).padStart(5, '0')}`;
+      } finally {
+        await conn.query("SELECT RELEASE_LOCK('fabrika_supplier_no')");
+      }
+    }
+    const cols = ['name', 'contact', 'tax_id'];
+    const vals = [n, contact || null, taxId || tax_number || null];
+    if (ex.supplier_no) {
+      cols.unshift('supplier_no');
+      vals.unshift(supplierNo);
+    }
+    if (ex.phone) {
+      cols.push('phone');
+      vals.push(phone || null);
+    }
+    if (ex.email) {
+      cols.push('email');
+      vals.push(email || null);
+    }
+    if (ex.address) {
+      cols.push('address');
+      vals.push(address || null);
+    }
+    if (ex.note) {
+      cols.push('note');
+      vals.push(note || null);
+    }
+    if (ex.tax_number) {
+      cols.push('tax_number');
+      vals.push(tax_number || null);
+    }
+    const ph = cols.map(() => '?').join(',');
+    const [r] = await conn.query(`INSERT INTO suppliers (${cols.join(',')}) VALUES (${ph})`, vals);
+    await conn.commit();
+    return { id: r.insertId, name: n, supplier_no: supplierNo };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
+async function updateSupplier(id, body) {
+  const sid = parseInt(String(id), 10);
+  if (!Number.isFinite(sid) || sid < 1) {
+    return err('Geçersiz tedarikçi', 'api.pur.supplier_id_invalid');
+  }
+  const ex = await supplierExtraCols();
+  const fields = [];
+  const vals = [];
+  if (body?.name != null) {
+    const nm = toUpperTr(String(body.name || '').trim());
+    if (!nm) return err('Tedarikçi adı gerekli', 'api.pur.supplier_name_required');
+    fields.push('name = ?');
+    vals.push(nm);
+  }
+  if (body?.contact !== undefined) {
+    fields.push('contact = ?');
+    vals.push(body.contact || null);
+  }
+  if (body?.taxId !== undefined || body?.tax_number !== undefined) {
+    fields.push('tax_id = ?');
+    vals.push(body.taxId != null ? body.taxId : body.tax_number || null);
+  }
+  if (ex.phone && body?.phone !== undefined) {
+    fields.push('phone = ?');
+    vals.push(body.phone || null);
+  }
+  if (ex.email && body?.email !== undefined) {
+    fields.push('email = ?');
+    vals.push(body.email || null);
+  }
+  if (ex.address && body?.address !== undefined) {
+    fields.push('address = ?');
+    vals.push(body.address || null);
+  }
+  if (ex.note && body?.note !== undefined) {
+    fields.push('note = ?');
+    vals.push(optionalNoteUpperTr(body.note));
+  }
+  if (ex.tax_number && (body?.tax_number !== undefined || body?.taxId !== undefined)) {
+    fields.push('tax_number = ?');
+    vals.push(body.tax_number != null ? body.tax_number : body.taxId || null);
+  }
+  if (!fields.length) {
+    return err('Güncellenecek alan yok', 'api.pur.supplier_nothing_to_update');
+  }
+  vals.push(sid);
+  const [r] = await pool.query(`UPDATE suppliers SET ${fields.join(', ')} WHERE id = ?`, vals);
+  if (!r.affectedRows) {
+    return err('Tedarikçi bulunamadı', 'api.pur.supplier_not_found');
+  }
+  return { ok: true };
 }
 
 async function listUnitsForPurchase() {
@@ -817,7 +914,16 @@ async function ensurePendingSupplier(conn) {
 function isOrderReadonlyForPricing(row) {
   if (!row) return true;
   if (String(row.status) === 'cancelled') return true;
-  return normalizeReceiptStatusValue(row.receipt_status) === 'completed' && normalizePricingStatusValue(row.pricing_status) === 'priced';
+  const buyerRaw = row.buyer_state != null && row.buyer_state !== '' ? row.buyer_state : row.buyer_status;
+  const buyer = String(buyerRaw || '')
+    .trim()
+    .toLowerCase();
+  if (buyer === 'completed' || buyer === 'ready_for_warehouse') return true;
+  if (buyerRaw != null && String(buyerRaw).trim() !== '') {
+    return false;
+  }
+  if (String(row.status) === 'completed') return true;
+  return false;
 }
 
 async function createPurchaseOrder({
@@ -1194,6 +1300,54 @@ async function getPurchaseOrderById(id, { hidePrice } = {}) {
     return { order: stripOrderForWarehouse(o) };
   }
   return { order: o };
+}
+
+async function listRecentBuyerCompletedPurchaseOrders(limitRaw) {
+  const lim = Math.min(50, Math.max(1, parseInt(String(limitRaw || 10), 10) || 10));
+  const hasReceiptStatus = await hasCol('purchase_orders', 'receipt_status');
+  const hasPricingStatus = await hasCol('purchase_orders', 'pricing_status');
+  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
+  /* Talep onaylanıp purchase_orders kaydı oluşmuş tüm aktif siparişler;
+     buyer_state'e bakılmaz çünkü "onaylanmış sipariş" = sistemde var olan sipariş. */
+  const where = "po.status <> 'cancelled'";
+  const [list] = await pool.query(
+    `SELECT po.id, po.order_code, po.supplier_id, po.project_id, po.order_date,
+            po.updated_at, po.created_at,
+            CASE WHEN po.status = 'partial' THEN 'partial_received' ELSE po.status END AS status,
+            ${hasReceiptStatus ? 'po.receipt_status,' : "'awaiting_receipt' AS receipt_status,"}
+            ${hasPricingStatus ? 'po.pricing_status,' : "'unpriced' AS pricing_status,"}
+            ${hasBuyerState ? 'po.buyer_state,' : 'NULL AS buyer_state,'}
+            po.currency,
+            COALESCE(s.name, CONCAT('Tedarikçi #', po.supplier_id)) AS supplier_name, prj.project_code,
+            (SELECT pr.request_code
+               FROM purchase_order_items poi
+               INNER JOIN purchase_request_items pri ON pri.id = poi.request_item_id
+               INNER JOIN purchase_requests pr ON pr.id = pri.request_id
+              WHERE poi.order_id = po.id
+              ORDER BY poi.id ASC
+              LIMIT 1) AS linked_request_code,
+            (SELECT COALESCE(NULLIF(TRIM(ur.full_name), ''), ur.username)
+               FROM purchase_order_items poi
+               INNER JOIN purchase_request_items pri ON pri.id = poi.request_item_id
+               INNER JOIN purchase_requests pr ON pr.id = pri.request_id
+               LEFT JOIN users ur ON ur.id = pr.requester_id
+              WHERE poi.order_id = po.id
+              ORDER BY poi.id ASC
+              LIMIT 1) AS linked_requester_name
+     FROM purchase_orders po
+     LEFT JOIN suppliers s ON s.id = po.supplier_id
+     LEFT JOIN projects prj ON prj.id = po.project_id
+     WHERE ${where}
+     ORDER BY COALESCE(po.updated_at, po.created_at, po.order_date) DESC, po.id DESC
+     LIMIT ?`,
+    [lim]
+  );
+  for (const r of list) {
+    r.receipt_status = normalizeReceiptStatusValue(r.receipt_status || r.status);
+    r.pricing_status = normalizePricingStatusValue(r.pricing_status);
+    r.buyer_status = normalizeBuyerStatusValue(r.buyer_state);
+  }
+  return { orders: list };
 }
 
 async function listPurchaseOrders({ status, statuses, hidePrice, openForReceipt, forPricing, buyerStatus, completedByBuyer } = {}) {
@@ -2182,17 +2336,27 @@ async function runOrderBuyerAction({ id, action }) {
   if (!Number.isFinite(oid) || oid < 1) {
     return err('Geçersiz sipariş', 'api.pur.id_invalid');
   }
-  const [[por]] = await pool.query('SELECT id, status FROM purchase_orders WHERE id = ?', [oid]);
+  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
+  const [[por]] = await pool.query(
+    hasBuyerState ? 'SELECT id, status, buyer_state FROM purchase_orders WHERE id = ?' : 'SELECT id, status FROM purchase_orders WHERE id = ?',
+    [oid]
+  );
   if (!por) {
     return err('Sipariş yok', 'api.pur.order_not_found');
   }
   if (String(por.status) === 'cancelled') {
     return err('İptal siparişte işlem yapılamaz', 'api.pur.order_readonly');
   }
-  if (String(por.status) === 'completed') {
+  if (hasBuyerState) {
+    const buyer = String(por.buyer_state || '')
+      .trim()
+      .toLowerCase();
+    if (buyer === 'completed' || buyer === 'ready_for_warehouse') {
+      return err('Satınalmacı süreci tamamlanmış sipariş', 'api.pur.order_readonly');
+    }
+  } else if (String(por.status) === 'completed') {
     return err('Tamamlanmış sipariş', 'api.pur.order_readonly');
   }
-  const hasBuyerState = await hasCol('purchase_orders', 'buyer_state');
   if (a === 'process') {
     if (hasBuyerState) {
       await pool.query("UPDATE purchase_orders SET buyer_state = 'in_progress' WHERE id = ?", [oid]);
@@ -2391,6 +2555,8 @@ module.exports = {
   listProductOptions,
   listSuppliers,
   createSupplier,
+  updateSupplier,
+  listRecentBuyerCompletedPurchaseOrders,
   listUnitsForPurchase,
   listProductsForPurchase,
   getNextRequestCodePreview,

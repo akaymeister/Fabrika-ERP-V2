@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="project.control.pageTitle">Proje kontrol</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page app-ui-v3 erp-page project-control-page">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title erp-page-title" data-i18n="project.control.pageTitle">Proje kontrol</h1>
+          <p class="subtitle" data-i18n="project.control.sub">Proje BOQ dosyalarını operasyon iş kalemlerine dönüştürür.</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" data-i18n-placeholder="lang.label" aria-label="Language" class="app-select app-topbar-lang" title="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/projects.html" class="btn btn-secondary" data-i18n="nav.project.hub">Özet</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+          <section class="card erp-card project-control-actions-card">
+            <div class="project-control-actions-head">
+              <h3 data-i18n="project.control.actionsTitle">Aksiyonlar</h3>
+              <button type="button" id="btnToggleUpload" class="btn btn-primary" data-i18n="project.control.btnUploadToggle">Excel BOQ Ekle</button>
+            </div>
+            <div id="uploadPanel" class="project-control-upload-panel is-hidden">
+              <form id="boqUploadForm" class="erp-form erp-form-grid project-control-upload-grid">
+                <div class="form-field">
+                  <label for="projectId" data-i18n="project.control.project">Proje</label>
+                  <select id="projectId" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="documentName" data-i18n="project.control.documentName">BOQ adı</label>
+                  <input id="documentName" type="text" maxlength="255" data-i18n-placeholder="project.control.documentNamePh" />
+                </div>
+                <div class="form-field">
+                  <label for="disciplineType" data-i18n="project.control.discipline">Disiplin</label>
+                  <input id="disciplineType" type="text" maxlength="64" data-i18n-placeholder="project.control.disciplinePh" />
+                </div>
+                <div class="form-field">
+                  <label for="revisionNote" data-i18n="project.control.revisionNote">Revizyon notu</label>
+                  <input id="revisionNote" type="text" maxlength="1000" data-i18n-placeholder="project.control.revisionNotePh" />
+                </div>
+                <div class="form-field">
+                  <label for="boqFile" data-i18n="project.control.file">Excel dosyası</label>
+                  <input id="boqFile" name="file" type="file" accept=".xlsx,.xls,.csv" required />
+                </div>
+                <div class="erp-form-actions">
+                  <button type="submit" class="btn btn-primary" data-i18n="project.control.upload">Yükle</button>
+                </div>
+              </form>
+              <p id="uploadMsg" class="login-error project-control-msg is-hidden" role="alert"></p>
+            </div>
+          </section>
+
+          <section class="card erp-card project-control-list-card">
+            <div class="project-control-list-head">
+              <h3 data-i18n="project.control.listTitle">Eklenen BOQ'ler</h3>
+              <div class="project-control-list-filters">
+                <select id="filterProject"></select>
+                <button id="btnRefreshList" type="button" class="btn btn-secondary" data-i18n="project.control.refresh">Yenile</button>
+              </div>
+            </div>
+            <div class="erp-table-wrap project-control-table-wrap">
+              <table class="erp-table erp-table-compact app-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="project.control.colProject">Proje</th>
+                    <th data-i18n="project.control.colFile">BOQ dosyası</th>
+                    <th data-i18n="project.control.colRevision">Revizyon</th>
+                    <th data-i18n="project.control.colActive">Aktif</th>
+                    <th data-i18n="project.control.colUploadDate">Yükleme tarihi</th>
+                    <th data-i18n="project.control.colRowCount">Satır</th>
+                    <th data-i18n="project.control.colStatus">Durum</th>
+                    <th data-i18n="project.control.colActions">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="boqListBody"></tbody>
+              </table>
+            </div>
+            <p id="listMsg" class="login-error project-control-msg is-hidden" role="alert"></p>
+          </section>
+
+          <section class="card erp-card project-control-detail-card is-hidden" id="detailCard">
+            <div class="project-control-detail-head">
+              <h3 id="detailTitle" data-i18n="project.control.detailTitle">BOQ detay</h3>
+              <div class="project-control-detail-actions">
+                <button type="button" id="btnAddRow" class="btn btn-secondary" data-i18n="project.control.addRow">Satır ekle</button>
+                <button type="button" id="btnAddColumn" class="btn btn-secondary" data-i18n="project.control.addColumn">Sütun ekle</button>
+                <button type="button" id="btnInitDeptTasks" class="btn btn-secondary" data-i18n="project.control.initDeptTasks">Departman görevlerini başlat</button>
+                <button type="button" id="btnToggleColumns" class="btn btn-secondary" data-i18n="project.control.showAllColumns">Tüm kolonları göster</button>
+              </div>
+            </div>
+            <div class="erp-table-wrap project-control-detail-table-wrap">
+              <table class="erp-table erp-table-compact app-table project-control-detail-table">
+                <thead id="detailHead"></thead>
+                <tbody id="detailBody"></tbody>
+              </table>
+            </div>
+            <div class="project-control-detail-footer">
+              <button type="button" id="btnLoadMoreRows" class="btn btn-secondary is-hidden" data-i18n="project.control.loadMore">Daha fazla yükle</button>
+            </div>
+            <div id="detailPanelsModal" class="project-control-modal is-hidden" aria-hidden="true">
+              <div class="project-control-modal-backdrop" data-act="close-panels-modal"></div>
+              <div class="project-control-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="detailPanelsModalTitle">
+                <div class="project-control-modal-head">
+                  <h4 id="detailPanelsModalTitle" data-i18n="project.control.detailPopupTitle">Ürün ve faz detayı</h4>
+                  <div class="project-control-modal-head-actions">
+                    <button type="button" id="btnSaveDetailPanels" class="btn btn-primary btn-sm" data-i18n="project.control.saveChanges">Kaydet</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-act="close-panels-modal" data-i18n="project.control.close">Kapat</button>
+                  </div>
+                </div>
+                <div class="project-control-detail-bottom project-control-detail-bottom-modal">
+                  <section class="erp-card project-control-product-card">
+                    <h4 data-i18n="project.control.productInfo">Ürün bilgisi</h4>
+                    <div class="project-control-product-wrap">
+                      <div class="project-control-product-image-box">
+                        <img id="detailProductImage" class="project-control-product-image" alt="Ürün görseli" />
+                        <div id="detailProductImageFallback" class="project-control-product-image-fallback" data-i18n="project.control.noImage">Görsel yok</div>
+                      </div>
+                      <div class="project-control-product-detail-box" id="detailProductInfo"></div>
+                    </div>
+                  </section>
+                  <section class="erp-card project-control-phase-card">
+                    <h4 data-i18n="project.control.phaseView">Faz görünümü</h4>
+                    <div class="project-control-phase-table-wrap">
+                      <table class="erp-table erp-table-compact app-table">
+                        <thead>
+                          <tr>
+                            <th data-i18n="project.control.phase">Faz</th>
+                            <th data-i18n="project.control.colStatus">Durum</th>
+                            <th data-i18n="project.control.terminDate">Termin tarihi</th>
+                          </tr>
+                        </thead>
+                        <tbody id="detailPhaseBody"></tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <p id="detailMsg" class="login-error project-control-msg is-hidden" role="alert"></p>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/project-common.js" defer></script>
+  <script src="/js/project-control.js" defer></script>
+</body>
+</html>

@@ -15,10 +15,13 @@
   const orderBadges = document.getElementById('orderBadges');
   const btnStart = document.getElementById('btnStart');
   const btnPrint = document.getElementById('btnPrint');
+  const btnPrintDlg = document.getElementById('btnPrintDlg');
   const btnSavePricing = document.getElementById('btnSavePricing');
   const btnCompleteOrder = document.getElementById('btnCompleteOrder');
   const btnReviseOrder = document.getElementById('btnReviseOrder');
   const procLockHint = document.getElementById('procLockHint');
+  const procDlg = document.getElementById('procDlg');
+  const procDlgClose = document.getElementById('procDlgClose');
   const cancelLineModal = document.getElementById('cancelLineModal');
   const cancelLineReason = document.getElementById('cancelLineReason');
   const cancelLineConfirm = document.getElementById('cancelLineConfirm');
@@ -91,10 +94,31 @@
   }
 
   /**
-   * type="number" birim fiyat alanı: görünüm en fazla 2 ondalık (ayırıcı her zaman nokta).
-   * Kayıtta input.value parseFloat ile okunur; step=0.0001 ile ince giriş mümkün.
+   * tr-TR vb.: binlik `.`, ondalık `,` (örn. 1.000.000,52). Virgül yoksa İngilizce `12.34` de kabul edilir.
+   * @param {unknown} raw
+   * @returns {number|null}
    */
-  function fmtUnitPriceInputValue(raw) {
+  function parseLocaleDecimalInput(raw) {
+    let s = String(raw ?? '')
+      .trim()
+      .replace(/\s/g, '');
+    if (!s) return null;
+    s = s.replace(/'/g, '');
+    if (s.indexOf(',') >= 0) {
+      const n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+      return Number.isFinite(n) ? n : null;
+    }
+    const dotCount = (s.match(/\./g) || []).length;
+    if (dotCount >= 2) {
+      const n = parseFloat(s.replace(/\./g, ''));
+      return Number.isFinite(n) ? n : null;
+    }
+    const n2 = parseFloat(s);
+    return Number.isFinite(n2) ? n2 : null;
+  }
+
+  /** Birim fiyat metin alanı: locale ile 2 ondalık (örn. 1.000.000,52). */
+  function fmtUnitPriceFieldDisplay(raw) {
     if (raw == null || raw === '') {
       return '';
     }
@@ -102,7 +126,24 @@
     if (!Number.isFinite(n)) {
       return '';
     }
-    return n.toFixed(2);
+    return fmtMoneyDisplay(n);
+  }
+
+  function formatUnitPriceInput(el) {
+    if (!el || el.disabled) return;
+    const raw = String(el.value || '').trim();
+    if (raw === '') {
+      el.value = '';
+      el.removeAttribute('title');
+      return;
+    }
+    const n = parseLocaleDecimalInput(raw);
+    if (n == null || !Number.isFinite(n) || n < 0) {
+      return;
+    }
+    const disp = fmtMoneyDisplay(n);
+    el.value = disp;
+    el.title = disp;
   }
 
   /**
@@ -205,6 +246,34 @@
     return html;
   }
 
+  function qtyCellPlain(item, qty) {
+    const unit = primaryUnit(item);
+    return `<div>${esc(fmtQty(qty))} ${esc(unit)}</div>`;
+  }
+
+  function openProcDialog() {
+    if (!procDlg) return;
+    if (typeof procDlg.showModal === 'function' && !procDlg.open) {
+      try {
+        procDlg.showModal();
+      } catch (e) {
+        procDlg.setAttribute('open', 'open');
+      }
+    } else if (!procDlg.open) {
+      procDlg.setAttribute('open', 'open');
+    }
+  }
+
+  function closeProcDialog() {
+    if (!procDlg) return;
+    closeAllSupCombos();
+    if (typeof procDlg.close === 'function' && procDlg.open) {
+      procDlg.close();
+    } else {
+      procDlg.removeAttribute('open');
+    }
+  }
+
   function orderQtyValue(item) {
     const q = Number(item && item.qty_ordered);
     return Number.isFinite(q) && q > 0 ? q : 0;
@@ -212,8 +281,9 @@
 
   function lineUnitPriceValue(input) {
     const priceRaw = input && input.priceEl ? String(input.priceEl.value || '').trim() : '';
-    const unitPrice = priceRaw === '' ? null : parseFloat(priceRaw.replace(',', '.'));
-    return Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : 0;
+    if (priceRaw === '') return 0;
+    const unitPrice = parseLocaleDecimalInput(priceRaw);
+    return unitPrice != null && Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : 0;
   }
 
   function calcLineTotal(item, input) {
@@ -279,7 +349,7 @@
     if (!entry || !entry.input) return false;
     const supplierId = entry.input.supEl && entry.input.supEl.value ? parseInt(String(entry.input.supEl.value), 10) : null;
     const priceRaw = entry.input.priceEl ? String(entry.input.priceEl.value).trim() : '';
-    const unitPrice = priceRaw === '' ? null : parseFloat(priceRaw.replace(',', '.'));
+    const unitPrice = priceRaw === '' ? null : parseLocaleDecimalInput(priceRaw);
     const fxRaw = entry.input.fxEl ? String(entry.input.fxEl.value).trim() : '';
     const fxRate = fxRaw === '' ? null : parseFloat(fxRaw.replace(',', '.'));
     const currency = allowedPricingCurrency(entry.input.curEl ? entry.input.curEl.value : 'UZS');
@@ -317,7 +387,7 @@
 
     for (const line of lineInputs) {
       if (!line) continue;
-      [line.supSearchEl, line.supEl, line.priceEl, line.curEl, line.fxEl].forEach((el) => {
+      [line.supSearchEl, line.supEl, line.priceEl, line.curEl, line.fxEl, line.supCmbBtn].forEach((el) => {
         if (!el) return;
         if (el.closest('tr') && el.closest('tr').classList.contains('po-line-cancelled')) return;
         el.disabled = !editable;
@@ -325,6 +395,7 @@
     }
 
     if (btnPrint) btnPrint.disabled = !hasOrder;
+    if (btnPrintDlg) btnPrintDlg.disabled = !hasOrder;
     if (btnStart) btnStart.disabled = !hasOrder || started || completed;
     if (btnSavePricing) btnSavePricing.disabled = !editable;
     if (btnCompleteOrder) btnCompleteOrder.disabled = !completeReady;
@@ -384,11 +455,38 @@
 
   function refreshAllSupplierDropdowns() {
     if (!linesDetailBody) return;
-    linesDetailBody.querySelectorAll('.po-line-sup').forEach((el) => {
-      const cur = el.value;
-      el.innerHTML = supplierOptionsHtml(cur);
+    linesDetailBody.querySelectorAll('.proc-sup-cmb').forEach((cmb) => {
+      const labelEl = cmb.querySelector('.proc-sup-cmb-label');
+      const supEl = cmb.querySelector('.po-line-sup');
+      if (!labelEl || !supEl) return;
+      const id = String(supEl.value || '');
+      const row = id ? suppliers.find((r) => String(r.id) === id) : null;
+      const text = row ? fmtDisplayUpper(row.name || '') : '';
+      labelEl.textContent = text || tK('purch.proc.supSearchPh');
+      labelEl.classList.toggle('is-placeholder', !text);
     });
   }
+
+  function closeAllSupCombos(except) {
+    if (!linesDetailBody) return;
+    linesDetailBody.querySelectorAll('.proc-sup-cmb.is-open').forEach((cmb) => {
+      if (cmb === except) return;
+      const panel = cmb.querySelector('.proc-sup-cmb-panel');
+      const btn = cmb.querySelector('.proc-sup-cmb-btn');
+      if (panel) panel.hidden = true;
+      cmb.classList.remove('is-open');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.proc-sup-cmb')) return;
+    if (e.target.closest('.proc-sup-cmb-panel')) return;
+    closeAllSupCombos();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAllSupCombos();
+  });
 
   async function loadIncomingOrders(keepSelection) {
     const prevSelectedId = keepSelection ? currentOrderId() : null;
@@ -535,6 +633,7 @@
     selectedOrder = data.order;
     if (detailEmpty) detailEmpty.hidden = true;
     if (orderFormBlock) orderFormBlock.hidden = false;
+    openProcDialog();
 
     const order = selectedOrder;
     const projectLabel = fmtDisplayUpper(order.project_label || order.project_code || '—');
@@ -543,6 +642,11 @@
     }
     renderBadges(order);
 
+    document.querySelectorAll('.proc-sup-cmb-panel').forEach((p) => {
+      if (p && p.parentNode && (!linesDetailBody || !linesDetailBody.contains(p))) {
+        try { p.parentNode.removeChild(p); } catch (e) { /* ignore */ }
+      }
+    });
     const items = Array.isArray(order.items) ? order.items : [];
     lineInputs = items.map(() => ({}));
     linesDetailBody.innerHTML = items
@@ -563,20 +667,32 @@
         const cancelBtn = cancelled
           ? '—'
           : `<button type="button" class="btn btn-danger btn-sm po-line-cancel text-ui" data-action="cancel-line" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+        const supSelectedId = String(it.line_supplier_id || order.supplier_id || '');
+        const supSelectedRow = suppliers.find((s) => String(s.id) === supSelectedId);
+        const supLabel = supSelectedRow ? fmtDisplayUpper(supSelectedRow.name || '') : '';
         return `<tr${rowCls}>
-          <td><span class="text-meta proc-product-code-muted">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/>${esc(fmtDisplayUpper(it.product_name || ''))}${cancelReasonHtml}</td>
-          <td class="r-stock">${qtyCellHtml(it, it.qty_ordered)}</td>
-          <td class="r-stock">${qtyCellHtml(it, it.qty_received)}</td>
-          <td class="r-stock">${qtyCellHtml(it, it.qty_remaining)}</td>
-          <td>
-            <input class="pur-inp po-line-supsearch app-input" data-i="${i}" placeholder="${esc(tK('purch.proc.supSearchPh'))}" ${cancelled ? 'disabled' : ''} />
-            <select class="pur-inp po-line-sup app-select" data-i="${i}" ${cancelled ? 'disabled' : ''}>${supplierOptionsHtml(it.line_supplier_id || order.supplier_id || '')}</select>
+          <td class="proc-col-prod"><span class="text-meta proc-product-code-muted">${esc(fmtDisplayUpper(it.product_code || ''))}</span><br/><span class="proc-prod-name">${esc(fmtDisplayUpper(it.product_name || ''))}</span>${cancelReasonHtml}</td>
+          <td class="proc-col-qty r-stock">${qtyCellPlain(it, it.qty_ordered)}</td>
+          <td class="proc-col-qty r-stock">${qtyCellPlain(it, it.qty_received)}</td>
+          <td class="proc-col-qty r-stock">${qtyCellPlain(it, it.qty_remaining)}</td>
+          <td class="proc-col-supplier">
+            <div class="proc-sup-cmb" data-i="${i}">
+              <input type="hidden" class="po-line-sup" data-i="${i}" value="${esc(supSelectedId)}" />
+              <button type="button" class="proc-sup-cmb-btn" data-i="${i}" ${cancelled ? 'disabled' : ''} aria-haspopup="listbox" aria-expanded="false">
+                <span class="proc-sup-cmb-label${supLabel ? '' : ' is-placeholder'}">${esc(supLabel || tK('purch.proc.supSearchPh'))}</span>
+                <span class="proc-sup-cmb-caret" aria-hidden="true">▾</span>
+              </button>
+              <div class="proc-sup-cmb-panel" hidden>
+                <input type="text" class="app-input proc-sup-cmb-search" data-i="${i}" data-i18n-placeholder="purch.proc.supSearchPh" />
+                <ul class="proc-sup-cmb-list" data-i="${i}" role="listbox"></ul>
+              </div>
+            </div>
           </td>
-          <td><input type="number" class="pur-inp po-line-price app-input" data-i="${i}" min="0" step="0.0001" value="${esc(fmtUnitPriceInputValue(it.unit_price))}" title="${esc(fmtMoneyDisplay(it.unit_price))}" ${cancelled ? 'disabled' : ''} /></td>
+          <td><input type="text" class="pur-inp po-line-price app-input proc-line-price-input" inputmode="decimal" autocomplete="off" data-i="${i}" value="${esc(fmtUnitPriceFieldDisplay(it.unit_price))}" title="${esc(fmtMoneyDisplay(it.unit_price))}" ${cancelled ? 'disabled' : ''} /></td>
           <td><input type="text" class="pur-inp po-line-total app-input" data-i="${i}" value="${esc(fmtMoneyDisplay((Number(it.qty_ordered) || 0) * (Number(it.unit_price) || 0)))}" readonly /></td>
-          <td><select class="pur-inp po-line-cur app-select" data-i="${i}" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
-          <td><input type="number" class="pur-inp po-line-fx app-input" data-i="${i}" min="0" step="0.0001" value="${esc(fmtFxInputValue(fxRate))}" ${cancelled ? 'disabled' : ''} /></td>
-          <td class="po-line-actions-cell">${cancelBtn}</td>
+          <td class="proc-col-cur"><select class="pur-inp po-line-cur app-select" data-i="${i}" ${cancelled ? 'disabled' : ''}>${currencyOptionsHtml(lineCurrency)}</select></td>
+          <td class="proc-col-fx"><input type="number" class="pur-inp po-line-fx app-input" data-i="${i}" min="0" step="0.0001" value="${esc(fmtFxInputValue(fxRate))}" ${cancelled ? 'disabled' : ''} /></td>
+          <td class="po-line-actions-cell proc-col-actions">${cancelBtn}</td>
         </tr>`;
       })
       .join('');
@@ -585,22 +701,132 @@
       const i = parseInt(el.getAttribute('data-i'), 10);
       lineInputs[i].supEl = el;
     });
-    linesDetailBody.querySelectorAll('.po-line-supsearch').forEach((el) => {
-      const i = parseInt(el.getAttribute('data-i'), 10);
-      lineInputs[i].supSearchEl = el;
-      el.addEventListener('input', () => {
-        const q = String(el.value || '').trim().toLowerCase();
-        const sel = lineInputs[i].supEl;
-        if (!sel) return;
-        const cur = sel.value;
-        let html = '<option value="">—</option>';
+    linesDetailBody.querySelectorAll('.proc-sup-cmb').forEach((cmb) => {
+      const i = parseInt(cmb.getAttribute('data-i'), 10);
+      const btn = cmb.querySelector('.proc-sup-cmb-btn');
+      const panel = cmb.querySelector('.proc-sup-cmb-panel');
+      const search = cmb.querySelector('.proc-sup-cmb-search');
+      const list = cmb.querySelector('.proc-sup-cmb-list');
+      const labelEl = cmb.querySelector('.proc-sup-cmb-label');
+      lineInputs[i].supSearchEl = search;
+      lineInputs[i].supCmb = cmb;
+      lineInputs[i].supCmbBtn = btn;
+
+      function renderList() {
+        if (!list) return;
+        const q = String((search && search.value) || '').trim().toLowerCase();
+        const cur = lineInputs[i].supEl ? String(lineInputs[i].supEl.value || '') : '';
         const filtered = q ? suppliers.filter((r) => String(r.name || '').toLowerCase().includes(q)) : suppliers;
+        const opts = [`<li role="option" data-id="" class="proc-sup-cmb-opt${cur === '' ? ' is-active' : ''}">—</li>`];
         filtered.forEach((row) => {
-          const selected = String(row.id) === String(cur) ? ' selected' : '';
-          html += `<option value="${esc(row.id)}"${selected}>${esc(row.name)}</option>`;
+          const sel = String(row.id) === cur ? ' is-active' : '';
+          opts.push(`<li role="option" data-id="${esc(row.id)}" class="proc-sup-cmb-opt${sel}">${esc(fmtDisplayUpper(row.name))}</li>`);
         });
-        sel.innerHTML = html;
-      });
+        list.innerHTML = opts.join('');
+      }
+
+      function positionPanel() {
+        if (!panel || !btn || panel.hidden) return;
+        const rect = btn.getBoundingClientRect();
+        const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+        const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        const desired = Math.max(rect.width, 260);
+        const width = Math.min(desired, vw - 16);
+        let left = rect.left;
+        if (left + width > vw - 8) left = Math.max(8, vw - width - 8);
+        const panelHeight = panel.offsetHeight || 280;
+        let top = rect.bottom + 4;
+        if (top + panelHeight > vh - 8) {
+          const altTop = rect.top - panelHeight - 4;
+          if (altTop > 8) top = altTop;
+          else top = Math.max(8, vh - panelHeight - 8);
+        }
+        panel.style.width = width + 'px';
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+      }
+
+      function bindReposition(on) {
+        const fn = positionPanel;
+        if (on) {
+          window.addEventListener('scroll', fn, true);
+          window.addEventListener('resize', fn);
+          lineInputs[i]._supCmbReposition = fn;
+        } else if (lineInputs[i]._supCmbReposition) {
+          window.removeEventListener('scroll', lineInputs[i]._supCmbReposition, true);
+          window.removeEventListener('resize', lineInputs[i]._supCmbReposition);
+          lineInputs[i]._supCmbReposition = null;
+        }
+      }
+
+      function openPanel() {
+        if (!panel || btn?.disabled) return;
+        closeAllSupCombos(cmb);
+        const host = procDlg && procDlg.open ? procDlg : document.body;
+        if (panel.parentNode !== host) {
+          host.appendChild(panel);
+        }
+        panel.hidden = false;
+        cmb.classList.add('is-open');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+        renderList();
+        positionPanel();
+        bindReposition(true);
+        if (search) {
+          search.value = '';
+          setTimeout(() => search.focus(), 0);
+        }
+      }
+
+      function closePanel() {
+        if (!panel) return;
+        panel.hidden = true;
+        cmb.classList.remove('is-open');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        bindReposition(false);
+      }
+
+      lineInputs[i].closeSupPanel = closePanel;
+
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (panel && panel.hidden) openPanel();
+          else closePanel();
+        });
+      }
+      if (search) {
+        search.addEventListener('input', renderList);
+        search.addEventListener('click', (e) => e.stopPropagation());
+        search.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closePanel();
+            if (btn) btn.focus();
+          } else if (e.key === 'Enter') {
+            const first = list && list.querySelector('.proc-sup-cmb-opt');
+            if (first) first.click();
+          }
+        });
+      }
+      if (list) {
+        list.addEventListener('click', (e) => {
+          const li = e.target.closest('.proc-sup-cmb-opt');
+          if (!li) return;
+          const id = li.getAttribute('data-id') || '';
+          const supEl = lineInputs[i].supEl;
+          if (supEl) {
+            supEl.value = id;
+            supEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          if (labelEl) {
+            const row = id ? suppliers.find((r) => String(r.id) === String(id)) : null;
+            const text = row ? fmtDisplayUpper(row.name || '') : '';
+            labelEl.textContent = text || tK('purch.proc.supSearchPh');
+            labelEl.classList.toggle('is-placeholder', !text);
+          }
+          closePanel();
+        });
+      }
     });
     linesDetailBody.querySelectorAll('.po-line-price').forEach((el) => {
       const i = parseInt(el.getAttribute('data-i'), 10);
@@ -619,7 +845,8 @@
       lineInputs[i].fxEl = el;
     });
     linesDetailBody.querySelectorAll('.po-line-sup, .po-line-price, .po-line-cur, .po-line-fx').forEach((el) => {
-      const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+      const isHiddenSup = el.classList.contains('po-line-sup');
+      const ev = el.tagName === 'SELECT' || isHiddenSup ? 'change' : 'input';
       el.addEventListener(ev, () => {
         const idx = parseInt(el.getAttribute('data-i'), 10);
         syncLineTotalCell(idx);
@@ -632,11 +859,29 @@
           updateProcessUiState();
         });
       }
+      if (el.classList.contains('po-line-price')) {
+        el.addEventListener('blur', () => {
+          formatUnitPriceInput(el);
+          const idx = parseInt(el.getAttribute('data-i'), 10);
+          syncLineTotalCell(idx);
+          updateProcessUiState();
+        });
+      }
     });
     syncAllLineTotals();
     updateProcessUiState();
-    if (window.i18n && window.i18n.apply) window.i18n.apply(orderFormBlock);
+    if (window.i18n && window.i18n.apply) {
+      window.i18n.apply(orderFormBlock);
+      if (procDlg) window.i18n.apply(procDlg);
+    }
     applyTitleCase(orderFormBlock);
+    if (procDlg) applyTitleCase(procDlg);
+  }
+
+  function formatAllUnitPriceInputs() {
+    lineInputs.forEach((row) => {
+      if (row && row.priceEl) formatUnitPriceInput(row.priceEl);
+    });
   }
 
   function collectPricingLines() {
@@ -652,7 +897,7 @@
       const input = lineInputs[i] || {};
       const supplierId = input.supEl && input.supEl.value ? parseInt(String(input.supEl.value), 10) : null;
       const priceRaw = input.priceEl ? String(input.priceEl.value).trim() : '';
-      const unitPrice = priceRaw === '' ? null : parseFloat(priceRaw.replace(',', '.'));
+      const unitPrice = priceRaw === '' ? null : parseLocaleDecimalInput(priceRaw);
       const currency = allowedPricingCurrency(input.curEl ? input.curEl.value : 'UZS');
       const fxRaw = input.fxEl ? String(input.fxEl.value).trim() : '';
       const fxRate = fxRaw === '' ? null : parseFloat(fxRaw.replace(',', '.'));
@@ -711,6 +956,7 @@
       showMsg(tK('api.pur.order_not_found'), true);
       return;
     }
+    formatAllUnitPriceInputs();
     const collected = collectPricingLines();
     if (collected.error) {
       showMsg(collected.error, true);
@@ -761,6 +1007,7 @@
       }
       return;
     }
+    formatAllUnitPriceInputs();
     const collected = collectPricingLines();
     if (collected.error) {
       showMsg(collected.error, true);
@@ -831,20 +1078,222 @@
     highlightSelectedOrder(String(id));
   }
 
-  function printOrder() {
+  function buildOrderPrintHtml(order) {
+    const items = Array.isArray(order && order.items) ? order.items : [];
+    const orderCode = fmtDisplayUpper(order.order_code || order.id || '');
+    const projectLine =
+      `${fmtDisplayUpper(order.project_code || '—')}` +
+      (order.project_name ? ` — ${fmtDisplayUpper(order.project_name)}` : order.project_label ? ` — ${fmtDisplayUpper(order.project_label)}` : '');
+    const orderDate = String(order.order_date || order.created_at || '').slice(0, 10);
+    const supplierName = fmtDisplayUpper(order.supplier_name || '—');
+
+    let totalAll = 0;
+    const rows = items
+      .map((it, idx) => {
+        const cancelled = isLineCancelled(it);
+        const qty = Number(it.qty_ordered) || 0;
+        const unitPrice = Number(it.unit_price) || 0;
+        const lineTotal = qty * unitPrice;
+        if (!cancelled) totalAll += lineTotal;
+        const cur = allowedPricingCurrency(it.currency || order.currency || 'UZS');
+        const fxRate =
+          it.fx_rate != null && it.fx_rate !== ''
+            ? Number(it.fx_rate)
+            : null;
+        const supplierLabel = (() => {
+          const id = it.line_supplier_id || order.supplier_id;
+          const row = id ? suppliers.find((r) => String(r.id) === String(id)) : null;
+          return row ? fmtDisplayUpper(row.name || '') : (order.supplier_name ? fmtDisplayUpper(order.supplier_name) : '—');
+        })();
+        return `<tr${cancelled ? ' class="row-cancelled"' : ''}>
+          <td class="cnum">${idx + 1}</td>
+          <td class="cprod">${it.product_code ? `<div class="pc"><strong>${esc(fmtDisplayUpper(it.product_code))}</strong></div>` : ''}<div class="pn">${esc(fmtDisplayUpper(it.product_name || ''))}</div>${cancelled ? `<div class="cancelled-tag">${esc(tK('purch.proc.lineCancelledBadge'))}</div>` : ''}</td>
+          <td class="cqty">${esc(fmtQty(qty))} ${esc(primaryUnit(it))}</td>
+          <td class="csup">${esc(supplierLabel)}</td>
+          <td class="cprice">${esc(fmtMoneyDisplay(unitPrice))}</td>
+          <td class="ctotal">${esc(fmtMoneyDisplay(lineTotal))}</td>
+          <td class="ccur">${esc(cur)}</td>
+          <td class="cfx">${fxRate != null && Number.isFinite(fxRate) ? esc(fmtMoneyDisplay(fxRate)) : '—'}</td>
+        </tr>`;
+      })
+      .join('');
+
+    const styles = `
+      @page { size: A4 landscape; margin: 12mm 14mm; }
+      * { box-sizing: border-box; }
+      body { font: 11px/1.45 Arial, Helvetica, sans-serif; color:#111; margin:0; }
+      h1 { font-size: 17px; margin: 0 0 6px; letter-spacing:.5px; }
+      .meta { display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px 20px; margin: 6px 0 12px; font-size: 11px; }
+      .meta div { padding: 2px 0; }
+      table.print-items { width:100%; border-collapse: collapse; table-layout: fixed; }
+      table.print-items th, table.print-items td { border:1px solid #888; padding:6px 8px; vertical-align: top; }
+      table.print-items th { background:#eee; text-align:left; font-size: 10px; }
+      table.print-items td.cnum { width: 28px; text-align:center; white-space:nowrap; }
+      table.print-items th.cw-prod, table.print-items td.cprod {
+        width: 32%;
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      table.print-items td.cprod .pc { font-size: 10px; color:#333; margin-bottom: 3px; }
+      table.print-items td.cprod .pn { font-size: 11px; font-weight: 600; }
+      table.print-items td.cprod .cancelled-tag { margin-top: 3px; font-size: 9px; color:#b91c1c; }
+      table.print-items th.cw-qty, table.print-items td.cqty { width: 9%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      table.print-items th.cw-sup, table.print-items td.csup {
+        width: 18%;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      table.print-items th.cw-price, table.print-items td.cprice { width: 11%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      table.print-items th.cw-total, table.print-items td.ctotal { width: 11%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      table.print-items th.cw-cur, table.print-items td.ccur { width: 6%; text-align: center; white-space: nowrap; }
+      table.print-items th.cw-fx, table.print-items td.cfx { width: 8%; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+      tr.row-cancelled td { color:#94a3b8; text-decoration: line-through; }
+      tfoot td { font-weight: 700; background:#f8fafc; }
+      .footer { margin-top: 22px; display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .sig { border-top:1px solid #444; padding-top: 6px; text-align:center; font-size: 10px; }
+      @media print {
+        a { color:#000; text-decoration: none; }
+        table.print-items th, table.print-items td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+    `;
+
+    return `<!DOCTYPE html><html lang="tr"><head>
+      <meta charset="UTF-8" />
+      <title>${esc(orderCode)}</title>
+      <style>${styles}</style>
+    </head><body>
+      <h1>${esc(tK('purch.proc.printTitle'))}</h1>
+      <div class="meta">
+        <div><strong>${esc(tK('purch.proc.colOrderCode'))}:</strong> ${esc(orderCode)}</div>
+        <div><strong>${esc(tK('purch.wf.colDate'))}:</strong> ${esc(orderDate)}</div>
+        <div><strong>${esc(tK('purch.req.lColProject'))}:</strong> ${esc(projectLine)}</div>
+        <div><strong>${esc(tK('purch.col.supplier'))}:</strong> ${esc(supplierName)}</div>
+        <div><strong>${esc(tK('purch.proc.colReceiptStatus'))}:</strong> ${esc(statusLabel('receipt', order.receipt_status || order.status))}</div>
+        <div><strong>${esc(tK('purch.proc.colPricingStatus'))}:</strong> ${esc(statusLabel('pricing', order.pricing_status))}</div>
+      </div>
+      <table class="print-items">
+        <thead><tr>
+          <th>#</th>
+          <th class="cw-prod">${esc(tK('purch.proc.colProductName'))}</th>
+          <th class="cw-qty">${esc(tK('purch.gr.colOrderQty'))}</th>
+          <th class="cw-sup">${esc(tK('purch.col.supplier'))}</th>
+          <th class="cw-price">${esc(tK('purch.col.unitPrice'))}</th>
+          <th class="cw-total">${esc(tK('purch.proc.colLineTotal'))}</th>
+          <th class="cw-cur">${esc(tK('purch.cur'))}</th>
+          <th class="cw-fx">${esc(tK('purch.proc.colFxRate'))}</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="8">—</td></tr>`}</tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right">${esc(tK('purch.proc.printGrandTotal'))}</td>
+          <td class="ctotal">${esc(fmtMoneyDisplay(totalAll))}</td>
+          <td colspan="2"></td>
+        </tr></tfoot>
+      </table>
+      <div class="footer">
+        <div class="sig">${esc(tK('purch.print.sigRequester'))}</div>
+        <div class="sig">${esc(tK('purch.print.sigApprover'))}</div>
+        <div class="sig">${esc(tK('purch.print.sigBuyer'))}</div>
+      </div>
+    </body></html>`;
+  }
+
+  function printInIframe(htmlPayload) {
+    return new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText =
+        'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      let done = false;
+      let timer = null;
+      function cleanup() {
+        if (done) return;
+        done = true;
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        try {
+          iframe.remove();
+        } catch (e) {
+          /* ignore */
+        }
+        resolve();
+      }
+      iframe.addEventListener(
+        'load',
+        async () => {
+          try {
+            const win = iframe.contentWindow;
+            if (win && win.document && win.document.images) {
+              const imgs = win.document.images;
+              const promises = [];
+              for (let i = 0; i < imgs.length; i += 1) {
+                const im = imgs[i];
+                if (im.complete) continue;
+                promises.push(
+                  new Promise((res) => {
+                    im.addEventListener('load', () => res(), { once: true });
+                    im.addEventListener('error', () => res(), { once: true });
+                  })
+                );
+              }
+              if (promises.length) await Promise.all(promises);
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            iframe.contentWindow.addEventListener(
+              'afterprint',
+              () => setTimeout(cleanup, 200),
+              { once: true }
+            );
+          } catch (e) {
+            /* ignore */
+          }
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (e) {
+            cleanup();
+            return;
+          }
+          timer = setTimeout(cleanup, 30000);
+        },
+        { once: true }
+      );
+      iframe.addEventListener('error', cleanup, { once: true });
+      document.body.appendChild(iframe);
+      try {
+        iframe.srcdoc = htmlPayload;
+      } catch (e) {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          doc.open();
+          doc.write(htmlPayload);
+          doc.close();
+        } catch (e2) {
+          cleanup();
+        }
+      }
+    });
+  }
+
+  async function printOrder() {
     if (!selectedOrder) {
       showMsg(tK('purch.proc.selectPo'), true);
       return;
     }
-    const id = currentOrderId();
-    if (id == null) {
-      showMsg(tK('api.pur.order_not_found'), true);
-      return;
-    }
-    const url = `/purchase-order-print.html?id=${encodeURIComponent(id)}&autoprint=1`;
-    const win = window.open(url, '_blank', 'noopener');
-    if (!win) {
-      showMsg(tK('purch.proc.printPopupFallback'), true);
+    if (btnPrint) btnPrint.disabled = true;
+    if (btnPrintDlg) btnPrintDlg.disabled = true;
+    try {
+      await printInIframe(buildOrderPrintHtml(selectedOrder));
+    } finally {
+      if (btnPrint) btnPrint.disabled = !selectedOrder;
+      if (btnPrintDlg) btnPrintDlg.disabled = !selectedOrder;
     }
   }
 
@@ -860,6 +1309,17 @@
 
   if (btnStart) btnStart.addEventListener('click', startProcessing);
   if (btnPrint) btnPrint.addEventListener('click', printOrder);
+  if (btnPrintDlg) btnPrintDlg.addEventListener('click', printOrder);
+  if (procDlgClose) procDlgClose.addEventListener('click', () => closeProcDialog());
+  if (procDlg) {
+    procDlg.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closeProcDialog();
+    });
+    procDlg.addEventListener('click', (e) => {
+      if (e.target === procDlg) closeProcDialog();
+    });
+  }
   if (btnSavePricing) btnSavePricing.addEventListener('click', savePricing);
   if (btnCompleteOrder) btnCompleteOrder.addEventListener('click', completeOrder);
   if (btnReviseOrder) btnReviseOrder.addEventListener('click', () => postBuyerAction('revise'));

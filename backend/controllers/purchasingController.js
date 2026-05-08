@@ -11,6 +11,8 @@ const {
   listProductOptions,
   listSuppliers,
   createSupplier,
+  updateSupplier,
+  listRecentBuyerCompletedPurchaseOrders,
   listUnitsForPurchase,
   listProductsForPurchase,
   getNextRequestCodePreview,
@@ -173,6 +175,37 @@ async function postSupplier(req, res) {
     description: 'Tedarikçi eklendi',
   });
   return res.status(201).json(jsonOk(out));
+}
+
+async function putSupplier(req, res) {
+  const id = parseId(req.params.id);
+  if (id == null) {
+    return res.status(400).json(jsonError('VALIDATION', 'Geçersiz id', null, 'api.pur.id_invalid'));
+  }
+  const b = req.body || {};
+  const out = await updateSupplier(id, {
+    name: b.name,
+    contact: b.contact,
+    taxId: b.taxId,
+    tax_number: b.tax_number,
+    phone: b.phone,
+    email: b.email,
+    address: b.address,
+    note: b.note,
+  });
+  if (out.error) {
+    const st = out.messageKey === 'api.pur.supplier_not_found' ? 404 : 400;
+    return res.status(st).json(validationOut(out));
+  }
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'purchasing',
+    table_name: 'suppliers',
+    record_id: id,
+    new_data: req.body || {},
+    description: 'Tedarikçi güncellendi',
+  });
+  return res.json(jsonOk({ ok: true }));
 }
 
 async function getRequests(req, res) {
@@ -443,6 +476,17 @@ async function postOrder(req, res) {
 async function getOrders(req, res) {
   const u = req.session.user;
   const hidePrice = !(await userHasPermission(u.id, u.role?.slug, 'module.purchasing'));
+  const recentBc =
+    String(req.query.recentBuyerCompleted || req.query.recent_completed || '') === '1' ||
+    String(req.query.recentBuyerCompleted || '') === 'true';
+  if (recentBc) {
+    const lim = parseInt(String(req.query.limit || '10'), 10) || 10;
+    const out = await listRecentBuyerCompletedPurchaseOrders(lim);
+    if (out.error) {
+      return res.status(500).json(validationOut(out));
+    }
+    return res.json(jsonOk(out));
+  }
   const q = req.query?.statuses;
   const statuses = q != null && String(q).trim() !== '' ? String(q).split(',').map((s) => s.trim()).filter(Boolean) : undefined;
   const openForReceipt =
@@ -720,6 +764,7 @@ module.exports = {
   getWarehouses,
   getSuppliers,
   postSupplier,
+  putSupplier,
   getHubCounters,
   getRequests,
   getRequestById,

@@ -7,6 +7,7 @@ const PROJECT_HUB = '/projects.html';
 const PROJECT_NAV_FALLBACK_TR = {
   'nav.project.hub': 'Özet',
   'nav.project.add': 'Proje ekle',
+  'nav.project.control': 'Proje kontrol',
   'nav.project.costs': 'Proje maliyet kontrolü',
   'nav.project.quotes': 'Proje fiyat teklifleri',
 };
@@ -23,12 +24,13 @@ function tProjectNav(k) {
 
 /**
  * Stok modülü ile aynı: `stock-nav` (tam yatay şerit, aktif koyu arka plan).
- * @param {string} active 'hub' | 'add' | 'cost' | 'quotes'
+ * @param {string} active 'hub' | 'add' | 'control' | 'cost' | 'quotes'
  */
 function projectNavHTML(active) {
   const items = [
     { href: '/projects.html', key: 'hub', k: 'nav.project.hub' },
     { href: '/project-list.html', key: 'add', k: 'nav.project.add' },
+    { href: '/project-control.html', key: 'control', k: 'nav.project.control' },
     { href: '/project-costs.html', key: 'cost', k: 'nav.project.costs' },
     { href: '/project-quotes.html', key: 'quotes', k: 'nav.project.quotes' },
   ];

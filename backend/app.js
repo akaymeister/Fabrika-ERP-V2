@@ -18,6 +18,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const projectControlRoutes = require('./routes/projectControlRoutes');
 const purchasingRoutes = require('./routes/purchasingRoutes');
 const hrRoutes = require('./routes/hrRoutes');
 const meRoutes = require('./routes/meRoutes');
@@ -57,6 +58,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/project-control', projectControlRoutes);
 app.use('/api/purchasing', purchasingRoutes);
 app.use('/api/hr', hrRoutes);
 app.use('/api/me', meRoutes);
@@ -90,6 +92,7 @@ app.get('/projects', (req, res) => res.redirect(302, '/projects.html'));
 app.get('/project-code', (req, res) => res.redirect(302, '/project-list.html'));
 app.get('/project-costs', (req, res) => res.redirect(302, '/project-costs.html'));
 app.get('/project-quotes', (req, res) => res.redirect(302, '/project-quotes.html'));
+app.get('/project-control', (req, res) => res.redirect(302, '/project-control.html'));
 app.get('/project-list', (req, res) => res.redirect(302, '/project-list.html'));
 app.get('/project-new', (req, res) => res.redirect(302, '/project-list.html'));
 app.get('/projects.html', requirePageAuth, requirePagePermission('module.projects'), sendPage('projects.html'));
@@ -99,6 +102,7 @@ app.get('/project-code.html', requirePageAuth, requirePagePermission('module.pro
 );
 app.get('/project-costs.html', requirePageAuth, requirePagePermission('module.projects'), sendPage('project-costs.html'));
 app.get('/project-quotes.html', requirePageAuth, requirePagePermission('module.projects'), sendPage('project-quotes.html'));
+app.get('/project-control.html', requirePageAuth, requirePagePermission('module.projects'), sendPage('project-control.html'));
 app.get('/project-new.html', requirePageAuth, requirePagePermission('module.projects'), (req, res) =>
   res.redirect(302, '/project-list.html')
 );

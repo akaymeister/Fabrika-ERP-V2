@@ -40,7 +40,12 @@
     <p class="muted app-muted-tight" data-i18n="stock.in.purchaseGrHint">
       Satınalma siparişlerinden stok, yalnızca <strong>Mal kabul / depo girişi</strong> ekranından girilir. Bu sayfa açılış, sayım, iade ve manuel giriş içindir.
     </p>
-    <div class="card stock-in-form-card app-card">
+    <div class="stock-in-toolbar card app-card erp-card">
+      <button type="button" id="btnOpenStockInModal" class="btn btn-primary" data-i18n="stock.in.btnManualModal">Manuel giriş yap</button>
+    </div>
+    <dialog id="stockInModal" class="stock-dialog stock-in-modal wide">
+      <h4 class="stock-dialog-title" data-i18n="stock.in.manualDlgTitle">Manuel stok girişi</h4>
+    <div class="card stock-in-form-card app-card stock-in-form-card-modal">
       <form id="f">
         <div class="form-row-2 app-form-row-narrow">
           <div class="form-field">
@@ -139,6 +144,10 @@
         <p id="ok" class="stock-in-ok-msg"></p>
       </form>
     </div>
+      <div class="app-dialog-actions stock-in-modal-actions">
+        <button type="button" class="module-button btn-secondary app-button app-button-secondary" id="stockInModalClose" data-i18n="common.close">Kapat</button>
+      </div>
+    </dialog>
 
     <dialog id="voidReasonDlg" class="stock-dialog">
       <h4 class="stock-dialog-title" data-i18n="stock.in.voidDlgTitle">Silme açıklaması (zorunlu)</h4>
@@ -1032,6 +1041,10 @@
         okp.style.display = 'none';
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      const sim = document.getElementById('stockInModal');
+      if (sim && typeof sim.showModal === 'function') {
+        sim.showModal();
+      }
     }
     document.getElementById('f')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1137,7 +1150,7 @@
       pushFrequentId(productId);
       const o = document.getElementById('ok');
       o.textContent =
-        'Tamam. Yeni stok mÂ²: ' + (data.newStockM2 != null ? data.newStockM2 : '') + ' / adet: ' + (data.newStockPieces || '');
+        'Tamam. Yeni stok m²: ' + (data.newStockM2 != null ? data.newStockM2 : '') + ' / adet: ' + (data.newStockPieces || '');
       o.style.display = 'block';
       document.getElementById('qtyInput').value = '';
       document.getElementById('unitPriceSysM2').value = '';
@@ -1152,6 +1165,10 @@
       await onSubChange();
       recalcLineTotals();
       await loadMovementsList();
+      const sim = document.getElementById('stockInModal');
+      if (sim && sim.open && typeof sim.close === 'function') {
+        sim.close();
+      }
     });
     document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
       cancelEditMov();
@@ -1229,6 +1246,16 @@
     document.getElementById('btnMovRefresh')?.addEventListener('click', () => loadMovementsList());
     document.getElementById('movFilterProject')?.addEventListener('change', () => loadMovementsList());
     document.getElementById('movFilterProductId')?.addEventListener('change', () => loadMovementsList());
+    document.getElementById('btnOpenStockInModal')?.addEventListener('click', () => {
+      cancelEditMov();
+      const dlg = document.getElementById('stockInModal');
+      if (dlg && typeof dlg.showModal === 'function') {
+        dlg.showModal();
+      }
+    });
+    document.getElementById('stockInModalClose')?.addEventListener('click', () => {
+      document.getElementById('stockInModal')?.close();
+    });
     function startStockInPage() {
       (async function () {
         await initStockPageNav('in');

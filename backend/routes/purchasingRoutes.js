@@ -14,6 +14,7 @@ const {
   getWarehouses,
   getSuppliers,
   postSupplier,
+  putSupplier,
   getHubCounters,
   getRequests,
   getRequestById,
@@ -76,6 +77,7 @@ router.get('/product-options', requireAnyPermission(PUR_REQ), getProductOptions)
 router.get('/projects-brief', requireAnyPermission(PUR_REQ), getProjectsBrief);
 router.get('/suppliers', requirePermission(PUR), getSuppliers);
 router.post('/suppliers', requirePermission(PUR), postSupplier);
+router.put('/suppliers/:id', requirePermission(PUR), putSupplier);
 router.get('/requests', requireAnyPermission(PUR_SEE), getRequests);
 router.get('/requests/:id/receipt-orders', requireAnyPermission(ANY), getRequestReceiptOrders);
 router.get('/requests/:id', requireAnyPermission(PUR_SEE_BASE), getRequestById);

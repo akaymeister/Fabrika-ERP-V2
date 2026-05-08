@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOQ Detay Mockup V2</title>
+  <style>
+    :root{
+      --bg:#f4f7fc; --card:#fff; --line:#dde5f1; --txt:#1d2737; --muted:#6e7b8d;
+      --blue:#2e7cf6; --green:#1f9d63; --orange:#f09a34; --red:#d74b4b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:Segoe UI,Arial,sans-serif;color:var(--txt)}
+    .page{max-width:1400px;margin:0 auto;padding:18px}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    h1{margin:0;font-size:23px}
+    .muted{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+    .kpi b{font-size:20px;display:block;margin-top:5px}
+    .filters{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:8px;flex-wrap:wrap}
+    select,input,button{padding:8px 10px;border:1px solid #cad6e7;border-radius:8px;background:#fff;font-size:13px}
+    button{cursor:pointer;font-weight:600}
+    .btn{background:var(--blue);border-color:var(--blue);color:#fff}
+    .layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .card h3{margin:0 0 10px;font-size:15px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px;border-bottom:1px solid #edf1f6;text-align:left}
+    th{font-size:12px;color:#607089}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;color:#fff;font-weight:600;font-size:12px}
+    .wait{background:#8a95a8}.work{background:var(--blue)}.done{background:var(--green)}.delay{background:var(--red)}.rev{background:var(--orange)}
+    .prog{height:8px;background:#e5edf8;border-radius:999px;overflow:hidden;width:120px;display:inline-block;vertical-align:middle;margin-right:6px}
+    .prog span{display:block;height:100%;background:var(--blue)}
+    .timeline{margin:0;padding-left:16px}
+    .timeline li{margin-bottom:8px;font-size:13px}
+    .product-with-thumb{display:flex;align-items:center;gap:8px;min-width:0}
+    .thumb{
+      width:28px;height:28px;border-radius:6px;object-fit:cover;flex:0 0 28px;
+      border:1px solid #d7e2f1;background:#eef3fb;
+    }
+    .thumb-empty{
+      width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;
+      font-size:10px;color:#8da0b8;border:1px dashed #c7d4e7;background:#f6f9ff;flex:0 0 28px;
+    }
+    .detail-flex{display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:start}
+    .img-box{
+      border:1px solid #c8d5e8;border-radius:10px;padding:10px;min-height:180px;
+      display:flex;align-items:center;justify-content:center;background:#f9fbff;
+    }
+    .img-box img{max-width:100%;max-height:260px;border-radius:8px;display:block}
+    .warn{font-size:12px;color:#7b889c;margin-top:8px}
+    .file-input{max-width:320px}
+    .detail-grid{display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:13px;margin-bottom:10px}
+    .detail-k{color:#6d7f97}
+    .detail-v{font-weight:600;word-break:break-word}
+    .detail-box{
+      border:1px solid #c8d5e8;
+      border-radius:10px;
+      padding:10px;
+      background:#fcfdff;
+    }
+    .phase-status{
+      min-width:130px;
+      font-weight:600;
+      border-radius:999px;
+      padding:5px 10px;
+      color:#fff;
+      border:0;
+      outline:none;
+    }
+    .phase-status.wait{background:#8a95a8}
+    .phase-status.work{background:#2e7cf6}
+    .phase-status.done{background:#1f9d63}
+    .phase-status.delay{background:#d74b4b}
+    .phase-status.rev{background:#f09a34}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>BOQ Detay - V2 (Kart Odaklı)</h1>
+        <div class="muted">Görsel örnek; canlı sisteme bağlı değildir.</div>
+      </div>
+      <button class="btn">İş Kalemi Ekle</button>
+    </div>
+
+    <div class="grid">
+      <div class="kpi">Toplam İş Kalemi<b>248</b></div>
+      <div class="kpi">Devam Eden<b>63</b></div>
+      <div class="kpi">Geciken<b>14</b></div>
+      <div class="kpi">Tamamlanan<b>171</b></div>
+    </div>
+
+    <div class="filters">
+      <select><option>Proje: AHK Otel</option></select>
+      <select><option>Durum: Tümü</option></select>
+      <input value="Ürün / mahal ara" />
+      <input id="excelInput" class="file-input" type="file" accept=".xlsx,.xls,.csv" />
+      <button>Operasyon</button>
+      <button>Tüm Kolonlar</button>
+      <button>Dışa Aktar</button>
+    </div>
+
+    <div class="layout">
+      <section class="card">
+        <h3>Öncelikli İş Kalemleri</h3>
+        <table>
+          <thead>
+            <tr><th>SN</th><th>Ürün</th><th>Durum</th><th>İlerleme</th><th>Atanan Kişi</th></tr>
+          </thead>
+          <tbody id="itemsTbody">
+            <tr data-image="https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=800" data-sn="12" data-kat="1" data-oda="1-002" data-mahal="Entrance Hall" data-urun-adi="Dekoratif Panel" data-urun-kodu="DKR-001" data-urun-grubu="Sabit Mobilya" data-urun-tanimi="Kapaklı ceviz panel" data-urun-olcusu="81x27" data-miktar-birim="2 m2" data-aktif-pasif="Aktif" data-durum="Devam">
+              <td>12</td>
+              <td>
+                <div class="product-with-thumb">
+                  <img class="thumb" src="https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=120" alt="Dekoratif Panel" />
+                  <span>Dekoratif Panel</span>
+                </div>
+              </td>
+              <td><span class="tag work">Devam</span></td><td><span class="prog"><span style="width:64%"></span></span>64%</td><td>Ahmet Yılmaz</td>
+            </tr>
+            <tr data-image="https://images.unsplash.com/photo-1616627450248-57f0c1f7f5f4?w=800" data-sn="13" data-kat="1" data-oda="1-014" data-mahal="Dressing" data-urun-adi="Dolap Kapak Seti" data-urun-kodu="DLP-014" data-urun-grubu="Sabit Mobilya" data-urun-tanimi="Lake dolap kapak seti" data-urun-olcusu="60x260" data-miktar-birim="4 adet" data-aktif-pasif="Aktif" data-durum="Gecikti">
+              <td>13</td>
+              <td>
+                <div class="product-with-thumb">
+                  <img class="thumb" src="https://images.unsplash.com/photo-1616627450248-57f0c1f7f5f4?w=120" alt="Dolap Kapak Seti" />
+                  <span>Dolap Kapak Seti</span>
+                </div>
+              </td>
+              <td><span class="tag delay">Gecikti</span></td><td><span class="prog"><span style="width:32%"></span></span>32%</td><td>Elif Kara</td>
+            </tr>
+            <tr data-image="" data-sn="14" data-kat="2" data-oda="2-001" data-mahal="Hall" data-urun-adi="Resepsiyon Tezgahı" data-urun-kodu="RSP-002" data-urun-grubu="Sabit Mobilya" data-urun-tanimi="Banko tipi resepsiyon tezgahı" data-urun-olcusu="240x95" data-miktar-birim="1 adet" data-aktif-pasif="Aktif" data-durum="Revizyon">
+              <td>14</td>
+              <td>
+                <div class="product-with-thumb">
+                  <span class="thumb-empty">YOK</span>
+                  <span>Resepsiyon Tezgahı</span>
+                </div>
+              </td>
+              <td><span class="tag rev">Revizyon</span></td><td><span class="prog"><span style="width:78%"></span></span>78%</td><td>Mehmet Demir</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h3>Faz Görünümü (Seçili Satır)</h3>
+        <table>
+          <thead>
+            <tr><th>Faz</th><th>Durum</th><th>Termin Tarihi</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Röleve</td><td>
+              <select class="phase-status" data-status="Tamam">
+                <option>Bekliyor</option><option>Devam</option><option selected>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>10.05.2026</td></tr>
+            <tr><td>Çizim</td><td>
+              <select class="phase-status" data-status="Devam">
+                <option>Bekliyor</option><option selected>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>14.05.2026</td></tr>
+            <tr><td>Malzeme Siparişi</td><td>
+              <select class="phase-status" data-status="Devam">
+                <option>Bekliyor</option><option selected>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>18.05.2026</td></tr>
+            <tr><td>Üretim</td><td>
+              <select class="phase-status" data-status="Bekliyor">
+                <option selected>Bekliyor</option><option>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>22.05.2026</td></tr>
+            <tr><td>Boya</td><td>
+              <select class="phase-status" data-status="Bekliyor">
+                <option selected>Bekliyor</option><option>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>26.05.2026</td></tr>
+            <tr><td>Sevk</td><td>
+              <select class="phase-status" data-status="Bekliyor">
+                <option selected>Bekliyor</option><option>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>29.05.2026</td></tr>
+            <tr><td>Montaj</td><td>
+              <select class="phase-status" data-status="Bekliyor">
+                <option selected>Bekliyor</option><option>Devam</option><option>Tamam</option><option>Gecikti</option><option>Revizyon</option>
+              </select>
+            </td><td>02.06.2026</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="layout" style="margin-top:12px;grid-template-columns:1fr 380px;">
+      <section class="card">
+        <h3>Ürün Bilgisi</h3>
+        <div class="detail-flex">
+          <div>
+            <h3 style="margin:0 0 10px;">Ürün Görseli</h3>
+            <div class="img-box" id="previewBox">
+              <img id="previewImg" src="https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=800" alt="Ürün görseli" />
+            </div>
+            <div class="warn" id="previewInfo">Satıra tıklayınca görsel burada gösterilir.</div>
+          </div>
+          <div class="detail-box">
+            <div class="detail-grid">
+              <div class="detail-k">SN</div><div class="detail-v" id="detSn">12</div>
+              <div class="detail-k">Kat</div><div class="detail-v" id="detKat">1</div>
+              <div class="detail-k">Oda No</div><div class="detail-v" id="detOda">1-002</div>
+              <div class="detail-k">Mahal</div><div class="detail-v" id="detMahal">Entrance Hall</div>
+              <div class="detail-k">Ürün Adı</div><div class="detail-v" id="detUrunAdi">Dekoratif Panel</div>
+              <div class="detail-k">Ürün Kodu</div><div class="detail-v" id="detUrunKodu">DKR-001</div>
+              <div class="detail-k">Ürün Grubu</div><div class="detail-v" id="detUrunGrubu">Sabit Mobilya</div>
+              <div class="detail-k">Ürün Tanımı</div><div class="detail-v" id="detUrunTanimi">Kapaklı ceviz panel</div>
+              <div class="detail-k">Ürün Ölçüsü</div><div class="detail-v" id="detUrunOlcusu">81x27</div>
+              <div class="detail-k">Miktar / Birim</div><div class="detail-v" id="detMiktarBirim">2 / m2</div>
+              <div class="detail-k">Aktif / Pasif</div><div class="detail-v" id="detAktifPasif">Aktif</div>
+              <div class="detail-k">Durum</div><div class="detail-v" id="detDurum">Devam</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <h3>Geçmiş</h3>
+        <ul class="timeline">
+          <li>06.05.2026 15:20 - Durum güncellendi (Devam)</li>
+          <li>06.05.2026 14:10 - Sorumlu değişti (Ahmet Y.)</li>
+          <li>05.05.2026 11:42 - İş kalemi oluşturuldu</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    (function () {
+      const tbody = document.getElementById('itemsTbody');
+      const excelInput = document.getElementById('excelInput');
+      const previewImg = document.getElementById('previewImg');
+      const previewInfo = document.getElementById('previewInfo');
+      const detailTargets = {
+        sn: document.getElementById('detSn'),
+        kat: document.getElementById('detKat'),
+        oda_no: document.getElementById('detOda'),
+        mahal: document.getElementById('detMahal'),
+        urun_adi: document.getElementById('detUrunAdi'),
+        urun_kodu: document.getElementById('detUrunKodu'),
+        urun_grubu: document.getElementById('detUrunGrubu'),
+        urun_tanimi: document.getElementById('detUrunTanimi'),
+        urun_olcusu: document.getElementById('detUrunOlcusu'),
+        miktar_birim: document.getElementById('detMiktarBirim'),
+        aktif_pasif: document.getElementById('detAktifPasif'),
+        durum: document.getElementById('detDurum'),
+      };
+
+      function norm(v) {
+        return String(v || '')
+          .toLocaleLowerCase('tr-TR')
+          .replace(/ı/g, 'i')
+          .replace(/ş/g, 's')
+          .replace(/ğ/g, 'g')
+          .replace(/ü/g, 'u')
+          .replace(/ö/g, 'o')
+          .replace(/ç/g, 'c')
+          .trim();
+      }
+
+      function setPreview(src, title) {
+        if (!src) {
+          previewImg.style.display = 'none';
+          previewInfo.textContent = title ? `${title} için görsel yok.` : 'Görsel bulunamadı.';
+          return;
+        }
+        previewImg.style.display = 'block';
+        previewImg.src = src;
+        previewInfo.textContent = title ? `${title} görseli gösteriliyor.` : 'Görsel gösteriliyor.';
+      }
+
+      function setDetail(d) {
+        detailTargets.sn.textContent = d.sn || '-';
+        detailTargets.kat.textContent = d.kat || '-';
+        detailTargets.oda_no.textContent = d.oda_no || '-';
+        detailTargets.mahal.textContent = d.mahal || '-';
+        detailTargets.urun_adi.textContent = d.urun_adi || '-';
+        detailTargets.urun_kodu.textContent = d.urun_kodu || '-';
+        detailTargets.urun_grubu.textContent = d.urun_grubu || '-';
+        detailTargets.urun_tanimi.textContent = d.urun_tanimi || '-';
+        detailTargets.urun_olcusu.textContent = d.urun_olcusu || '-';
+        detailTargets.miktar_birim.textContent = d.miktar_birim || '-';
+        detailTargets.aktif_pasif.textContent = d.aktif_pasif || '-';
+        detailTargets.durum.textContent = d.durum || '-';
+      }
+
+      function readDetailFromRow(tr) {
+        return {
+          sn: tr.getAttribute('data-sn') || '',
+          kat: tr.getAttribute('data-kat') || '',
+          oda_no: tr.getAttribute('data-oda') || '',
+          mahal: tr.getAttribute('data-mahal') || '',
+          urun_adi: tr.getAttribute('data-urun-adi') || '',
+          urun_kodu: tr.getAttribute('data-urun-kodu') || '',
+          urun_grubu: tr.getAttribute('data-urun-grubu') || '',
+          urun_tanimi: tr.getAttribute('data-urun-tanimi') || '',
+          urun_olcusu: tr.getAttribute('data-urun-olcusu') || '',
+          miktar_birim: tr.getAttribute('data-miktar-birim') || '',
+          aktif_pasif: tr.getAttribute('data-aktif-pasif') || '',
+          durum: tr.getAttribute('data-durum') || '',
+        };
+      }
+
+      function statusClass(v) {
+        const n = norm(v);
+        if (n.includes('tamam') || n.includes('bitti')) return 'done';
+        if (n.includes('gecik') || n.includes('delay')) return 'delay';
+        if (n.includes('reviz')) return 'rev';
+        if (n.includes('bekle') || n.includes('pasif')) return 'wait';
+        return 'work';
+      }
+
+      function repaintPhaseSelect(selectEl) {
+        selectEl.classList.remove('wait', 'work', 'done', 'delay', 'rev');
+        selectEl.classList.add(statusClass(selectEl.value));
+      }
+
+      function rowClickBind() {
+        tbody.querySelectorAll('tr').forEach((tr) => {
+          tr.style.cursor = 'pointer';
+          tr.addEventListener('click', () => {
+            const img = tr.getAttribute('data-image') || '';
+            const title = tr.children[1] ? tr.children[1].textContent : '';
+            setPreview(img, title);
+            setDetail(readDetailFromRow(tr));
+          });
+        });
+      }
+
+      function parseExcel(file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          if (!rows.length) return;
+
+          const head = rows[0] || [];
+          const findIdx = (keys) => head.findIndex((h) => {
+            const n = norm(h);
+            return keys.some((k) => n.includes(k));
+          });
+          const escAttr = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+          const idxSn = findIdx(['sn', 's.n', 'sira no']);
+          const idxKat = findIdx(['kat']);
+          const idxOda = findIdx(['oda no', 'oda']);
+          const idxMahal = findIdx(['mahal']);
+          const idxUrun = findIdx(['urun adi', 'urun', 'product name', 'product']);
+          const idxUrunKodu = findIdx(['urun kodu', 'kodu', 'code']);
+          const idxUrunGrubu = findIdx(['urun grubu', 'grubu', 'group']);
+          const idxGorsel = findIdx(['urun gorseli', 'gorsel', 'resim', 'image', 'foto']);
+          const idxUrunTanimi = findIdx(['urun tanimi', 'tanimi', 'description']);
+          const idxUrunOlcusu = findIdx(['urun olcusu', 'olcusu', 'olcu', 'size']);
+          const idxUrunMiktar = findIdx(['urun miktar', 'miktar', 'qty', 'quantity']);
+          const idxBirim = findIdx(['birim', 'unit']);
+          const idxAktifPasif = findIdx(['aktif', 'pasif', 'aktif / pasif']);
+          const idxDurum = findIdx(['durum', 'status']);
+          const idxAtanan = findIdx(['atanan kisi', 'atanan kişi', 'sorumlu', 'personel', 'assigned', 'assignee']);
+
+          if (idxUrun < 0) {
+            previewInfo.textContent = 'Excelde ürün kolonu bulunamadı.';
+            return;
+          }
+
+          const bodyRows = rows.slice(1).filter((r) => r.some((x) => String(x || '').trim())).slice(0, 30);
+          tbody.innerHTML = bodyRows.map((r, i) => {
+            const sn = idxSn >= 0 ? r[idxSn] : i + 1;
+            const kat = idxKat >= 0 ? (r[idxKat] || '') : '';
+            const oda = idxOda >= 0 ? (r[idxOda] || '') : '';
+            const mahal = idxMahal >= 0 ? (r[idxMahal] || '') : '';
+            const urun = r[idxUrun] || '';
+            const urunKodu = idxUrunKodu >= 0 ? (r[idxUrunKodu] || '') : '';
+            const urunGrubu = idxUrunGrubu >= 0 ? (r[idxUrunGrubu] || '') : '';
+            const img = idxGorsel >= 0 ? (r[idxGorsel] || '') : '';
+            const urunTanimi = idxUrunTanimi >= 0 ? (r[idxUrunTanimi] || '') : '';
+            const urunOlcusu = idxUrunOlcusu >= 0 ? (r[idxUrunOlcusu] || '') : '';
+            const urunMiktar = idxUrunMiktar >= 0 ? (r[idxUrunMiktar] || '') : '';
+            const birim = idxBirim >= 0 ? (r[idxBirim] || '') : '';
+            const aktifPasif = idxAktifPasif >= 0 ? (r[idxAktifPasif] || '') : '';
+            const durum = idxDurum >= 0 ? (r[idxDurum] || '') : 'Devam';
+            const atanan = idxAtanan >= 0 ? (r[idxAtanan] || '') : '-';
+            const miktarBirim = `${urunMiktar || '-'} ${birim || ''}`.trim();
+            const thumb = img
+              ? `<img class="thumb" src="${escAttr(img)}" alt="${escAttr(urun)}" />`
+              : `<span class="thumb-empty">YOK</span>`;
+            return `<tr data-image="${escAttr(img)}"
+              data-sn="${escAttr(sn)}"
+              data-kat="${escAttr(kat)}"
+              data-oda="${escAttr(oda)}"
+              data-mahal="${escAttr(mahal)}"
+              data-urun-adi="${escAttr(urun)}"
+              data-urun-kodu="${escAttr(urunKodu)}"
+              data-urun-grubu="${escAttr(urunGrubu)}"
+              data-urun-tanimi="${escAttr(urunTanimi)}"
+              data-urun-olcusu="${escAttr(urunOlcusu)}"
+              data-miktar-birim="${escAttr(miktarBirim)}"
+              data-aktif-pasif="${escAttr(aktifPasif)}"
+              data-durum="${escAttr(durum)}">
+              <td>${sn}</td>
+              <td><div class="product-with-thumb">${thumb}<span>${urun}</span></div></td>
+              <td><span class="tag ${statusClass(durum)}">${durum || 'Devam'}</span></td>
+              <td><span class="prog"><span style="width:50%"></span></span>50%</td>
+              <td>${atanan || '-'}</td>
+            </tr>`;
+          }).join('');
+
+          rowClickBind();
+          const first = tbody.querySelector('tr');
+          if (first) {
+            first.click();
+          }
+          if (idxGorsel < 0) {
+            previewInfo.textContent = 'Not: Excelde "Ürün Görseli" kolonu bulunamadı. Gömülü Excel resimleri bu mockup tarafından okunmaz; URL/path kolonu gerekir.';
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      excelInput.addEventListener('change', function () {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        parseExcel(file);
+      });
+
+      document.querySelectorAll('.phase-status').forEach((sel) => {
+        repaintPhaseSelect(sel);
+        sel.addEventListener('change', () => repaintPhaseSelect(sel));
+      });
+
+      rowClickBind();
+      const firstSeed = tbody.querySelector('tr');
+      if (firstSeed) firstSeed.click();
+    })();
+  </script>
+</body>
+</html>
