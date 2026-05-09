@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
+const { computeWageBreakdown } = require('./hrService');
 
 async function getMyProfile(userId) {
   const id = Number(userId);
@@ -11,6 +12,7 @@ async function getMyProfile(userId) {
             e.id AS employee_id, e.employee_no, e.first_name, e.last_name, e.full_name AS employee_full_name,
             e.nationality, e.hire_date, e.employment_status, e.photo_path,
             e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+            e.official_salary_currency, e.official_salary_fx_rate,
             d.id AS department_id, d.name AS department_name,
             p.id AS position_id, p.name AS position_name
      FROM users u
@@ -26,6 +28,36 @@ async function getMyProfile(userId) {
   const row = rows[0];
   const employeeName =
     [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || String(row.employee_full_name || '').trim() || null;
+
+  // Maaş objesi TEK helper'dan üretilir; manuel hesap yapılmaz.
+  let salaryObj = null;
+  if (row.employee_id) {
+    const breakdown = computeWageBreakdown({
+      total_salary_amount: row.salary_amount,
+      total_salary_currency: row.salary_currency,
+      official_salary_amount: row.official_salary_amount,
+      official_salary_currency: row.official_salary_currency || row.salary_currency,
+      official_salary_fx_rate:
+        row.official_salary_fx_rate != null && Number(row.official_salary_fx_rate) > 0
+          ? row.official_salary_fx_rate
+          : 1,
+    });
+    salaryObj = {
+      currency: breakdown.total_salary_currency,
+      total: breakdown.total_salary_amount,
+      official: breakdown.official_salary_amount,
+      official_currency: breakdown.official_salary_currency,
+      official_fx_rate: breakdown.official_salary_fx_rate,
+      unofficial: breakdown.unofficial_salary_amount,
+      unofficial_currency: breakdown.unofficial_salary_currency,
+      total_salary_uzs: breakdown.total_salary_uzs,
+      total_salary_usd: breakdown.total_salary_usd,
+      official_salary_uzs: breakdown.official_salary_uzs,
+      official_salary_usd: breakdown.official_salary_usd,
+      unofficial_salary_uzs: breakdown.unofficial_salary_uzs,
+      unofficial_salary_usd: breakdown.unofficial_salary_usd,
+    };
+  }
 
   return {
     user: {
@@ -53,12 +85,7 @@ async function getMyProfile(userId) {
           photo_path: row.photo_path,
           department: row.department_id ? { id: row.department_id, name: row.department_name } : null,
           position: row.position_id ? { id: row.position_id, name: row.position_name } : null,
-          salary: {
-            currency: row.salary_currency,
-            total: Number(row.salary_amount || 0),
-            official: Number(row.official_salary_amount || 0),
-            unofficial: Number(row.unofficial_salary_amount || 0),
-          },
+          salary: salaryObj,
         }
       : null,
     summary: {

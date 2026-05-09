@@ -5,6 +5,8 @@ const KEYS = {
   LOCALE: 'default_locale',
   /** Proje kodu otomatik üretim: örn. PRJ → PRJ-26-001 (yy + yıl içi sıra) */
   PROJECT_CODE_PREFIX: 'project_code_prefix',
+  /** Marka / firma logosu — /uploads/brand/<file> şeklinde URL */
+  BRAND_LOGO_URL: 'brand_logo_url',
 };
 
 async function getAll() {

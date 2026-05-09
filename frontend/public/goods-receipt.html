@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title data-i18n="purch.gr.title">MAL KABUL</title>
-  <link rel="stylesheet" href="/style.css?v=gr11" />
+  <link rel="stylesheet" href="/style.css?v=gr12" />
 </head>
 <body class="app-shell app-master-page app-ui-v3 erp-page goods-receipt-page">
   <div class="container pur-wide app-layout-v3">
@@ -61,36 +61,78 @@
       </div>
     </section>
 
-    <section class="card app-card erp-card app-card-stack-mt">
-      <h3 class="app-card-title" data-i18n="purch.gr.blockReceipt">SEÇİLİ SİPARİŞ — KABUL FORMU</h3>
-      <p id="grDetailEmpty" class="muted" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
-      <div id="grDetailBlock" hidden>
-        <p id="grOrderMeta" class="display-upper gr-order-meta"></p>
-        <p class="product-unit-hint gr-hint-spaced" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
-        <div class="gr-line-scroll">
-          <table class="gr-line-table app-table" id="grLineTable">
-            <thead>
-              <tr>
-                <th data-i18n="purch.gr.colProduct">Ürün</th>
-                <th data-i18n="purch.gr.colWhSub">Depo / alt kategori</th>
-                <th data-i18n="purch.gr.colOrderQty">Sipariş</th>
-                <th data-i18n="purch.gr.colPrevRecv">Önceki kabul</th>
-                <th data-i18n="purch.gr.colRemain">Kalan</th>
-                <th data-i18n="purch.gr.colThisAccept">Bu girişte kabul</th>
-                <th data-i18n="purch.gr.colReject">Red</th>
-                <th data-i18n="purch.gr.colDamage">Hasar</th>
-                <th data-i18n="purch.gr.colLineNote">Açıklama</th>
-              </tr>
-            </thead>
-            <tbody id="grLineBody"></tbody>
-          </table>
+    <p id="grDetailEmpty" class="muted gr-detail-empty" data-i18n="purch.gr.selectPoFirst">Gelen siparişler listesinden bir satır seçin.</p>
+
+    <dialog id="grReceiptDlg" class="gr-receipt-dlg">
+      <div class="gr-receipt-titlebar">
+        <img id="grBrandLogo" class="gr-receipt-logo" data-brand-logo alt="" hidden />
+        <h3 class="gr-receipt-title" data-i18n="purch.gr.title">MAL KABUL</h3>
+      </div>
+      <div class="gr-receipt-header">
+        <div class="gr-receipt-meta">
+          <div class="gr-meta-row"><span class="gr-meta-label" data-i18n="purch.gr.colOrderCode">Sipariş</span><strong id="grHdrOrderCode">—</strong></div>
+          <div class="gr-meta-row"><span class="gr-meta-label" data-i18n="purch.gr.colProject">Proje</span><strong id="grHdrProject">—</strong></div>
+          <div class="gr-meta-row"><span class="gr-meta-label" data-i18n="purch.gr.colDate">Tarih</span><strong id="grHdrDate">—</strong></div>
+          <div class="gr-meta-row"><span class="gr-meta-label" data-i18n="purch.gr.colStatus">Durum</span><strong id="grHdrStatus">—</strong></div>
         </div>
+        <div class="gr-receipt-header-right">
+          <div class="gr-receipt-header-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="grBtnPrint" data-i18n="purch.gr.btnPrint">Yazdır</button>
+            <button type="button" class="gr-receipt-close" id="grReceiptClose" aria-label="Kapat" data-i18n-aria-label="common.close" title="Kapat" data-i18n-title="common.close">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="gr-icon-svg"><path d="M6 6l12 12M18 6l-12 12"/></svg>
+            </button>
+          </div>
+          <div class="gr-receipt-creator">
+            <span class="gr-meta-label" data-i18n="purch.gr.colCreator">Siparişi açan</span>
+            <strong id="grHdrCreator">—</strong>
+          </div>
+        </div>
+      </div>
+      <div class="gr-receipt-body">
+        <div id="grDetailBlock">
+          <p class="product-unit-hint gr-hint-spaced" data-i18n="purch.gr.noPriceHint">Bu ekranda birim fiyat, tutar veya kur girilmez. Sadece kabul miktarları.</p>
+          <div class="app-table-scroll gr-line-scroll">
+            <table class="gr-line-table app-table" id="grLineTable">
+              <colgroup>
+                <col class="gr-c-prod" />
+                <col class="gr-c-img" />
+                <col class="gr-c-pdf" />
+                <col class="gr-c-wh" />
+                <col class="gr-c-qty" />
+                <col class="gr-c-qty" />
+                <col class="gr-c-qty" />
+                <col class="gr-c-input" />
+                <col class="gr-c-input" />
+                <col class="gr-c-input" />
+                <col class="gr-c-note" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th data-i18n="purch.gr.colProduct">Ürün</th>
+                  <th data-i18n="purch.req.colImg">Görsel</th>
+                  <th data-i18n="purch.req.colPdf">PDF</th>
+                  <th data-i18n="purch.gr.colWhSub">Depo / alt kategori</th>
+                  <th data-i18n="purch.gr.colOrderQty">Sipariş</th>
+                  <th data-i18n="purch.gr.colPrevRecv">Önceki kabul</th>
+                  <th data-i18n="purch.gr.colRemain">Kalan</th>
+                  <th data-i18n="purch.gr.colThisAccept">Bu girişte kabul</th>
+                  <th data-i18n="purch.gr.colReject">Red</th>
+                  <th data-i18n="purch.gr.colDamage">Hasar</th>
+                  <th data-i18n="purch.gr.colLineNote">Açıklama</th>
+                </tr>
+              </thead>
+              <tbody id="grLineBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="gr-receipt-footer">
         <div class="gr-action-row" role="group" aria-label="Mal kabul eylemleri">
           <button type="button" class="btn btn-secondary" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
           <button type="button" class="btn btn-primary" id="grBtnSave" data-i18n="common.save">Kaydet</button>
         </div>
       </div>
-    </section>
+    </dialog>
     <section class="card app-card erp-card app-card-stack-mt">
       <h3 class="app-card-title" data-i18n="purch.gr.blockCompleted">MAL KABULÜ TAMAMLANAN SİPARİŞLER</h3>
       <p class="muted text-meta" data-i18n="purch.gr.completedSub">Mal kabulü tamamlanan siparişler sadece inceleme amaçlı listelenir.</p>
@@ -120,6 +162,7 @@
   <script src="/js/stock-common.js?v=gr10"></script>
   <script src="/js/i18n.js?v=gr10"></script>
   <script src="/js/navigation.js?v=gr10"></script>
+  <script src="/js/brand.js?v=gr11"></script>
   <script>
     (function () {
       const msg = document.getElementById('msg');
@@ -128,9 +171,16 @@
       const detailEmpty = document.getElementById('grDetailEmpty');
       const detailBlock = document.getElementById('grDetailBlock');
       const lineBody = document.getElementById('grLineBody');
-      const orderMeta = document.getElementById('grOrderMeta');
       const editBtn = document.getElementById('grBtnEdit');
       const saveBtn = document.getElementById('grBtnSave');
+      const printBtn = document.getElementById('grBtnPrint');
+      const dlg = document.getElementById('grReceiptDlg');
+      const dlgClose = document.getElementById('grReceiptClose');
+      const hdrOrderCode = document.getElementById('grHdrOrderCode');
+      const hdrProject = document.getElementById('grHdrProject');
+      const hdrDate = document.getElementById('grHdrDate');
+      const hdrStatus = document.getElementById('grHdrStatus');
+      const hdrCreator = document.getElementById('grHdrCreator');
       let selectedOrderId = null;
       let currentOrder = null;
       let ordersList = [];
@@ -197,18 +247,9 @@
       }
       function qtyCellHtml(it, qty, strong) {
         const unit = primaryUnit(it);
-        const calcM2 = calcM2ForQty(it, qty);
-        const calcM3 = calcM3ForQty(it, qty);
         const mainTagStart = strong ? '<strong>' : '';
         const mainTagEnd = strong ? '</strong>' : '';
-        let html = mainTagStart + esc(fmtQ(qty)) + ' ' + esc(unit) + mainTagEnd;
-        if (calcM2 != null && !isM2Unit(unit)) {
-          html += helperLine('stock.mov.colQtyM2Helper', calcM2);
-        }
-        if (calcM3 != null && !isM3Unit(unit)) {
-          html += helperLine('stock.mov.colQtyM3Helper', calcM3);
-        }
-        return html;
+        return mainTagStart + esc(fmtQ(qty)) + ' ' + esc(unit) + mainTagEnd;
       }
       function clearPoSelection() {
         document.querySelectorAll('#grPoBody tr[data-oid]').forEach((r) => r.classList.remove('gr-po-sel'));
@@ -242,12 +283,24 @@
           const noteInput = !canEdit
             ? '<span class="gr-muted-dash">—</span>'
             : '<input type="text" class="gr-inp gr-inp-wide f-nt input-upper" />';
+          const imgPath = it.request_line_image_path || it.line_image_path || '';
+          const pdfPath = it.request_line_pdf_path || it.line_pdf_path || '';
+          const imgCellInner = imgPath
+            ? '<a href="' + esc(imgPath) + '" target="_blank" rel="noopener" class="gr-line-att-img" title="' +
+              esc(tK('purch.req.colImg')) + '"><img src="' + esc(imgPath) + '" alt="" /></a>'
+            : '<span class="gr-muted-dash">—</span>';
+          const pdfCellInner = pdfPath
+            ? '<a href="' + esc(pdfPath) + '" target="_blank" rel="noopener" class="gr-line-att-pdf" title="' +
+              esc(tK('purch.req.colPdf')) + '">PDF</a>'
+            : '<span class="gr-muted-dash">—</span>';
           tr.innerHTML =
             '<td><span class="gr-meta-inline">' +
             esc(it.product_code || '') +
             '</span><br/><span class="display-upper">' +
             esc(it.product_name || '') +
-            '</td>' +
+            '</span></td>' +
+            '<td class="gr-cell-img">' + imgCellInner + '</td>' +
+            '<td class="gr-cell-pdf">' + pdfCellInner + '</td>' +
             '<td><span class="display-upper">' +
             esc(it.warehouse_name || '—') +
             '</span><br/><span class="display-upper gr-meta-inline">' +
@@ -355,6 +408,31 @@
           });
         });
       }
+      function openReceiptDialog() {
+        if (!dlg) return;
+        if (typeof dlg.showModal === 'function' && !dlg.open) {
+          try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', 'open'); }
+        } else if (!dlg.open) {
+          dlg.setAttribute('open', 'open');
+        }
+      }
+      function closeReceiptDialog() {
+        if (!dlg) return;
+        if (typeof dlg.close === 'function' && dlg.open) dlg.close();
+        else dlg.removeAttribute('open');
+      }
+      function fillHeader(o) {
+        if (!o) return;
+        const projectLine =
+          (o.project_code || '—') + (o.project_name ? ' — ' + o.project_name : '');
+        const orderDate = String(o.order_date || o.created_at || '').slice(0, 10);
+        const creator = o.order_creator_name || o.created_by_name || o.requester_name || '—';
+        if (hdrOrderCode) hdrOrderCode.textContent = String(o.order_code || o.id || '—');
+        if (hdrProject) hdrProject.textContent = projectLine;
+        if (hdrDate) hdrDate.textContent = orderDate || '—';
+        if (hdrStatus) hdrStatus.textContent = statusLabel(o.receipt_status || o.status);
+        if (hdrCreator) hdrCreator.textContent = creator;
+      }
       async function selectOrder(oid, fromCompleted) {
         if (!oid) return;
         selectedOrderId = String(oid);
@@ -371,19 +449,159 @@
           return;
         }
         currentOrder = data.order;
-        detailEmpty.hidden = true;
-        detailBlock.hidden = false;
-        const o = currentOrder;
-        const meta =
-          (o.order_code || o.id) + ' — ' + (o.supplier_name || '—') + ' — ' + (o.project_code || tK('purch.gr.project'));
-        orderMeta.textContent = meta;
+        if (detailEmpty) detailEmpty.hidden = true;
+        if (detailBlock) detailBlock.hidden = false;
+        fillHeader(currentOrder);
         if (readonlyOrder) {
           showMsg(tK('purch.gr.readonlyInfo'), false);
         }
         updateActionButtons();
         renderLineRows();
-        if (window.i18n && window.i18n.apply) {
-          window.i18n.apply(detailBlock);
+        openReceiptDialog();
+        if (window.i18n && window.i18n.apply && dlg) {
+          window.i18n.apply(dlg);
+        }
+      }
+      function buildReceiptPrintHtml(o, opts) {
+        const items = Array.isArray(o && o.items) ? o.items : [];
+        const orderCode = String(o.order_code || o.id || '');
+        const projectLine =
+          (o.project_code || '—') + (o.project_name ? ' — ' + o.project_name : '');
+        const orderDate = String(o.order_date || o.created_at || '').slice(0, 10);
+        const creator = o.order_creator_name || o.created_by_name || o.requester_name || '—';
+        const supplier = o.supplier_name || '—';
+        const stat = statusLabel(o.receipt_status || o.status);
+        const logoUrl = (opts && opts.logoUrl) ? String(opts.logoUrl) : '';
+        const absLogo = logoUrl
+          ? (/^https?:/i.test(logoUrl) ? logoUrl : (window.location.origin + logoUrl))
+          : '';
+        const logoBlock = absLogo
+          ? '<div class="brand"><img src="' + esc(absLogo) + '" alt="" /></div>'
+          : '';
+        const rows = items
+          .map((it, idx) => {
+            const ord = Number(it.qty_ordered) || 0;
+            const recv = Number(it.qty_received) || 0;
+            const rem = typeof it.qty_remaining !== 'undefined'
+              ? Number(it.qty_remaining)
+              : (ord - recv);
+            const unit = primaryUnit(it);
+            const imgPath = it.request_line_image_path || it.line_image_path || '';
+            const pdfPath = it.request_line_pdf_path || it.line_pdf_path || '';
+            const imgAbs = imgPath
+              ? (/^https?:/i.test(imgPath) ? imgPath : (window.location.origin + imgPath))
+              : '';
+            const pdfAbs = pdfPath
+              ? (/^https?:/i.test(pdfPath) ? pdfPath : (window.location.origin + pdfPath))
+              : '';
+            const imgCellHtml = imgAbs ? '<img src="' + esc(imgAbs) + '" alt="" />' : '—';
+            const pdfCellHtml = pdfAbs ? '<a href="' + esc(pdfAbs) + '" target="_blank">PDF</a>' : '—';
+            return (
+              '<tr>' +
+              '<td class="cnum">' + (idx + 1) + '</td>' +
+              '<td class="cprod">' + (it.product_code ? '<div class="pc"><strong>' + esc(String(it.product_code).toUpperCase()) + '</strong></div>' : '') + '<div class="pn">' + esc(String(it.product_name || '').toUpperCase()) + '</div></td>' +
+              '<td class="cwh">' + esc(String(it.warehouse_name || '—').toUpperCase()) + (it.subcategory_name ? '<div class="sub">' + esc(String(it.subcategory_name).toUpperCase()) + '</div>' : '') + '</td>' +
+              '<td class="cqty">' + esc(fmtQ(ord)) + ' ' + esc(unit) + '</td>' +
+              '<td class="cqty">' + esc(fmtQ(recv)) + ' ' + esc(unit) + '</td>' +
+              '<td class="cqty">' + esc(fmtQ(rem)) + ' ' + esc(unit) + '</td>' +
+              '<td class="cimg">' + imgCellHtml + '</td>' +
+              '<td class="cpdf">' + pdfCellHtml + '</td>' +
+              '</tr>'
+            );
+          })
+          .join('');
+        const styles = '@page{size:A4 landscape;margin:12mm 14mm}*{box-sizing:border-box}body{font:11px/1.45 Arial,Helvetica,sans-serif;color:#111;margin:0}.hdr{display:flex;align-items:center;gap:14px;margin:0 0 6px}.brand{flex:0 0 auto}.brand img{height:48px;max-width:200px;object-fit:contain;display:block}h1{font-size:17px;margin:0;letter-spacing:.5px;flex:1 1 auto}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 20px;margin:6px 0 12px;font-size:11px}.meta div{padding:2px 0}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #888;padding:6px 8px;vertical-align:top}th{background:#eee;text-align:left;font-size:10px}td.cnum{width:24px;text-align:center}td.cprod{width:26%;white-space:normal !important;word-break:break-word;overflow-wrap:anywhere}td.cprod .pc{font-size:10px;color:#333;margin-bottom:3px}td.cprod .pn{font-size:11px;font-weight:600}td.cwh{width:18%;white-space:normal;word-break:break-word}td.cwh .sub{font-size:10px;color:#555}td.cqty{width:9%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}td.cimg{width:9%;text-align:center}td.cimg img{max-width:100%;max-height:50px;object-fit:contain}td.cpdf{width:8%;text-align:center;font-size:10px}.footer{margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.sig{border-top:1px solid #444;padding-top:6px;text-align:center;font-size:10px}@media print{a{color:#000;text-decoration:none}}';
+        return (
+          '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8" /><title>' + esc(orderCode) + '</title><style>' + styles + '</style></head><body>' +
+          '<div class="hdr">' + logoBlock + '<h1>' + esc(tK('purch.gr.printTitle')) + '</h1></div>' +
+          '<div class="meta">' +
+          '<div><strong>' + esc(tK('purch.gr.colOrderCode')) + ':</strong> ' + esc(orderCode) + '</div>' +
+          '<div><strong>' + esc(tK('purch.gr.colDate')) + ':</strong> ' + esc(orderDate) + '</div>' +
+          '<div><strong>' + esc(tK('purch.gr.colProject')) + ':</strong> ' + esc(projectLine) + '</div>' +
+          '<div><strong>' + esc(tK('purch.gr.colSupplier')) + ':</strong> ' + esc(String(supplier).toUpperCase()) + '</div>' +
+          '<div><strong>' + esc(tK('purch.gr.colCreator')) + ':</strong> ' + esc(String(creator).toUpperCase()) + '</div>' +
+          '<div><strong>' + esc(tK('purch.gr.colStatus')) + ':</strong> ' + esc(stat) + '</div>' +
+          '</div>' +
+          '<table><thead><tr>' +
+          '<th>#</th>' +
+          '<th>' + esc(tK('purch.gr.colProduct')) + '</th>' +
+          '<th>' + esc(tK('purch.gr.colWhSub')) + '</th>' +
+          '<th>' + esc(tK('purch.gr.colOrderQty')) + '</th>' +
+          '<th>' + esc(tK('purch.gr.colPrevRecv')) + '</th>' +
+          '<th>' + esc(tK('purch.gr.colRemain')) + '</th>' +
+          '<th>' + esc(tK('purch.req.colImg')) + '</th>' +
+          '<th>' + esc(tK('purch.req.colPdf')) + '</th>' +
+          '</tr></thead><tbody>' + (rows || '<tr><td colspan="8">—</td></tr>') + '</tbody></table>' +
+          '<div class="footer">' +
+          '<div class="sig">' + esc(tK('purch.print.sigRequester')) + '</div>' +
+          '<div class="sig">' + esc(tK('purch.print.sigApprover')) + '</div>' +
+          '<div class="sig">' + esc(tK('purch.print.sigBuyer')) + '</div>' +
+          '</div>' +
+          '</body></html>'
+        );
+      }
+      function printReceiptInIframe(htmlPayload) {
+        return new Promise((resolve) => {
+          const iframe = document.createElement('iframe');
+          iframe.setAttribute('aria-hidden', 'true');
+          iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+          let done = false;
+          let timer = null;
+          function cleanup() {
+            if (done) return;
+            done = true;
+            if (timer) { clearTimeout(timer); timer = null; }
+            try { iframe.remove(); } catch (e) { /* ignore */ }
+            resolve();
+          }
+          iframe.addEventListener('load', async () => {
+            try {
+              const w = iframe.contentWindow;
+              if (w && w.document && w.document.images) {
+                const imgs = w.document.images;
+                const promises = [];
+                for (let i = 0; i < imgs.length; i++) {
+                  const im = imgs[i];
+                  if (im.complete) continue;
+                  promises.push(new Promise((r) => {
+                    im.addEventListener('load', () => r(), { once: true });
+                    im.addEventListener('error', () => r(), { once: true });
+                  }));
+                }
+                if (promises.length) await Promise.all(promises);
+              }
+            } catch (e) { /* ignore */ }
+            try {
+              iframe.contentWindow.addEventListener('afterprint', () => setTimeout(cleanup, 200), { once: true });
+            } catch (e) { /* ignore */ }
+            try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+            catch (e) { cleanup(); return; }
+            timer = setTimeout(cleanup, 30000);
+          }, { once: true });
+          iframe.addEventListener('error', cleanup, { once: true });
+          document.body.appendChild(iframe);
+          try { iframe.srcdoc = htmlPayload; }
+          catch (e) {
+            try {
+              const doc = iframe.contentDocument || iframe.contentWindow.document;
+              doc.open(); doc.write(htmlPayload); doc.close();
+            } catch (e2) { cleanup(); }
+          }
+        });
+      }
+      async function printReceipt() {
+        if (!currentOrder) return;
+        if (printBtn) printBtn.disabled = true;
+        try {
+          let logoUrl = '';
+          try {
+            if (window.brand && typeof window.brand.getLogoUrl === 'function') {
+              logoUrl = (await window.brand.getLogoUrl()) || '';
+            }
+          } catch (e) { /* logo opsiyonel */ }
+          await printReceiptInIframe(buildReceiptPrintHtml(currentOrder, { logoUrl }));
+        } finally {
+          if (printBtn) printBtn.disabled = !currentOrder;
         }
       }
       editBtn?.addEventListener('click', () => {
@@ -393,6 +611,12 @@
         renderLineRows();
         showMsg(tK('stock.out.editDlgHint'), false);
       });
+      printBtn?.addEventListener('click', () => { void printReceipt(); });
+      dlgClose?.addEventListener('click', () => closeReceiptDialog());
+      if (dlg) {
+        dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeReceiptDialog(); });
+        dlg.addEventListener('click', (e) => { if (e.target === dlg) closeReceiptDialog(); });
+      }
       saveBtn.addEventListener('click', async () => {
         if (!selectedOrderId || !currentOrder) {
           showMsg(tK('purch.gr.selectPoFirst'), true);
@@ -458,8 +682,9 @@
             selectedOrderId = null;
             readonlyOrder = false;
             editMode = false;
-            detailBlock.hidden = true;
-            detailEmpty.hidden = false;
+            if (detailBlock) detailBlock.hidden = true;
+            if (detailEmpty) detailEmpty.hidden = false;
+            closeReceiptDialog();
           }
         }
       });

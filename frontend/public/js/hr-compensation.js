@@ -53,25 +53,36 @@
 
   function updateRecCells(tr, r, pct) {
     if (!tr || !r) return;
-    const off = r.official_salary_uzs;
-    const uuz = r.unofficial_salary_uzs;
-    const uusd = r.unofficial_salary_usd;
-    const tot = r.total_salary_amount;
-    const cur = r.total_salary_currency || 'UZS';
-    const rOff = recValue(off, pct);
-    const rUuz = uuz == null ? null : recValue(uuz, pct);
-    const rUusd = uusd == null ? null : recValue(uusd, pct);
-    const rTot = recValue(tot, pct);
+    // ORİJİNAL para birimi alanları: tavsiye değer = orijinal × (1 + pct/100)
+    const totOrig = r.total_salary_amount;
+    const offOrig = r.official_salary_amount;
+    const unofOrig = r.unofficial_salary_amount;
+    const totOrigCur = r.total_salary_currency || 'UZS';
+    const offOrigCur = r.official_salary_currency || totOrigCur;
+    const unofOrigCur = r.unofficial_salary_currency || totOrigCur;
+    // NORMALIZE alanları: zam orijinal currency üzerinde tanımlı; normalize alanlar
+    // backend'den gelen oranları aynen kullanır (zam aynı oranda yansır).
+    const totUzs = r.total_salary_uzs;
+    const totUsd = r.total_salary_usd;
+    const offUzs = r.official_salary_uzs;
+    const offUsd = r.official_salary_usd;
+    const unofUzs = r.unofficial_salary_uzs;
+    const unofUsd = r.unofficial_salary_usd;
 
     const set = (sel, val, ccy) => {
       const el = tr.querySelector(sel);
       if (!el) return;
       el.textContent = val == null ? '-' : fmtMoney(val, ccy);
     };
-    set('.comp-rec-official', rOff, 'UZS');
-    set('.comp-rec-uuz', rUuz, 'UZS');
-    set('.comp-rec-uusd', rUusd, 'USD');
-    set('.comp-rec-total', rTot, cur);
+    set('.comp-rec-total-orig', recValue(totOrig, pct), totOrigCur);
+    set('.comp-rec-off-orig', recValue(offOrig, pct), offOrigCur);
+    set('.comp-rec-unof-orig', unofOrig == null ? null : recValue(unofOrig, pct), unofOrigCur);
+    set('.comp-rec-total-uzs', totUzs == null ? null : recValue(totUzs, pct), 'UZS');
+    set('.comp-rec-total-usd', totUsd == null ? null : recValue(totUsd, pct), 'USD');
+    set('.comp-rec-off-uzs', offUzs == null ? null : recValue(offUzs, pct), 'UZS');
+    set('.comp-rec-off-usd', offUsd == null ? null : recValue(offUsd, pct), 'USD');
+    set('.comp-rec-unof-uzs', unofUzs == null ? null : recValue(unofUzs, pct), 'UZS');
+    set('.comp-rec-unof-usd', unofUsd == null ? null : recValue(unofUsd, pct), 'USD');
   }
 
   async function loadMeFlags() {
@@ -111,23 +122,42 @@
 
   function renderHead() {
     if (!compHead) return;
-    const th = (k, cls) => `<th class="${cls || ''}" data-i18n="${k}">${t(k)}</th>`;
-    const cells = [
-      th('hr.compensation.col.photo', 'comp-col-photo'),
-      th('hr.compensation.col.name', 'comp-name comp-col-name'),
-      th('hr.compensation.col.official', 'comp-num'),
-      th('hr.compensation.col.unofficialUzs', 'comp-num'),
-      th('hr.compensation.col.unofficialUsd', 'comp-num'),
-      th('hr.compensation.col.total', 'comp-num'),
-    ];
-    cells.push(
-      th('hr.compensation.col.raisePct', 'comp-num comp-col-raise'),
-      th('hr.compensation.col.recOfficial', 'comp-num'),
-      th('hr.compensation.col.recUnofficialUzs', 'comp-num'),
-      th('hr.compensation.col.recUnofficialUsd', 'comp-num'),
-      th('hr.compensation.col.recTotal', 'comp-num')
-    );
-    compHead.innerHTML = `<tr>${cells.join('')}</tr>`;
+    const th = (k, cls, extra) => `<th class="${cls || ''}" data-i18n="${k}"${extra || ''}>${t(k)}</th>`;
+    // İki grup: ORİJİNAL (kaydedilmiş para birimi) + NORMALIZE (USD/UZS rapor alanları)
+    const groupRow = `
+      <tr class="comp-group-row">
+        <th class="comp-col-photo" rowspan="2"></th>
+        <th class="comp-name comp-col-name" rowspan="2" data-i18n="hr.compensation.col.name">${t('hr.compensation.col.name')}</th>
+        <th class="comp-group-orig" colspan="3" data-i18n="hr.compensation.group.original">${t('hr.compensation.group.original')}</th>
+        <th class="comp-group-norm" colspan="6" data-i18n="hr.compensation.group.normalized">${t('hr.compensation.group.normalized')}</th>
+        <th class="comp-num comp-col-raise" rowspan="2" data-i18n="hr.compensation.col.raisePct">${t('hr.compensation.col.raisePct')}</th>
+        <th class="comp-group-orig" colspan="3" data-i18n="hr.compensation.group.original">${t('hr.compensation.group.original')}</th>
+        <th class="comp-group-norm" colspan="6" data-i18n="hr.compensation.group.normalized">${t('hr.compensation.group.normalized')}</th>
+      </tr>
+    `;
+    const detailRow = `
+      <tr class="comp-detail-row">
+        ${th('hr.compensation.col.totalOriginal', 'comp-num')}
+        ${th('hr.compensation.col.officialOriginal', 'comp-num')}
+        ${th('hr.compensation.col.unofficialOriginal', 'comp-num')}
+        ${th('hr.compensation.col.totalUzs', 'comp-num')}
+        ${th('hr.compensation.col.totalUsd', 'comp-num')}
+        ${th('hr.compensation.col.officialUzs', 'comp-num')}
+        ${th('hr.compensation.col.officialUsd', 'comp-num')}
+        ${th('hr.compensation.col.unofficialUzs', 'comp-num')}
+        ${th('hr.compensation.col.unofficialUsd', 'comp-num')}
+        ${th('hr.compensation.col.totalOriginal', 'comp-num')}
+        ${th('hr.compensation.col.officialOriginal', 'comp-num')}
+        ${th('hr.compensation.col.unofficialOriginal', 'comp-num')}
+        ${th('hr.compensation.col.totalUzs', 'comp-num')}
+        ${th('hr.compensation.col.totalUsd', 'comp-num')}
+        ${th('hr.compensation.col.officialUzs', 'comp-num')}
+        ${th('hr.compensation.col.officialUsd', 'comp-num')}
+        ${th('hr.compensation.col.unofficialUzs', 'comp-num')}
+        ${th('hr.compensation.col.unofficialUsd', 'comp-num')}
+      </tr>
+    `;
+    compHead.innerHTML = groupRow + detailRow;
     if (window.i18n && window.i18n.apply) window.i18n.apply(compHead);
   }
 
@@ -156,34 +186,60 @@
       .map((r) => {
         const id = String(r.id);
         const pct = raiseById[id] != null ? raiseById[id] : 0;
-        const off = r.official_salary_uzs;
-        const uuz = r.unofficial_salary_uzs;
-        const uusd = r.unofficial_salary_usd;
-        const tot = r.total_salary_amount;
-        const cur = r.total_salary_currency || 'UZS';
+
+        // ORİJİNAL para birimi alanları
+        const totOrig = r.total_salary_amount;
+        const offOrig = r.official_salary_amount;
+        const unofOrig = r.unofficial_salary_amount;
+        const totOrigCur = r.total_salary_currency || 'UZS';
+        const offOrigCur = r.official_salary_currency || totOrigCur;
+        const unofOrigCur = r.unofficial_salary_currency || totOrigCur;
+        // NORMALIZE rapor alanları (backend'den geliyor; eksikse null)
+        const totUzs = r.total_salary_uzs;
+        const totUsd = r.total_salary_usd;
+        const offUzs = r.official_salary_uzs;
+        const offUsd = r.official_salary_usd;
+        const unofUzs = r.unofficial_salary_uzs;
+        const unofUsd = r.unofficial_salary_usd;
 
         const ro = !canEditRaise ? ' readonly' : '';
         const raiseVal = pct === 0 ? '' : String(pct).replace('.', ',');
         const raiseInput = `<input type="text" class="comp-raise x-raise" inputmode="decimal" autocomplete="off" data-id="${esc(id)}" value="${esc(raiseVal)}" title="${esc(t('hr.compensation.raiseHint'))}"${ro} />`;
 
+        const cellOrNull = (val, ccy, cls) =>
+          `<td class="comp-num ${cls || ''}">${val == null ? '-' : esc(fmtMoney(val, ccy))}</td>`;
+
         let html = `<tr data-id="${esc(id)}">
         <td class="comp-col-photo">${photoCell(r)}</td>
-        <td class="comp-name comp-col-name">${esc(r.person_name || '-')}</td>
-        <td class="comp-num">${esc(fmtMoney(off, 'UZS'))}</td>
-        <td class="comp-num">${uuz == null ? '-' : esc(fmtMoney(uuz, 'UZS'))}</td>
-        <td class="comp-num">${uusd == null ? '-' : esc(fmtMoney(uusd, 'USD'))}</td>
-        <td class="comp-num">${esc(fmtMoney(tot, cur))}</td>`;
+        <td class="comp-name comp-col-name">${esc(r.person_name || '-')}</td>`;
 
-        const rOff = recValue(off, pct);
-        const rUuz = uuz == null ? null : recValue(uuz, pct);
-        const rUusd = uusd == null ? null : recValue(uusd, pct);
-        const rTot = recValue(tot, pct);
+        // === Mevcut: Orijinal grup ===
+        html += cellOrNull(totOrig, totOrigCur);
+        html += cellOrNull(offOrig, offOrigCur);
+        html += cellOrNull(unofOrig, unofOrigCur);
+        // === Mevcut: Normalize grup ===
+        html += cellOrNull(totUzs, 'UZS');
+        html += cellOrNull(totUsd, 'USD');
+        html += cellOrNull(offUzs, 'UZS');
+        html += cellOrNull(offUsd, 'USD');
+        html += cellOrNull(unofUzs, 'UZS');
+        html += cellOrNull(unofUsd, 'USD');
 
+        // === Zam ===
         html += `<td class="comp-num comp-col-raise">${raiseInput}</td>`;
-        html += `<td class="comp-num comp-rec-official">${rOff == null ? '-' : esc(fmtMoney(rOff, 'UZS'))}</td>`;
-        html += `<td class="comp-num comp-rec-uuz">${rUuz == null ? '-' : esc(fmtMoney(rUuz, 'UZS'))}</td>`;
-        html += `<td class="comp-num comp-rec-uusd">${rUusd == null ? '-' : esc(fmtMoney(rUusd, 'USD'))}</td>`;
-        html += `<td class="comp-num comp-rec-total">${rTot == null ? '-' : esc(fmtMoney(rTot, cur))}</td>`;
+
+        // === Tavsiye: Orijinal grup ===
+        html += cellOrNull(recValue(totOrig, pct), totOrigCur, 'comp-rec-total-orig');
+        html += cellOrNull(recValue(offOrig, pct), offOrigCur, 'comp-rec-off-orig');
+        html += cellOrNull(unofOrig == null ? null : recValue(unofOrig, pct), unofOrigCur, 'comp-rec-unof-orig');
+        // === Tavsiye: Normalize grup ===
+        html += cellOrNull(totUzs == null ? null : recValue(totUzs, pct), 'UZS', 'comp-rec-total-uzs');
+        html += cellOrNull(totUsd == null ? null : recValue(totUsd, pct), 'USD', 'comp-rec-total-usd');
+        html += cellOrNull(offUzs == null ? null : recValue(offUzs, pct), 'UZS', 'comp-rec-off-uzs');
+        html += cellOrNull(offUsd == null ? null : recValue(offUsd, pct), 'USD', 'comp-rec-off-usd');
+        html += cellOrNull(unofUzs == null ? null : recValue(unofUzs, pct), 'UZS', 'comp-rec-unof-uzs');
+        html += cellOrNull(unofUsd == null ? null : recValue(unofUsd, pct), 'USD', 'comp-rec-unof-usd');
+
         html += '</tr>';
         return html;
       })

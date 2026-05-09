@@ -37,7 +37,12 @@
       <div class="app-content">
         <main class="app-master-main">
 
-    <section class="card app-card">
+    <!-- BLOK 1: Rapor sayaçları -->
+    <section class="card app-card attm-block attm-block-kpi">
+      <div class="app-card-header section-header">
+        <h3 class="app-card-title" data-i18n="hr.att.monthly.kpi.title">Rapor sayaçları</h3>
+        <p class="app-muted-text" data-i18n="hr.att.monthly.kpi.sub">Seçili ay için canlı toplamlar</p>
+      </div>
       <div id="liveCards" class="attm-live-cards hidden">
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.totalNormal">Toplam normal çalışma</div><div class="v" id="kpiTotalNormal">0</div></div>
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.totalOvertime">Toplam mesai saat</div><div class="v" id="kpiTotalOvertime">0</div></div>
@@ -47,44 +52,115 @@
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.nonOfficialUzs">Toplam Resmi Olmayan Ödeme (UZS)</div><div class="v" id="kpiNonOfficialUzs">-</div></div>
         <div class="attm-live-card"><div class="k" data-i18n="hr.att.monthly.kpi.unofficialUsd">Toplam Gayri Resmi Ödeme (USD)</div><div class="v" id="kpiUnofficialUsd">-</div></div>
       </div>
-      <div class="attm-month-row">
-        <div>
+    </section>
+
+    <!-- BLOK 2: Filtreler -->
+    <section class="card app-card attm-block attm-block-filters">
+      <div class="app-card-header section-header">
+        <h3 class="app-card-title" data-i18n="hr.att.monthly.filters.title">Filtreler</h3>
+        <p class="app-muted-text" data-i18n="hr.att.monthly.filters.sub">Ay, gün ve personel filtreleri</p>
+      </div>
+      <div class="attm-filter-row">
+        <div class="attm-f-cell">
           <label for="monthKey" data-i18n="hr.att.monthly.month">Ay</label>
-          <input id="monthKey" type="month" />
+          <input id="monthKey" type="month" class="app-input" />
         </div>
-        <div>
+        <div class="attm-f-cell">
           <label for="mDayFilter" data-i18n="hr.att.monthly.day">Gün</label>
-          <select id="mDayFilter" aria-label="day"><option value="" data-i18n="hr.att.monthly.allDays">Tüm günler</option></select>
+          <select id="mDayFilter" class="app-select" aria-label="day"><option value="" data-i18n="hr.att.monthly.allDays">Tüm günler</option></select>
         </div>
-      </div>
-      <p class="muted attm-filter-title" data-i18n="hr.emp.filtersTitle">Filtreler</p>
-      <div class="app-page-toolbar attm-filter-toolbar">
-      <div class="app-toolbar-left attm-inline-5 app-filterbar">
-        <select id="mNatFilter" class="app-select" aria-label="nat">
-          <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
-          <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
-          <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
-          <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
-          <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
-          <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
-        </select>
-        <input id="mNameFilter" class="app-input app-search-input" type="search" data-i18n-placeholder="hr.emp.search" placeholder="İsim ara" />
-        <select id="mDepFilter" class="app-select" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
-        <select id="mPosFilter" class="app-select" aria-label="pos"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
-      </div>
-      <div class="app-toolbar-right">
-        <button type="button" id="btnLoadMonthly" class="version-btn app-button app-button-secondary" data-i18n="hr.att.monthly.load">Listele</button>
-      </div>
+        <div class="attm-f-cell">
+          <label for="mNatFilter" data-i18n="hr.emp.filterNat">Uyruk</label>
+          <select id="mNatFilter" class="app-select" aria-label="nat">
+            <option value="" data-i18n="hr.emp.filterNat">Uyruk</option>
+            <option value="TR" data-i18n="hr.emp.nat.TR">TR</option>
+            <option value="UZ" data-i18n="hr.emp.nat.UZ">UZ</option>
+            <option value="RU" data-i18n="hr.emp.nat.RU">RU</option>
+            <option value="EN" data-i18n="hr.emp.nat.EN">EN</option>
+            <option value="OTHER" data-i18n="hr.emp.nat.OTHER">Diğer</option>
+          </select>
+        </div>
+        <div class="attm-f-cell attm-f-cell--name">
+          <label for="mNameFilter" data-i18n="hr.emp.search">İsim ara</label>
+          <div id="mNameCmb" class="attm-emp-cmb">
+            <input
+              id="mNameFilter"
+              class="app-input attm-emp-cmb-input"
+              type="text"
+              autocomplete="off"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="mNameCmbList"
+              data-i18n-placeholder="hr.emp.search"
+              placeholder="İsim ara"
+            />
+            <button
+              type="button"
+              id="mNameCmbClear"
+              class="attm-emp-cmb-clear"
+              aria-label="Temizle"
+              data-i18n-aria-label="hr.att.monthly.empSearchClear"
+              hidden
+            >×</button>
+            <div id="mNameCmbPanel" class="attm-emp-cmb-panel" hidden>
+              <ul id="mNameCmbList" class="attm-emp-cmb-list" role="listbox"></ul>
+              <p id="mNameCmbEmpty" class="attm-emp-cmb-empty" data-i18n="hr.att.monthly.empSearchNoResult">Eşleşen personel yok</p>
+            </div>
+          </div>
+        </div>
+        <div class="attm-f-cell">
+          <label for="mDepFilter" data-i18n="hr.emp.filterDept">Departman</label>
+          <select id="mDepFilter" class="app-select" aria-label="dept"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+        </div>
+        <div class="attm-f-cell">
+          <label for="mPosFilter" data-i18n="hr.emp.filterPos">Pozisyon</label>
+          <select id="mPosFilter" class="app-select" aria-label="pos"><option value="" data-i18n="hr.emp.filterPos">Pozisyon</option></select>
+        </div>
+        <div class="attm-f-cell attm-f-cell--btn">
+          <button type="button" id="btnLoadMonthly" class="version-btn app-button app-button-secondary" data-i18n="hr.att.monthly.load">Listele</button>
+        </div>
       </div>
       <p id="monthlyMsg" class="attm-msg-slot"></p>
-      <h3 data-i18n="hr.att.monthly.summary">Personel özeti</h3>
-      <div class="attm-summary-table-wrap"><table class="app-table attm-summary-table"><thead><tr id="summaryHeadRow"></tr></thead><tbody id="summaryBody"></tbody></table></div>
-      <div class="attm-summary-spacer"></div>
-      <h3 data-i18n="hr.att.monthly.rows">Günlük satırlar</h3>
-      <div class="attm-daily-wrap"><table class="attm-daily-table app-table"><thead><tr>
-        <th data-i18n="hr.att.colDate">Tarih</th><th data-i18n="hr.att.colEmployee">Personel</th><th data-i18n="hr.att.colProject">Proje</th>
-        <th data-i18n="hr.att.colStatus">Durum</th><th data-i18n="hr.att.colWorkType">Is tipi</th><th data-i18n="hr.att.colTotalHours">Saat</th><th data-i18n="hr.att.colOvertimeHours">FM</th><th data-i18n="hr.att.colNote">Not</th><th data-i18n="hr.emp.colAction">İşlem</th>
-      </tr></thead><tbody id="monthlyBody"></tbody></table></div>
+    </section>
+
+    <!-- BLOK 3: Personel özeti -->
+    <section class="card app-card attm-block attm-block-summary">
+      <div class="app-card-header section-header">
+        <h3 class="app-card-title" data-i18n="hr.att.monthly.summary">Personel özeti</h3>
+        <p class="app-muted-text" data-i18n="hr.att.monthly.summary.sub">Seçili filtrelerin aylık personel bazlı özeti</p>
+      </div>
+      <div class="attm-summary-table-wrap">
+        <table class="app-table attm-summary-table">
+          <thead><tr id="summaryHeadRow"></tr></thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BLOK 4: Günlük giriş/çıkışlar -->
+    <section class="card app-card attm-block attm-block-rows">
+      <div class="app-card-header section-header">
+        <h3 class="app-card-title" data-i18n="hr.att.monthly.rows">Günlük giriş/çıkışlar</h3>
+        <p class="app-muted-text" data-i18n="hr.att.monthly.rows.sub">Seçili filtrelerin günlük puantaj satırları</p>
+      </div>
+      <div class="attm-daily-wrap">
+        <table class="attm-daily-table app-table">
+          <thead><tr>
+            <th data-i18n="hr.att.colDate">Tarih</th>
+            <th data-i18n="hr.att.colEmployee">Personel</th>
+            <th data-i18n="hr.att.colProject">Proje</th>
+            <th data-i18n="hr.att.colStatus">Durum</th>
+            <th data-i18n="hr.att.colWorkType">Is tipi</th>
+            <th data-i18n="hr.att.colTotalHours">Saat</th>
+            <th data-i18n="hr.att.colOvertimeHours">FM</th>
+            <th data-i18n="hr.att.colNote">Not</th>
+            <th data-i18n="hr.emp.colAction">İşlem</th>
+          </tr></thead>
+          <tbody id="monthlyBody"></tbody>
+        </table>
+      </div>
     </section>
       
         </main>

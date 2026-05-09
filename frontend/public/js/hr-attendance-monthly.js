@@ -35,6 +35,16 @@
   const kpiNonOfficialUzs = document.getElementById('kpiNonOfficialUzs');
   const kpiUnofficialUsd = document.getElementById('kpiUnofficialUsd');
 
+  // Personel arama combobox elementleri
+  const mNameCmb = document.getElementById('mNameCmb');
+  const mNameCmbPanel = document.getElementById('mNameCmbPanel');
+  const mNameCmbList = document.getElementById('mNameCmbList');
+  const mNameCmbEmpty = document.getElementById('mNameCmbEmpty');
+  const mNameCmbClear = document.getElementById('mNameCmbClear');
+  let employeesAll = [];
+  let employeesLoaded = false;
+  let _empCmbRepositionFn = null;
+
   const ICON_EDIT_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 
@@ -259,6 +269,7 @@
   }
 
   async function loadMonthly() {
+    closeEmpCmbPanel();
     const mk = monthKeyEl && monthKeyEl.value ? monthKeyEl.value : '';
     if (!mk) return showMsg(t('hr.att.monthly.pickMonth'), true);
     const qs = new URLSearchParams({ month: mk });
@@ -305,6 +316,115 @@
     showMsg(payload.isLocked ? t('hr.att.monthly.lockedHint') : '', false);
   }
 
+  // -------- Personel adı searchable combobox --------
+  async function loadEmployeesForCombo() {
+    if (employeesLoaded) return;
+    try {
+      const { ok, data } = await window.hrApi('/api/hr/employees');
+      if (!ok || !data?.ok) return;
+      const list = data.data?.employees || data.employees || [];
+      employeesAll = list
+        .map((e) => {
+          const fullName = displayNameOnly(
+            e.display_name || e.full_name || e.name || `${e.first_name || ''} ${e.last_name || ''}`
+          );
+          const depObj = departments.find((d) => String(d.id) === String(e.department_id || ''));
+          const posObj = positions.find((p) => String(p.id) === String(e.position_id || ''));
+          return {
+            id: e.id,
+            name: fullName,
+            department_id: e.department_id || '',
+            position_id: e.position_id || '',
+            departmentName: depObj?.name || e.department_name || '',
+            positionName: posObj?.name || e.position_name || '',
+          };
+        })
+        .filter((e) => e.name);
+      employeesLoaded = true;
+    } catch (_) {
+      /* sessizce yut */
+    }
+  }
+
+  function renderEmpCmbList() {
+    if (!mNameCmbList) return;
+    const q = String((mNameFilter && mNameFilter.value) || '').trim().toLowerCase();
+    const dep = mDepFilter?.value ? String(mDepFilter.value) : '';
+    const pos = mPosFilter?.value ? String(mPosFilter.value) : '';
+    let list = employeesAll.slice();
+    if (dep) list = list.filter((e) => String(e.department_id || '') === dep);
+    if (pos) list = list.filter((e) => String(e.position_id || '') === pos);
+    if (q) list = list.filter((e) => String(e.name || '').toLowerCase().includes(q));
+    list = list.slice(0, 100);
+    if (mNameCmbEmpty) mNameCmbEmpty.hidden = list.length > 0;
+    mNameCmbList.innerHTML = list
+      .map((e) => {
+        const meta = [e.departmentName, e.positionName].filter(Boolean).join(' · ');
+        const metaHtml = meta ? `<span class="attm-emp-cmb-opt-meta">${escHtml(meta)}</span>` : '';
+        return `<li role="option" data-name="${escHtml(e.name)}" class="attm-emp-cmb-opt">${escHtml(
+          e.name
+        )}${metaHtml}</li>`;
+      })
+      .join('');
+  }
+
+  function positionEmpCmbPanel() {
+    if (!mNameCmbPanel || !mNameFilter || mNameCmbPanel.hidden) return;
+    const rect = mNameFilter.getBoundingClientRect();
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    const desired = Math.max(rect.width, 280);
+    const width = Math.min(desired, vw - 16);
+    let left = rect.left;
+    if (left + width > vw - 8) left = Math.max(8, vw - width - 8);
+    const panelHeight = mNameCmbPanel.offsetHeight || 280;
+    let top = rect.bottom + 4;
+    if (top + panelHeight > vh - 8) {
+      const altTop = rect.top - panelHeight - 4;
+      if (altTop > 8) top = altTop;
+      else top = Math.max(8, vh - panelHeight - 8);
+    }
+    mNameCmbPanel.style.width = width + 'px';
+    mNameCmbPanel.style.left = left + 'px';
+    mNameCmbPanel.style.top = top + 'px';
+  }
+
+  function bindEmpCmbReposition(on) {
+    if (on && !_empCmbRepositionFn) {
+      _empCmbRepositionFn = positionEmpCmbPanel;
+      window.addEventListener('scroll', _empCmbRepositionFn, true);
+      window.addEventListener('resize', _empCmbRepositionFn);
+    } else if (!on && _empCmbRepositionFn) {
+      window.removeEventListener('scroll', _empCmbRepositionFn, true);
+      window.removeEventListener('resize', _empCmbRepositionFn);
+      _empCmbRepositionFn = null;
+    }
+  }
+
+  async function openEmpCmbPanel() {
+    if (!mNameCmbPanel) return;
+    await loadEmployeesForCombo();
+    if (mNameCmbPanel.parentNode !== document.body) document.body.appendChild(mNameCmbPanel);
+    mNameCmbPanel.hidden = false;
+    if (mNameFilter) mNameFilter.setAttribute('aria-expanded', 'true');
+    renderEmpCmbList();
+    positionEmpCmbPanel();
+    bindEmpCmbReposition(true);
+  }
+
+  function closeEmpCmbPanel() {
+    if (!mNameCmbPanel) return;
+    mNameCmbPanel.hidden = true;
+    if (mNameFilter) mNameFilter.setAttribute('aria-expanded', 'false');
+    bindEmpCmbReposition(false);
+  }
+
+  function updateEmpCmbClearBtn() {
+    if (!mNameCmbClear) return;
+    const has = String((mNameFilter && mNameFilter.value) || '').length > 0;
+    mNameCmbClear.hidden = !has;
+  }
+
   function closeAttmEditModal() {
     if (attmEditModal) attmEditModal.classList.remove('attm-modal-open');
     pendingWorkDateForEdit = '';
@@ -331,7 +451,74 @@
     mDayFilter?.addEventListener('change', () => {
       renderMonthlyRowsTable(monthlyRowsAll);
     });
-    mDepFilter?.addEventListener('change', syncMPosFilter);
+    mDepFilter?.addEventListener('change', () => {
+      syncMPosFilter();
+      if (mNameCmbPanel && !mNameCmbPanel.hidden) renderEmpCmbList();
+    });
+    mPosFilter?.addEventListener('change', () => {
+      if (mNameCmbPanel && !mNameCmbPanel.hidden) renderEmpCmbList();
+    });
+
+    // Personel adı searchable combobox bağlamaları
+    mNameFilter?.addEventListener('focus', () => {
+      openEmpCmbPanel();
+    });
+    mNameFilter?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEmpCmbPanel();
+    });
+    mNameFilter?.addEventListener('input', () => {
+      updateEmpCmbClearBtn();
+      if (mNameCmbPanel?.hidden) {
+        openEmpCmbPanel();
+      } else {
+        renderEmpCmbList();
+        positionEmpCmbPanel();
+      }
+    });
+    mNameFilter?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeEmpCmbPanel();
+      } else if (e.key === 'Enter') {
+        const visible = mNameCmbPanel && !mNameCmbPanel.hidden;
+        if (visible) {
+          const first = mNameCmbList?.querySelector('.attm-emp-cmb-opt');
+          if (first) {
+            e.preventDefault();
+            first.click();
+            return;
+          }
+        }
+        closeEmpCmbPanel();
+        loadMonthly();
+      }
+    });
+    mNameCmbList?.addEventListener('click', (e) => {
+      const li = e.target.closest('.attm-emp-cmb-opt');
+      if (!li) return;
+      const name = li.getAttribute('data-name') || '';
+      if (mNameFilter) mNameFilter.value = name;
+      updateEmpCmbClearBtn();
+      closeEmpCmbPanel();
+      mNameFilter?.focus();
+    });
+    mNameCmbClear?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (mNameFilter) mNameFilter.value = '';
+      updateEmpCmbClearBtn();
+      if (mNameCmbPanel && !mNameCmbPanel.hidden) {
+        renderEmpCmbList();
+      }
+      mNameFilter?.focus();
+    });
+    document.addEventListener('click', (e) => {
+      if (!mNameCmbPanel || mNameCmbPanel.hidden) return;
+      const t = e.target;
+      if (!t || !(t instanceof Node)) return;
+      if (t === mNameFilter || t === mNameCmbClear) return;
+      if (t.closest && (t.closest('#mNameCmbPanel') || t.closest('#mNameCmb'))) return;
+      closeEmpCmbPanel();
+    });
 
     monthlyBody?.addEventListener('click', (e) => {
       const btn = e.target.closest('.attm-edit-row');

@@ -44,6 +44,7 @@ const {
   postWorkStatus,
   patchWorkStatus,
   removeWorkStatus,
+  postWagePreview,
 } = require('../controllers/hrController');
 
 const router = express.Router();
@@ -119,5 +120,8 @@ router.get('/work-statuses', getWorkStatuses);
 router.post('/work-statuses', postWorkStatus);
 router.patch('/work-statuses/:id', patchWorkStatus);
 router.delete('/work-statuses/:id', removeWorkStatus);
+
+// Maaş kırılımı preview (stateless). Sadece module.hr yetkisi yeterli; tek motor üzerinden hesaplar.
+router.post('/wage/preview', postWagePreview);
 
 module.exports = router;

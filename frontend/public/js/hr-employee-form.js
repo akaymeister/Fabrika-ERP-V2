@@ -14,7 +14,11 @@
   const salaryCurrency = document.getElementById('salaryCurrency');
   const salaryAmount = document.getElementById('salaryAmount');
   const officialSalary = document.getElementById('officialSalary');
+  const officialSalaryCurrency = document.getElementById('officialSalaryCurrency');
+  const officialSalaryFx = document.getElementById('officialSalaryFx');
   const unofficialSalary = document.getElementById('unofficialSalary');
+  const salaryFxHint = document.getElementById('salaryFxHint');
+  const salaryFxErr = document.getElementById('salaryFxErr');
   const countryCode = document.getElementById('countryCode');
   const regionSelect = document.getElementById('regionSelect');
   const addressLine = document.getElementById('addressLine');
@@ -96,11 +100,151 @@
     }
   }
 
-  function syncUnofficial() {
-    const total = Number(salaryAmount.value);
-    const off = Number(officialSalary.value);
-    const u = (Number.isFinite(total) ? total : 0) - (Number.isFinite(off) ? off : 0);
-    unofficialSalary.value = Number.isFinite(u) ? String(Math.round(u * 100) / 100) : '0';
+  /**
+   * Locale ondalık parser: "1.000.000,52" veya "1000000.52" → 1000000.52
+   * Boş / hatalı değer → null.
+   */
+  function parseTrDecimal(raw) {
+    if (raw == null) return null;
+    let s = String(raw).trim();
+    if (!s) return null;
+    s = s.replace(/\s/g, '');
+    const hasComma = s.indexOf(',') >= 0;
+    const hasDot = s.indexOf('.') >= 0;
+    if (hasComma && hasDot) {
+      // "1.234,56" → "1234.56"
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (hasComma) {
+      // "1234,56" → "1234.56"
+      s = s.replace(',', '.');
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function fmtTrMoney(value, decimals) {
+    const n = Number(value);
+    const d = Number.isFinite(decimals) ? decimals : 2;
+    if (!Number.isFinite(n)) return d > 0 ? '0,' + '0'.repeat(d) : '0';
+    return n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+
+  function setMoneyValue(el, value, decimals) {
+    if (!el) return;
+    el.value = fmtTrMoney(value, decimals);
+  }
+
+  function readMoney(el) {
+    if (!el) return 0;
+    const n = parseTrDecimal(el.value);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+
+  function attachMoneyFormatter(el, decimals) {
+    if (!el) return;
+    el.addEventListener('focus', () => {
+      const n = parseTrDecimal(el.value);
+      if (Number.isFinite(n)) el.value = String(n).replace('.', ',');
+    });
+    el.addEventListener('blur', () => {
+      setMoneyValue(el, parseTrDecimal(el.value), decimals);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Maaş preview: Frontend bağımsız hesap motoru DEĞİL.
+  //  Tüm rakamlar /api/hr/wage/preview üzerinden TEK backend motorundan gelir.
+  // ---------------------------------------------------------------------------
+  let _wagePreviewTimer = null;
+  let _wagePreviewSeq = 0;
+  let _lastBreakdown = null;
+
+  function setSalaryFxState(fxApplicable) {
+    if (officialSalaryFx) {
+      if (fxApplicable) {
+        officialSalaryFx.removeAttribute('readonly');
+        officialSalaryFx.classList.remove('is-readonly');
+      } else {
+        officialSalaryFx.setAttribute('readonly', 'readonly');
+        officialSalaryFx.classList.add('is-readonly');
+        // Aynı currency: kur otomatik 1
+        setMoneyValue(officialSalaryFx, 1, 2);
+      }
+    }
+    if (salaryFxHint) {
+      const k = fxApplicable ? 'hr.emp.salaryFxStandard' : 'hr.emp.salaryFxAuto';
+      salaryFxHint.setAttribute('data-i18n', k);
+      salaryFxHint.textContent = t(k);
+    }
+  }
+
+  function clearSalaryError() {
+    if (salaryFxErr) salaryFxErr.textContent = '';
+  }
+
+  function setSalaryError(messageKey) {
+    if (!salaryFxErr) return;
+    if (!messageKey) {
+      salaryFxErr.textContent = '';
+      return;
+    }
+    const txt = t(messageKey);
+    salaryFxErr.textContent = txt && txt !== messageKey ? txt : messageKey;
+  }
+
+  function applyBreakdownToUI(breakdown) {
+    _lastBreakdown = breakdown || null;
+    if (!breakdown) {
+      setMoneyValue(unofficialSalary, 0, 2);
+      setSalaryError(null);
+      return;
+    }
+    setSalaryFxState(!!breakdown.fx_applicable);
+    if (breakdown.unofficial_salary_amount != null) {
+      setMoneyValue(unofficialSalary, Number(breakdown.unofficial_salary_amount), 2);
+    } else {
+      setMoneyValue(unofficialSalary, 0, 2);
+    }
+    if (Array.isArray(breakdown.errors) && breakdown.errors.length) {
+      setSalaryError(breakdown.errors[0].messageKey || 'api.hr.salary_amount_invalid');
+    } else {
+      clearSalaryError();
+    }
+  }
+
+  async function fetchWagePreview() {
+    const seq = ++_wagePreviewSeq;
+    const sameCurrency = (salaryCurrency?.value || 'UZS') === (officialSalaryCurrency?.value || 'UZS');
+    const fxRaw = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : null;
+    const payload = {
+      salary_amount: readMoney(salaryAmount),
+      salary_currency: salaryCurrency?.value || 'UZS',
+      official_salary_amount: readMoney(officialSalary),
+      official_salary_currency: officialSalaryCurrency?.value || 'UZS',
+      official_salary_fx_rate: sameCurrency ? 1 : (Number.isFinite(fxRaw) && fxRaw > 0 ? fxRaw : null),
+    };
+    try {
+      const res = await window.hrApi('/api/hr/wage/preview', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (seq !== _wagePreviewSeq) return; // race koruması
+      const breakdown = res?.data?.data?.breakdown || res?.data?.breakdown || null;
+      applyBreakdownToUI(breakdown);
+    } catch (_) {
+      if (seq !== _wagePreviewSeq) return;
+      // Sessizce başarısız: kullanıcı yazmaya devam edebilir, kayıt sırasında backend yine doğrular.
+    }
+  }
+
+  function schedulePreview() {
+    if (_wagePreviewTimer) clearTimeout(_wagePreviewTimer);
+    _wagePreviewTimer = setTimeout(fetchWagePreview, 250);
+  }
+
+  function applyCurrencyParityVisuals() {
+    const sameCurrency = (salaryCurrency?.value || 'UZS') === (officialSalaryCurrency?.value || 'UZS');
+    setSalaryFxState(!sameCurrency);
   }
 
   async function loadDepsAndPositions() {
@@ -193,9 +337,22 @@
     maritalStatus.value = e.marital_status || '';
     nationality.value = e.nationality || '';
     salaryCurrency.value = e.salary_currency === 'USD' ? 'USD' : 'UZS';
-    salaryAmount.value = e.salary_amount != null ? String(e.salary_amount) : '0';
-    officialSalary.value = e.official_salary_amount != null ? String(e.official_salary_amount) : '0';
-    syncUnofficial();
+    setMoneyValue(salaryAmount, e.salary_amount != null ? Number(e.salary_amount) : 0, 2);
+    setMoneyValue(officialSalary, e.official_salary_amount != null ? Number(e.official_salary_amount) : 0, 2);
+    if (officialSalaryCurrency) {
+      const oc = String(e.official_salary_currency || '').toUpperCase();
+      officialSalaryCurrency.value = oc === 'USD' || oc === 'UZS' ? oc : (e.salary_currency === 'USD' ? 'USD' : 'UZS');
+    }
+    if (officialSalaryFx) {
+      const fx = e.official_salary_fx_rate != null ? Number(e.official_salary_fx_rate) : 1;
+      setMoneyValue(officialSalaryFx, Number.isFinite(fx) && fx > 0 ? fx : 1, 2);
+    }
+    // Backend'in döndürdüğü resmi olmayan maaş varsa önce onu basıp, sonra preview ile doğrula.
+    if (e.unofficial_salary_amount != null) {
+      setMoneyValue(unofficialSalary, Number(e.unofficial_salary_amount), 2);
+    }
+    applyCurrencyParityVisuals();
+    schedulePreview();
     countryCode.value = e.country || '';
     syncRegions(e.region_or_city || '');
     phone.value = e.phone || '';
@@ -230,8 +387,15 @@
       marital_status: maritalStatus.value || null,
       nationality: nationality.value || null,
       salary_currency: salaryCurrency.value,
-      salary_amount: salaryAmount.value === '' ? 0 : Number(salaryAmount.value),
-      official_salary_amount: officialSalary.value === '' ? 0 : Number(officialSalary.value),
+      salary_amount: readMoney(salaryAmount),
+      official_salary_amount: readMoney(officialSalary),
+      official_salary_currency: officialSalaryCurrency
+        ? (officialSalaryCurrency.value === 'USD' ? 'USD' : 'UZS')
+        : (salaryCurrency.value === 'USD' ? 'USD' : 'UZS'),
+      official_salary_fx_rate: (() => {
+        const v = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : null;
+        return Number.isFinite(v) && v > 0 ? v : 1;
+      })(),
       country: countryCode.value || null,
       region_or_city: regionSelect.value || null,
       address_line: addressLine.value || null,
@@ -294,6 +458,14 @@
   async function saveEmployee(e) {
     e.preventDefault();
     if (!validateRequiredFields()) return;
+    // Frontend uyarısı (asıl karar backend'de). Son preview'da hata varsa kayıt göndermeyelim.
+    if (_lastBreakdown && Array.isArray(_lastBreakdown.errors) && _lastBreakdown.errors.length) {
+      const k = _lastBreakdown.errors[0].messageKey || 'api.hr.salary_amount_invalid';
+      const txt = t(k);
+      showMsg(txt && txt !== k ? txt : k, false);
+      showPopup(txt && txt !== k ? txt : k, true);
+      return;
+    }
     const payload = buildPayload();
     const url = editingId ? `/api/hr/employees/${encodeURIComponent(editingId)}` : '/api/hr/employees';
     const method = editingId ? 'PATCH' : 'POST';
@@ -323,8 +495,22 @@
     await loadEmployee();
     countryCode?.addEventListener('change', () => syncRegions(null));
     departmentId?.addEventListener('change', syncPositions);
-    salaryAmount?.addEventListener('input', syncUnofficial);
-    officialSalary?.addEventListener('input', syncUnofficial);
+    // Frontend manuel maaş matematiği yapmıyor; tüm hesap backend'den geliyor.
+    salaryAmount?.addEventListener('input', schedulePreview);
+    officialSalary?.addEventListener('input', schedulePreview);
+    officialSalaryFx?.addEventListener('input', schedulePreview);
+    salaryCurrency?.addEventListener('change', () => {
+      applyCurrencyParityVisuals();
+      schedulePreview();
+    });
+    officialSalaryCurrency?.addEventListener('change', () => {
+      applyCurrencyParityVisuals();
+      schedulePreview();
+    });
+    attachMoneyFormatter(salaryAmount, 2);
+    attachMoneyFormatter(officialSalary, 2);
+    attachMoneyFormatter(officialSalaryFx, 2);
+    applyCurrencyParityVisuals();
     photoFile?.addEventListener('change', () => {
       const f = photoFile.files && photoFile.files[0];
       if (f && photoPreview) {

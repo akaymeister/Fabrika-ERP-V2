@@ -94,14 +94,38 @@
 
   function renderSalary(e) {
     salaryFields.innerHTML = '';
-    const unofficial =
-      e.unofficial_salary_amount != null
-        ? Number(e.unofficial_salary_amount)
-        : Number(e.salary_amount || 0) - Number(e.official_salary_amount || 0);
-    renderStat(salaryFields, t('hr.emp.salaryCurrency'), e.salary_currency || '-');
-    renderStat(salaryFields, t('hr.emp.salaryTotal'), fmtMoney(e.salary_amount));
-    renderStat(salaryFields, t('hr.emp.salaryOfficial'), fmtMoney(e.official_salary_amount));
-    renderStat(salaryFields, t('hr.emp.salaryUnofficial'), fmtMoney(unofficial));
+    // Frontend manuel hesap yapmaz; tüm değerler backend computeWageBreakdown'dan geliyor.
+    const breakdown = e?.wage_breakdown || null;
+    const totalAmt = breakdown?.total_salary_amount != null
+      ? breakdown.total_salary_amount
+      : e?.salary_amount;
+    const totalCur =
+      String(breakdown?.total_salary_currency || e?.salary_currency || '').toUpperCase() || '-';
+    const officialAmt = breakdown?.official_salary_amount != null
+      ? breakdown.official_salary_amount
+      : e?.official_salary_amount;
+    const officialCur =
+      String(breakdown?.official_salary_currency || e?.official_salary_currency || totalCur || '').toUpperCase() || totalCur;
+    const unofficialAmt = breakdown?.unofficial_salary_amount != null
+      ? breakdown.unofficial_salary_amount
+      : e?.unofficial_salary_amount;
+    const unofficialCur =
+      String(breakdown?.unofficial_salary_currency || totalCur || '').toUpperCase() || totalCur;
+    const fxApplicable = breakdown ? !!breakdown.fx_applicable : (officialCur && totalCur && officialCur !== totalCur);
+    const fxNum = Number(breakdown?.official_salary_fx_rate ?? e?.official_salary_fx_rate);
+    const fxText = Number.isFinite(fxNum) && fxNum > 0
+      ? fxNum.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '-';
+    renderStat(salaryFields, t('hr.emp.salaryAmountLabel'), `${fmtMoney(totalAmt)} ${totalCur}`);
+    renderStat(salaryFields, t('hr.emp.salaryOfficial'), `${fmtMoney(officialAmt)} ${officialCur}`);
+    if (fxApplicable) {
+      renderStat(salaryFields, t('hr.emp.salaryFx'), fxText);
+    }
+    renderStat(
+      salaryFields,
+      t('hr.emp.salaryUnofficial'),
+      unofficialAmt == null ? '-' : `${fmtMoney(unofficialAmt)} ${unofficialCur}`
+    );
   }
 
   function renderAddress(e) {

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="payrollMock.title">Bordro yönetimi — tasarım önerisi</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page app-ui-v3 payroll-mock-page">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <aside class="app-master-sidebar" aria-label="Mock navigation">
+        <p class="subtitle payroll-mock-nav-title" data-i18n="payrollMock.navTitle">Bordro (statik menü)</p>
+        <ul class="payroll-mock-nav">
+          <li><a href="#" class="is-active" aria-current="page" data-i18n="payrollMock.navDash">Özet</a></li>
+          <li><a href="#" data-i18n="payrollMock.navPeriod">Dönemler</a></li>
+          <li><a href="#" data-i18n="payrollMock.navLines">Satırlar</a></li>
+          <li><a href="#" data-i18n="payrollMock.navReports">Raporlar</a></li>
+          <li><a href="#" data-i18n="payrollMock.navSettings">Parametreler</a></li>
+        </ul>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <span class="payroll-mock-banner" data-i18n="payrollMock.badge">Tasarım önizlemesi — canlı veri yok</span>
+          <h1 class="app-page-title" data-i18n="payrollMock.title">Bordro yönetimi — tasarım önerisi</h1>
+          <p class="subtitle" data-i18n="payrollMock.sub">Fabrika ERP İK görünümü ile uyumlu olası ekranlar (yalnızca mockup)</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" aria-label="Language" class="app-select app-topbar-lang">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a href="/hr.html" class="version-btn app-button app-button-secondary" data-i18n="payrollMock.backHub">İK paneline dön</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+
+          <div class="payroll-mock-kpi-grid summary-section">
+            <div class="summary-card">
+              <span class="summary-label" data-i18n="payrollMock.kpiGross">Brüt ödeme (dönem)</span>
+              <strong>312.450.000,00 UZS</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label" data-i18n="payrollMock.kpiNet">Net ödeme (dönem)</span>
+              <strong>268.920.000,00 UZS</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label" data-i18n="payrollMock.kpiHead">Bordroya dahil personel</span>
+              <strong>142</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label" data-i18n="payrollMock.kpiPending">Onay bekleyen satır</span>
+              <strong>8</strong>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label" data-i18n="payrollMock.kpiDisputes">Açık itiraz</span>
+              <strong>3</strong>
+            </div>
+          </div>
+
+          <section class="card app-card attm-block">
+            <div class="app-card-header section-header">
+              <h3 class="app-card-title" data-i18n="payrollMock.cardPeriodTitle">Aktif bordro dönemi</h3>
+              <p class="app-muted-text" data-i18n="payrollMock.cardPeriodDesc">Ay kapatma, kilit, ödeme vadesi ve dönem bazlı kur kaydı burada yönetilir.</p>
+            </div>
+            <div class="app-page-toolbar attm-filter-toolbar">
+              <div class="app-toolbar-left attm-inline-5 app-filterbar">
+                <div>
+                  <label for="mockPeriod" data-i18n="payrollMock.labelPeriod">Dönem</label>
+                  <input id="mockPeriod" class="app-input" type="month" value="2026-05" readonly />
+                </div>
+                <div>
+                  <label for="mockPayDate" data-i18n="payrollMock.payDate">Ödeme tarihi</label>
+                  <input id="mockPayDate" class="app-input" type="date" value="2026-06-05" readonly />
+                </div>
+                <div>
+                  <label for="mockStatus" data-i18n="payrollMock.state">Durum</label>
+                  <input id="mockStatus" class="app-input" type="text" readonly data-i18n="payrollMock.stateReview" />
+                </div>
+              </div>
+              <div class="app-toolbar-right">
+                <button type="button" class="version-btn app-button app-button-secondary" data-i18n="payrollMock.btnLock">Dönemi kilitle</button>
+                <button type="button" class="version-btn app-button app-button-primary" data-i18n="payrollMock.btnRecalc">Hesapları yenile</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card app-card attm-block payroll-mock-card-gap">
+            <div class="app-card-header section-header">
+              <h3 class="app-card-title" data-i18n="payrollMock.cardLinesTitle">Bordro satırları</h3>
+              <p class="app-muted-text" data-i18n="payrollMock.cardLinesDesc">Aylık ücret, puantaj, izin ve kesintilerin birleşimi; net tutar merkezi ücret motoru ile tutarlı olmalıdır.</p>
+            </div>
+            <div class="attm-summary-table-wrap">
+              <table class="app-table attm-summary-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="payrollMock.colEmployee">Personel</th>
+                    <th data-i18n="payrollMock.colDept">Departman</th>
+                    <th data-i18n="payrollMock.colDays">Hakediş günü</th>
+                    <th data-i18n="payrollMock.colBase">Aylık ücret</th>
+                    <th data-i18n="payrollMock.colGross">Brüt</th>
+                    <th data-i18n="payrollMock.colDed">Kesintiler</th>
+                    <th data-i18n="payrollMock.colNet">Net</th>
+                    <th data-i18n="payrollMock.colDispute">İtiraz</th>
+                    <th data-i18n="payrollMock.colMethod">Ödeme</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-i18n="payrollMock.emp1">Ahmet YILMAZ</td>
+                    <td data-i18n="payrollMock.dep1">Üretim</td>
+                    <td>22</td>
+                    <td>12.000.000,00 UZS</td>
+                    <td>11.200.000,00 UZS</td>
+                    <td>1.850.000,00 UZS</td>
+                    <td>9.350.000,00 UZS</td>
+                    <td>
+                      <span class="payroll-mock-disp-badge is-open" data-i18n="payrollMock.dispState.open">İncelemede</span>
+                      <button type="button" class="payroll-mock-detail-btn payroll-mock-open-daybreak" data-mock-emp="emp1" data-i18n="payrollMock.btnDetail">Detay</button>
+                    </td>
+                    <td data-i18n="payrollMock.method1">Banka havalesi</td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="payrollMock.emp2">Dilşoda Karimova</td>
+                    <td data-i18n="payrollMock.dep2">Kalite</td>
+                    <td>21</td>
+                    <td>1.800,00 USD</td>
+                    <td>1.720,00 USD</td>
+                    <td>260,00 USD</td>
+                    <td>1.460,00 USD</td>
+                    <td>—</td>
+                    <td data-i18n="payrollMock.method2">Banka havalesi</td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="payrollMock.emp3">Ruslan Petrov</td>
+                    <td data-i18n="payrollMock.dep3">Muhasebe</td>
+                    <td>20</td>
+                    <td>18.500.000,00 UZS</td>
+                    <td>17.100.000,00 UZS</td>
+                    <td>3.200.000,00 UZS</td>
+                    <td>13.900.000,00 UZS</td>
+                    <td>
+                      <span class="payroll-mock-disp-badge is-fixed" data-i18n="payrollMock.dispState.fixed">Düzeltildi</span>
+                    </td>
+                    <td data-i18n="payrollMock.method3">Banka havalesi</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card app-card attm-block payroll-mock-card-gap">
+            <div class="app-card-header section-header">
+              <h3 class="app-card-title" data-i18n="payrollMock.cardDisputeTitle">Hakediş itirazları ve eksiklik bildirimleri</h3>
+              <p class="app-muted-text" data-i18n="payrollMock.cardDisputeDesc">Personel itirazları puantaj ve izin kayıtları üzerinden incelenir; düzeltme bordro satırını otomatik revize eder ve önceki hesap denetim izine alınır.</p>
+            </div>
+            <div class="app-page-toolbar attm-filter-toolbar">
+              <div class="app-toolbar-left"></div>
+              <div class="app-toolbar-right">
+                <button type="button" class="version-btn app-button app-button-secondary" data-i18n="payrollMock.btnNewDispute">İtiraz aç</button>
+              </div>
+            </div>
+            <div class="attm-summary-table-wrap">
+              <table class="app-table attm-summary-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="payrollMock.dispCol.no">Talep no</th>
+                    <th data-i18n="payrollMock.dispCol.emp">Personel</th>
+                    <th data-i18n="payrollMock.dispCol.period">Dönem</th>
+                    <th data-i18n="payrollMock.dispCol.day">Gün</th>
+                    <th data-i18n="payrollMock.dispCol.type">Talep tipi</th>
+                    <th data-i18n="payrollMock.dispCol.desc">Açıklama</th>
+                    <th data-i18n="payrollMock.dispCol.state">Durum</th>
+                    <th data-i18n="payrollMock.dispCol.action">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-i18n="payrollMock.disp1.no">ITZ-2026-0008</td>
+                    <td data-i18n="payrollMock.emp1">Ahmet YILMAZ</td>
+                    <td>2026-05</td>
+                    <td data-i18n="payrollMock.disp1.day">2026-05-12</td>
+                    <td data-i18n="payrollMock.dispType.ot">Eksik fazla mesai</td>
+                    <td data-i18n="payrollMock.disp1.desc">12 Mayıs günü 17:00–20:00 fazla mesai bordroya yansımamış.</td>
+                    <td><span class="payroll-mock-disp-badge is-open" data-i18n="payrollMock.dispState.open">İncelemede</span></td>
+                    <td>
+                      <span class="payroll-mock-row-actions">
+                        <button type="button" class="version-btn app-button app-button-secondary payroll-mock-open-daybreak" data-mock-emp="emp1" data-i18n="payrollMock.btnView">Görüntüle</button>
+                        <button type="button" class="version-btn app-button app-button-primary" data-i18n="payrollMock.btnApprove">Onayla</button>
+                        <button type="button" class="logout-btn app-button app-button-secondary" data-i18n="payrollMock.btnReject">Reddet</button>
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="payrollMock.disp2.no">ITZ-2026-0009</td>
+                    <td data-i18n="payrollMock.emp1">Ahmet YILMAZ</td>
+                    <td>2026-05</td>
+                    <td data-i18n="payrollMock.disp2.day">2026-05-19</td>
+                    <td data-i18n="payrollMock.dispType.day">Eksik hakediş günü</td>
+                    <td data-i18n="payrollMock.disp2.desc">19 Mayıs hakediş günü olarak görünmüyor; o gün vardiyada idim.</td>
+                    <td><span class="payroll-mock-disp-badge is-approved" data-i18n="payrollMock.dispState.approved">Onaylandı (revize bekliyor)</span></td>
+                    <td>
+                      <span class="payroll-mock-row-actions">
+                        <button type="button" class="version-btn app-button app-button-secondary payroll-mock-open-daybreak" data-mock-emp="emp1" data-i18n="payrollMock.btnView">Görüntüle</button>
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="payrollMock.disp3.no">ITZ-2026-0007</td>
+                    <td data-i18n="payrollMock.emp3">Ruslan Petrov</td>
+                    <td>2026-05</td>
+                    <td data-i18n="payrollMock.disp3.day">—</td>
+                    <td data-i18n="payrollMock.dispType.ded">Hatalı kesinti</td>
+                    <td data-i18n="payrollMock.disp3.desc">Avans kesintisi iki kez işlenmiş.</td>
+                    <td><span class="payroll-mock-disp-badge is-fixed" data-i18n="payrollMock.dispState.fixed">Düzeltildi</span></td>
+                    <td>
+                      <span class="payroll-mock-row-actions">
+                        <button type="button" class="version-btn app-button app-button-secondary payroll-mock-open-daybreak" data-mock-emp="emp3" data-i18n="payrollMock.btnView">Görüntüle</button>
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="payroll-mock-two-col">
+            <section class="card app-card payroll-mock-flow">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardFixFlowTitle">Düzeltme akışı (revizyon)</h3>
+              </div>
+              <ol>
+                <li data-i18n="payrollMock.fixFlow1">1. Personel kendi sayfasından itiraz açar; gün, sorun tipi ve açıklama girer.</li>
+                <li data-i18n="payrollMock.fixFlow2">2. İK puantaj/izin kayıtları ile karşılaştırır; gerekirse vardiya sorumlusundan teyit alır.</li>
+                <li data-i18n="payrollMock.fixFlow3">3. Onaylanan itirazda kaynak kayıt (puantaj satırı / fazla mesai) güncellenir — bordroda doğrudan değişiklik yapılmaz.</li>
+                <li data-i18n="payrollMock.fixFlow4">4. Bordro satırı merkezi ücret motoruyla otomatik yeniden hesaplanır; yeni versiyon (v2, v3...) oluşur, eski hesap denetim izine düşer.</li>
+                <li data-i18n="payrollMock.fixFlow5">5. Fark tutar bordroya işlenir veya bir sonraki dönemde ek ödeme satırı olarak yansıtılır.</li>
+              </ol>
+            </section>
+            <section class="card app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardPolicyTitle">Politika ve kilit kuralı</h3>
+              </div>
+              <ul class="payroll-mock-policy-list">
+                <li data-i18n="payrollMock.policy1">İtiraz penceresi: Bordro yayınlandıktan sonra 5 iş günü.</li>
+                <li data-i18n="payrollMock.policy2">Pencere içinde dönem yarı kilitli kalır; sadece itiraza bağlı düzeltmeler kabul edilir.</li>
+                <li data-i18n="payrollMock.policy3">Pencere kapanınca dönem tam kilitlenir; sonraki düzeltmeler bir sonraki bordro döneminde ek ödeme/kesinti olarak görünür.</li>
+                <li data-i18n="payrollMock.policy4">Her revizyon, kim/ne zaman/hangi gerekçeyle bilgisi ile audit_log'a yazılır.</li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="payroll-mock-two-col">
+            <section class="card app-card payroll-mock-flow">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardFlowTitle">Onay ve dağıtım akışı</h3>
+              </div>
+              <ol>
+                <li data-i18n="payrollMock.flow1">1. Veri toplama — puantaj ve izinler kilitli döneme alınır.</li>
+                <li data-i18n="payrollMock.flow2">2. Hesaplama — vergi, sosyal güvenlik ve avans kesintileri uygulanır.</li>
+                <li data-i18n="payrollMock.flow3">3. İnceleme — İK ve muhasebe çift kontrol yapar.</li>
+                <li data-i18n="payrollMock.flow4">4. Onay ve ödeme — yönetici onayı, banka dosyası ve muhasebe fişi üretimi.</li>
+              </ol>
+            </section>
+            <section class="card app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardFxTitle">Kur ve resmi ödeme</h3>
+                <p class="app-muted-text" data-i18n="payrollMock.cardFxDesc">Resmi ve gayri resmi kalemler için dönem anındaki kur; ileride bordro dönemi tablosunda saklanan kur ile eşlenir.</p>
+              </div>
+              <p class="app-muted-text payroll-mock-fx-rate">1 USD = 12.650,00 UZS <span class="muted" data-i18n="payrollMock.fxSample">(örnek kurlar)</span></p>
+            </section>
+          </div>
+
+          <div class="payroll-mock-two-col">
+            <section class="card app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardRepTitle">Çıktılar</h3>
+              </div>
+              <ul class="payroll-mock-rep-list">
+                <li data-i18n="payrollMock.rep1">Banka ödeme listesi (CSV)</li>
+                <li data-i18n="payrollMock.rep2">Genel muhasebe özet fişi</li>
+                <li data-i18n="payrollMock.rep3">Bordro dökümü / payslip (PDF)</li>
+              </ul>
+              <div class="app-form-actions payroll-mock-rep-actions">
+                <button type="button" class="version-btn app-button app-button-secondary" disabled data-i18n="payrollMock.btnDownload">İndir</button>
+              </div>
+            </section>
+            <section class="card app-card">
+              <div class="app-card-header section-header">
+                <h3 class="app-card-title" data-i18n="payrollMock.cardAuditTitle">Denetim izi</h3>
+                <p class="app-muted-text" data-i18n="payrollMock.cardAuditDesc">Kim ne zaman değiştirdi; önceki net değerler; dışa aktarım ve onay logları.</p>
+              </div>
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="payrollMock.auditColDate">Tarih</th>
+                    <th data-i18n="payrollMock.auditColUser">Kullanıcı</th>
+                    <th data-i18n="payrollMock.auditColAction">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-i18n="payrollMock.audit1Date">2026-05-28 14:02</td>
+                    <td data-i18n="payrollMock.audit1User">ik.onay</td>
+                    <td data-i18n="payrollMock.audit1Action">Dönem hesaplaması tetiklendi</td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="payrollMock.audit2Date">2026-05-27 09:41</td>
+                    <td data-i18n="payrollMock.audit2User">muhasebe</td>
+                    <td data-i18n="payrollMock.audit2Action">Satır düzeltmesi (kesinti)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <p class="payroll-mock-footer" data-i18n="payrollMock.footerNote">Bu sayfa yalnızca ürün tasarımı içindir; veriler örnektir, butonlar gerçek işlem yapmaz.</p>
+
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <div id="payrollMockDayModal" class="attm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="payrollMockDayModalTitle">
+    <div class="attm-modal payroll-mock-day-modal">
+      <div class="payroll-mock-modal-head">
+        <h3 id="payrollMockDayModalTitle" data-i18n="payrollMock.cardDayBreakdownTitle">Personel hakediş dökümü</h3>
+        <button type="button" id="payrollMockDayModalClose" class="version-btn app-button app-button-secondary" data-i18n="common.close">Kapat</button>
+      </div>
+      <p class="attm-modal-help" data-i18n="payrollMock.cardDayBreakdownDesc">Bordro satırının arkasındaki gün gün puantaj. Eksik gün veya eksik mesai burada işaretlenir; düzeltme aylık puantaj kaydı üzerinden yapılır, bordro yeniden hesaplanır.</p>
+      <p id="payrollMockDayModalEmp" class="app-muted-text" aria-live="polite"></p>
+      <div class="attm-summary-table-wrap">
+        <table class="app-table attm-summary-table">
+          <thead>
+            <tr>
+              <th data-i18n="payrollMock.dayCol.date">Tarih</th>
+              <th data-i18n="payrollMock.dayCol.in">Giriş</th>
+              <th data-i18n="payrollMock.dayCol.out">Çıkış</th>
+              <th data-i18n="payrollMock.dayCol.normal">Normal saat</th>
+              <th data-i18n="payrollMock.dayCol.ot">Fazla mesai</th>
+              <th data-i18n="payrollMock.dayCol.status">Durum</th>
+              <th data-i18n="payrollMock.dayCol.flag">Bayrak</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-05-11</td>
+              <td>08:00</td>
+              <td>17:00</td>
+              <td>8,00</td>
+              <td>0,00</td>
+              <td data-i18n="payrollMock.dayStatus.work">Çalıştı</td>
+              <td><span class="payroll-mock-flag is-ok" data-i18n="payrollMock.flagOk">Tutarlı</span></td>
+            </tr>
+            <tr class="payroll-mock-day-row is-missing">
+              <td>2026-05-12</td>
+              <td>08:00</td>
+              <td>17:00</td>
+              <td>8,00</td>
+              <td>0,00</td>
+              <td data-i18n="payrollMock.dayStatus.work">Çalıştı</td>
+              <td><span class="payroll-mock-flag is-missing" data-i18n="payrollMock.flagMissingOt">Eksik FM</span></td>
+            </tr>
+            <tr>
+              <td>2026-05-13</td>
+              <td>08:00</td>
+              <td>17:00</td>
+              <td>8,00</td>
+              <td>0,00</td>
+              <td data-i18n="payrollMock.dayStatus.work">Çalıştı</td>
+              <td><span class="payroll-mock-flag is-ok" data-i18n="payrollMock.flagOk">Tutarlı</span></td>
+            </tr>
+            <tr class="payroll-mock-day-row is-missing">
+              <td>2026-05-19</td>
+              <td>—</td>
+              <td>—</td>
+              <td>0,00</td>
+              <td>0,00</td>
+              <td data-i18n="payrollMock.dayStatus.absent">Gelmedi</td>
+              <td><span class="payroll-mock-flag is-missing" data-i18n="payrollMock.flagMissingDay">Eksik gün</span></td>
+            </tr>
+            <tr>
+              <td>2026-05-20</td>
+              <td>08:00</td>
+              <td>17:00</td>
+              <td>8,00</td>
+              <td>0,00</td>
+              <td data-i18n="payrollMock.dayStatus.work">Çalıştı</td>
+              <td><span class="payroll-mock-flag is-ok" data-i18n="payrollMock.flagOk">Tutarlı</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js" defer></script>
+  <script>
+    function startPayrollMock() {
+      (async function () {
+        if (window.i18n && window.i18n.loadDict) await window.i18n.loadDict(window.i18n.getLang());
+        if (window.i18n && window.i18n.apply) window.i18n.apply(document);
+        document.querySelectorAll('.payroll-mock-nav a').forEach((a) => {
+          a.addEventListener('click', (e) => e.preventDefault());
+        });
+
+        const dayModal = document.getElementById('payrollMockDayModal');
+        const dayModalEmp = document.getElementById('payrollMockDayModalEmp');
+        const dayModalClose = document.getElementById('payrollMockDayModalClose');
+        function tMock(k) {
+          return window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t(k) : k;
+        }
+        function openPayrollMockDayModal(empKey) {
+          const nameKey = empKey === 'emp3' ? 'payrollMock.dayBreakdownEmpName3' : 'payrollMock.dayBreakdownEmpName';
+          if (dayModalEmp) dayModalEmp.textContent = tMock(nameKey);
+          dayModal?.classList.add('attm-modal-open');
+        }
+        function closePayrollMockDayModal() {
+          dayModal?.classList.remove('attm-modal-open');
+        }
+        document.querySelectorAll('.payroll-mock-open-daybreak').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openPayrollMockDayModal(btn.getAttribute('data-mock-emp') || 'emp1');
+          });
+        });
+        dayModalClose?.addEventListener('click', closePayrollMockDayModal);
+        dayModal?.addEventListener('click', (e) => {
+          if (e.target === dayModal) closePayrollMockDayModal();
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && dayModal?.classList.contains('attm-modal-open')) closePayrollMockDayModal();
+        });
+      })();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startPayrollMock);
+    else startPayrollMock();
+  </script>
+</body>
+</html>

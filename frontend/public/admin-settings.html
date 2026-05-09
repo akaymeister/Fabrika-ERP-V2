@@ -39,33 +39,65 @@
 
     <p id="adminErr" class="login-error app-error-state admin-settings-err"></p>
 
+    <div class="admin-settings-top-row">
     <section class="card app-card erp-card admin-section admin-settings-settings-card">
       <div class="app-card-header section-header">
-        <h3 class="app-card-title">Sistem ayarları</h3>
-        <p class="app-muted-text">Varsayılan para birimi; örn. UZS.</p>
+        <h3 class="app-card-title" data-i18n="admin.settings.title">Sistem ayarları</h3>
+        <p class="app-muted-text" data-i18n="admin.settings.desc">Varsayılan para birimi; örn. UZS.</p>
       </div>
       <div class="app-card-body app-form-grid">
       <div class="form-field">
-        <label class="app-label" for="defaultCurrency">Varsayılan para (ISO, örn. UZS)</label>
+        <label class="app-label" for="defaultCurrency" data-i18n="admin.settings.currency">Varsayılan para (ISO, örn. UZS)</label>
         <input type="text" id="defaultCurrency" class="input-upper app-input" maxlength="5" />
       </div>
       <div class="form-field">
-        <label class="app-label" for="defaultLocale">Varsayılan dil (tr / uz / ru / en)</label>
+        <label class="app-label" for="defaultLocale" data-i18n="admin.settings.locale">Varsayılan dil (tr / uz / ru / en)</label>
         <input type="text" id="defaultLocale" class="input-lower app-input" maxlength="5" />
       </div>
       <div class="form-field">
-        <label class="app-label" for="projectCodePrefix">Proje kodu öneki</label>
+        <label class="app-label" for="projectCodePrefix" data-i18n="admin.settings.prefix">Proje kodu öneki</label>
         <input type="text" id="projectCodePrefix" class="input-upper app-input admin-settings-prefix-inp" maxlength="16" placeholder="PRJ" />
-        <p class="form-hint app-muted-text admin-settings-hint">
+        <p class="form-hint app-muted-text admin-settings-hint" data-i18n="admin.settings.prefix_hint">
           Otomatik kod: PRJ-26-001 (2–16; A–Z, 0–9, tire)
         </p>
       </div>
       <div class="app-form-actions">
-      <button type="button" class="btn btn-primary" id="btnSaveSettings">Ayarları kaydet</button>
+      <button type="button" class="btn btn-primary" id="btnSaveSettings" data-i18n="admin.settings.save">Ayarları kaydet</button>
       </div>
       <p id="setMsg" class="admin-settings-success-msg"></p>
       </div>
     </section>
+
+    <section class="card app-card erp-card admin-section admin-settings-logo-card" aria-labelledby="adminLogoTitle">
+      <div class="app-card-header section-header">
+        <h3 class="app-card-title" id="adminLogoTitle" data-i18n="admin.logo.title">Logo</h3>
+        <p class="app-muted-text" data-i18n="admin.logo.desc">JPG, PNG veya GIF formatında logo yükleyin. Diğer kartlar bu logoyu otomatik kullanır.</p>
+      </div>
+      <div class="app-card-body admin-logo-body">
+        <div class="admin-logo-preview" id="brandLogoPreview">
+          <img id="brandLogoImg" alt="" hidden />
+          <span id="brandLogoEmpty" class="app-muted-text" data-i18n="admin.logo.empty">Henüz logo yüklenmedi.</span>
+        </div>
+        <div class="admin-logo-controls">
+          <input
+            type="file"
+            id="brandLogoInput"
+            accept="image/jpeg,image/png,image/gif,.jpg,.jpeg,.png,.gif"
+            class="admin-logo-input-hidden"
+            aria-label="Logo dosyası seç"
+            data-i18n-aria-label="admin.logo.choose_aria"
+          />
+          <button type="button" class="btn btn-secondary" id="brandLogoChooseBtn" data-i18n="admin.logo.choose">Dosya seç</button>
+          <button type="button" class="btn btn-primary" id="brandLogoUploadBtn" disabled data-i18n="admin.logo.upload">Yükle</button>
+          <button type="button" class="btn btn-danger" id="brandLogoRemoveBtn" hidden data-i18n="admin.logo.remove">Logoyu kaldır</button>
+        </div>
+        <p id="brandLogoFileName" class="app-muted-text admin-logo-filename"></p>
+        <p class="form-hint app-muted-text admin-logo-hint" data-i18n="admin.logo.hint">Önerilen: 512×512 piksel, en fazla 4 MB.</p>
+        <p id="brandLogoMsg" class="admin-settings-success-msg"></p>
+        <p id="brandLogoErr" class="login-error admin-logo-err"></p>
+      </div>
+    </section>
+    </div>
 
     <section id="tunnelCard" class="card app-card erp-card admin-section admin-settings-tunnel-card" style="display:none">
       <div class="app-card-header section-header">

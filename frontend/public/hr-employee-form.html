@@ -111,28 +111,52 @@
           </section>
         </div>
 
-        <section class="emp-form-card erp-card erp-section">
-        <h3 data-i18n="hr.emp.salaryGroup">Maaş</h3>
-        <div class="grid erp-grid erp-grid-2 emp-form-two-col">
-          <div>
-            <label for="salaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
-            <select id="salaryCurrency">
-              <option value="UZS">UZS</option>
-              <option value="USD">USD</option>
-            </select>
+        <section class="emp-form-card erp-card erp-section emp-salary-card">
+        <h3 data-i18n="hr.emp.monthlyWage">Aylık Ücret</h3>
+        <div class="emp-salary-grid">
+          <div class="emp-salary-row">
+            <div class="emp-salary-field emp-salary-amount">
+              <label for="salaryAmount" data-i18n="hr.emp.salaryAmountLabel">Maaş Tutarı</label>
+              <input id="salaryAmount" type="text" inputmode="decimal" autocomplete="off" value="0,00" />
+            </div>
+            <div class="emp-salary-field emp-salary-currency-field">
+              <label for="salaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
+              <select id="salaryCurrency">
+                <option value="UZS">UZS</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
           </div>
-          <div></div>
-          <div>
-            <label for="salaryAmount" data-i18n="hr.emp.salaryTotal">Toplam maaş</label>
-            <input id="salaryAmount" type="number" min="0" step="0.01" value="0" />
+          <div class="emp-salary-row">
+            <div class="emp-salary-field emp-salary-amount">
+              <label for="officialSalary" data-i18n="hr.emp.salaryOfficial">Resmi maaş</label>
+              <input id="officialSalary" type="text" inputmode="decimal" autocomplete="off" value="0,00" />
+            </div>
+            <div class="emp-salary-field emp-salary-currency-field">
+              <label for="officialSalaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
+              <select id="officialSalaryCurrency">
+                <option value="UZS">UZS</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div class="emp-salary-field emp-salary-fx-field">
+              <label for="officialSalaryFx" data-i18n="hr.emp.salaryFx">Kur</label>
+              <input id="officialSalaryFx" type="text" inputmode="decimal" autocomplete="off" value="1,00" data-i18n-placeholder="hr.emp.salaryFxPlaceholder" placeholder="örn. 12500" />
+            </div>
           </div>
-          <div>
-            <label for="officialSalary" data-i18n="hr.emp.salaryOfficial">Resmi maaş</label>
-            <input id="officialSalary" type="number" min="0" step="0.01" value="0" />
+          <div class="emp-salary-row">
+            <div class="emp-salary-field emp-salary-fx-hint-field">
+              <p id="salaryFxHint" class="emp-salary-fx-hint app-muted-text" data-i18n="hr.emp.salaryFxStandard">Kur standardı: 1 USD = X UZS</p>
+            </div>
           </div>
-          <div>
-            <label for="unofficialSalary" data-i18n="hr.emp.salaryUnofficial">Resmi olmayan</label>
-            <input id="unofficialSalary" type="number" readonly value="0" />
+          <div class="emp-salary-row">
+            <div class="emp-salary-field emp-salary-amount">
+              <label for="unofficialSalary" data-i18n="hr.emp.salaryUnofficial">Resmi olmayan maaş (otomatik)</label>
+              <input id="unofficialSalary" type="text" inputmode="decimal" readonly value="0,00" />
+            </div>
+          </div>
+          <div class="emp-salary-row">
+            <p id="salaryFxErr" class="emp-salary-error login-error" role="alert"></p>
           </div>
         </div>
         </section>

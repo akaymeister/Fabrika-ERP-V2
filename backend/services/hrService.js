@@ -68,8 +68,265 @@ function parseMoney2(v) {
   return Math.round(n * 100) / 100;
 }
 
-function computeUnofficial(total, official) {
-  return Math.round((Number(total) - Number(official)) * 100) / 100;
+/** UZS / USD dışı değerleri UZS'ye düşür. Boş gelirse fallback kullanılır. */
+function normalizeCurrencyOrFallback(v, fallback) {
+  const c = String(v == null ? '' : v).trim().toUpperCase();
+  if (c === 'USD' || c === 'UZS') return c;
+  const fb = String(fallback || 'UZS').toUpperCase();
+  return fb === 'USD' ? 'USD' : 'UZS';
+}
+
+/** Pozitif ondalıklı kur değeri; null/boş ise null döner (geçersiz/negatifse de null). */
+function parseFxRate(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 1000000) / 1000000;
+}
+
+// ============================================================================
+//  TEK MAAŞ HESAP MOTORU (computeWageBreakdown)
+// ----------------------------------------------------------------------------
+//  Sistemdeki tek formül kaynağı. Frontend / backend'de manuel
+//  total - official benzeri hesaplar yapılmaz; tüm tüketiciler buraya bağlanır.
+//  Kur standardı her zaman: 1 USD = X UZS.
+// ============================================================================
+
+const WAGE_CURRENCIES = new Set(['USD', 'UZS']);
+
+function _wageNormCurrency(v, fallback) {
+  const c = String(v == null ? '' : v).trim().toUpperCase();
+  if (WAGE_CURRENCIES.has(c)) return c;
+  const fb = String(fallback || 'UZS').trim().toUpperCase();
+  return WAGE_CURRENCIES.has(fb) ? fb : 'UZS';
+}
+
+function _wageRound2(n) {
+  if (n == null || n === '') return null;
+  const x = Number(n);
+  if (!Number.isFinite(x)) return null;
+  return Math.round(x * 100) / 100;
+}
+
+function _wageParseAmount(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function _wageParseFx(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n * 1000000) / 1000000;
+}
+
+function _wageHasFxInput(v) {
+  return v != null && String(v).trim() !== '';
+}
+
+/**
+ * Maaş kırılımını hesaplar; raw + normalize edilmiş 6 alanı + validation döner.
+ *
+ * input = {
+ *   total_salary_amount, total_salary_currency,
+ *   official_salary_amount, official_salary_currency,
+ *   official_salary_fx_rate
+ * }
+ *
+ * Kurallar:
+ *   - aynı currency: fx = 1 (DB'ye 1 yazılır)
+ *   - farklı currency: fx zorunlu, fx > 0
+ *   - resmi olmayan maaş negatif olamaz
+ *   - kur standardı: 1 USD = X UZS
+ *
+ * Çıktı her zaman aynı şekilli: isValid bayrağı + (varsa) errors listesi.
+ */
+function computeWageBreakdown(input) {
+  const errors = [];
+  const totalCurrency = _wageNormCurrency(input?.total_salary_currency);
+  const officialCurrency = _wageNormCurrency(input?.official_salary_currency, totalCurrency);
+  const totalAmount = _wageParseAmount(input?.total_salary_amount);
+  const officialAmount = _wageParseAmount(input?.official_salary_amount);
+  const fxParsed = _wageParseFx(input?.official_salary_fx_rate);
+  const fxProvided = _wageHasFxInput(input?.official_salary_fx_rate);
+
+  if (totalAmount == null) {
+    errors.push({ code: 'salary_amount_invalid', messageKey: 'api.hr.salary_amount_invalid' });
+  }
+  if (officialAmount == null) {
+    errors.push({ code: 'official_salary_invalid', messageKey: 'api.hr.official_salary_invalid' });
+  }
+
+  const sameCurrency = totalCurrency === officialCurrency;
+  const fxRequired = !sameCurrency;
+  const fxApplicable = !sameCurrency;
+
+  let fxUsed = null;
+  if (sameCurrency) {
+    fxUsed = 1;
+  } else if (fxParsed != null) {
+    fxUsed = fxParsed;
+  } else if (!fxProvided) {
+    errors.push({ code: 'salary_fx_required', messageKey: 'api.hr.salary_fx_required' });
+  } else {
+    errors.push({ code: 'salary_fx_invalid', messageKey: 'api.hr.salary_fx_invalid' });
+  }
+
+  // Hesaplama yapılamayacaksa kısa devre dön (alanlar null kalır).
+  if (errors.length || totalAmount == null || officialAmount == null || fxUsed == null) {
+    return {
+      isValid: false,
+      errors,
+      fx_required: fxRequired,
+      fx_applicable: fxApplicable,
+      fx_used: sameCurrency ? 1 : (fxParsed || null),
+      total_salary_amount: totalAmount,
+      total_salary_currency: totalCurrency,
+      official_salary_amount: officialAmount,
+      official_salary_currency: officialCurrency,
+      official_salary_fx_rate: sameCurrency ? 1 : (fxParsed || null),
+      unofficial_salary_amount: null,
+      unofficial_salary_currency: totalCurrency,
+      total_salary_uzs: null,
+      total_salary_usd: null,
+      official_salary_uzs: null,
+      official_salary_usd: null,
+      unofficial_salary_uzs: null,
+      unofficial_salary_usd: null,
+    };
+  }
+
+  // Resmi olmayan maaş = total - (official official-currency'den total-currency'ye dönüştürülmüş)
+  let unofficialAmount;
+  if (sameCurrency) {
+    unofficialAmount = totalAmount - officialAmount;
+  } else if (totalCurrency === 'USD' && officialCurrency === 'UZS') {
+    // unofficial USD = total USD - (official UZS / fx)
+    unofficialAmount = totalAmount - officialAmount / fxUsed;
+  } else {
+    // totalCurrency === 'UZS' && officialCurrency === 'USD'
+    // unofficial UZS = total UZS - (official USD * fx)
+    unofficialAmount = totalAmount - officialAmount * fxUsed;
+  }
+  unofficialAmount = _wageRound2(unofficialAmount);
+
+  if (unofficialAmount != null && unofficialAmount < 0) {
+    errors.push({ code: 'salary_unofficial_negative', messageKey: 'api.hr.salary_unofficial_negative' });
+  }
+
+  // Normalize edilmiş 6 alan (rapor / KPI / muhasebe için).
+  let totalUzs = null;
+  let totalUsd = null;
+  let officialUzs = null;
+  let officialUsd = null;
+  let unofficialUzs = null;
+  let unofficialUsd = null;
+
+  if (sameCurrency) {
+    if (totalCurrency === 'UZS') {
+      totalUzs = _wageRound2(totalAmount);
+      officialUzs = _wageRound2(officialAmount);
+      unofficialUzs = _wageRound2(unofficialAmount);
+    } else {
+      totalUsd = _wageRound2(totalAmount);
+      officialUsd = _wageRound2(officialAmount);
+      unofficialUsd = _wageRound2(unofficialAmount);
+    }
+    // Aynı currency'de "diğer" para birimine dönüş için kur tanımlı değil → null bırakılır.
+  } else {
+    if (totalCurrency === 'USD') {
+      totalUsd = _wageRound2(totalAmount);
+      totalUzs = _wageRound2(totalAmount * fxUsed);
+      unofficialUsd = _wageRound2(unofficialAmount);
+      unofficialUzs = _wageRound2(unofficialAmount * fxUsed);
+    } else {
+      totalUzs = _wageRound2(totalAmount);
+      totalUsd = _wageRound2(totalAmount / fxUsed);
+      unofficialUzs = _wageRound2(unofficialAmount);
+      unofficialUsd = _wageRound2(unofficialAmount / fxUsed);
+    }
+    if (officialCurrency === 'USD') {
+      officialUsd = _wageRound2(officialAmount);
+      officialUzs = _wageRound2(officialAmount * fxUsed);
+    } else {
+      officialUzs = _wageRound2(officialAmount);
+      officialUsd = _wageRound2(officialAmount / fxUsed);
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    fx_required: fxRequired,
+    fx_applicable: fxApplicable,
+    fx_used: fxUsed,
+    total_salary_amount: _wageRound2(totalAmount),
+    total_salary_currency: totalCurrency,
+    official_salary_amount: _wageRound2(officialAmount),
+    official_salary_currency: officialCurrency,
+    official_salary_fx_rate: fxUsed,
+    unofficial_salary_amount: unofficialAmount,
+    unofficial_salary_currency: totalCurrency,
+    total_salary_uzs: totalUzs,
+    total_salary_usd: totalUsd,
+    official_salary_uzs: officialUzs,
+    official_salary_usd: officialUsd,
+    unofficial_salary_uzs: unofficialUzs,
+    unofficial_salary_usd: unofficialUsd,
+  };
+}
+
+/**
+ * Sadece doğrulama yapar. Geçerliyse breakdown döner; değilse { error, messageKey }.
+ */
+function validateWagePayload(input) {
+  const breakdown = computeWageBreakdown(input);
+  if (!breakdown.isValid) {
+    const first = breakdown.errors[0] || {};
+    return err(first.messageKey || 'Maaş hesabı geçersiz', first.messageKey || 'api.hr.salary_amount_invalid');
+  }
+  return { breakdown };
+}
+
+/**
+ * DB INSERT/UPDATE için kullanılacak normalize alanları üretir. Hatalıysa { error, messageKey }.
+ */
+function derivePersistableWage(input) {
+  const out = validateWagePayload(input);
+  if (out && out.error) return out;
+  const b = out.breakdown;
+  return {
+    persist: {
+      salary_currency: b.total_salary_currency,
+      salary_amount: b.total_salary_amount,
+      official_salary_amount: b.official_salary_amount,
+      official_salary_currency: b.official_salary_currency,
+      official_salary_fx_rate: b.official_salary_fx_rate,
+      unofficial_salary_amount: b.unofficial_salary_amount,
+    },
+    breakdown: b,
+  };
+}
+
+/**
+ * DB satırından breakdown üretir (listeler / detay endpoint'leri için).
+ * Eski kayıtlarda official_salary_currency veya fx_rate eksikse fallback uygular.
+ */
+function breakdownFromEmployeeRow(row) {
+  if (!row) return null;
+  return computeWageBreakdown({
+    total_salary_amount: row.salary_amount,
+    total_salary_currency: row.salary_currency,
+    official_salary_amount: row.official_salary_amount,
+    official_salary_currency: row.official_salary_currency || row.salary_currency,
+    official_salary_fx_rate:
+      row.official_salary_fx_rate != null && Number(row.official_salary_fx_rate) > 0
+        ? row.official_salary_fx_rate
+        : 1,
+  });
 }
 
 async function nextEmployeeNumber(conn) {
@@ -558,6 +815,7 @@ async function listEmployees(filters = {}, viewer = null) {
   const sql = `SELECT e.id, e.employee_no, e.full_name, e.first_name, e.last_name, e.nationality, e.birth_date, e.gender, e.marital_status, e.photo_path,
                       COALESCE(NULLIF(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')), ' '), e.full_name) AS person_name,
                       e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+                      e.official_salary_currency, e.official_salary_fx_rate,
                       e.country, e.region_or_city, e.address_line,
                       e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status, e.overtime_eligible,
                       e.department_id, d.name AS department_name, e.position_id, pz.name AS position_name,
@@ -579,6 +837,8 @@ async function listEmployees(filters = {}, viewer = null) {
       delete r.salary_amount;
       delete r.official_salary_amount;
       delete r.unofficial_salary_amount;
+      delete r.official_salary_currency;
+      delete r.official_salary_fx_rate;
     });
     return { employees: rows, salaryColumns: [] };
   }
@@ -622,19 +882,22 @@ async function listEmployees(filters = {}, viewer = null) {
   }
 
   rows.forEach((r) => {
-    const currency = String(r.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
-    const totalSalaryAmount = Number(r.salary_amount || 0);
-    const officialSalaryUzs = Number(r.official_salary_amount || 0);
-    const unofficialSalaryAmount = Number(r.unofficial_salary_amount || 0);
-    const unofficialSalaryUzs = currency === 'UZS' ? unofficialSalaryAmount : null;
-    const unofficialSalaryUsd = currency === 'USD' ? unofficialSalaryAmount : null;
+    // Tüm maaş alanları TEK helper'dan üretilir; manuel hesap kalmadı.
+    const breakdown = breakdownFromEmployeeRow(r) || {};
+    const currency = breakdown.total_salary_currency || 'UZS';
+    const totalSalaryAmount = breakdown.total_salary_amount != null ? Number(breakdown.total_salary_amount) : 0;
+    const officialUzsForRow = breakdown.official_salary_uzs;
+    const unofficialUzsForRow = breakdown.unofficial_salary_uzs;
+    const unofficialUsdForRow = breakdown.unofficial_salary_usd;
 
-    const rgu = divSafe(officialSalaryUzs, monthlyWorkDays);
-    const grgu = divSafe(unofficialSalaryUzs, monthlyWorkDays);
-    const gu = divSafe(unofficialSalaryUsd, monthlyWorkDays);
-    const rsu = divSafe(rgu, standardDailyHours);
-    const grsu = divSafe(grgu, standardDailyHours);
-    const su = divSafe(gu, standardDailyHours);
+    // Salary_columns hesaplarında UZS bazlı sütunlar için normalize UZS değerlerini,
+    // USD bazlı sütun (gu_usd) için normalize USD değerini kullanıyoruz.
+    const rgu = officialUzsForRow != null ? divSafe(officialUzsForRow, monthlyWorkDays) : null;
+    const grgu = unofficialUzsForRow != null ? divSafe(unofficialUzsForRow, monthlyWorkDays) : null;
+    const gu = unofficialUsdForRow != null ? divSafe(unofficialUsdForRow, monthlyWorkDays) : null;
+    const rsu = rgu != null ? divSafe(rgu, standardDailyHours) : null;
+    const grsu = grgu != null ? divSafe(grgu, standardDailyHours) : null;
+    const su = gu != null ? divSafe(gu, standardDailyHours) : null;
 
     const salaryCols = {};
     if (visible.total) salaryCols.total = formatMoneyWithCurrency(totalSalaryAmount, currency);
@@ -646,13 +909,22 @@ async function listEmployees(filters = {}, viewer = null) {
     if (visible.su) salaryCols.su = su == null ? '-' : formatMoneyWithCurrency(su, 'USD');
     r.salary_columns = salaryCols;
 
+    // Orijinal alanlar
     r.total_salary_amount = totalSalaryAmount;
     r.total_salary_currency = currency;
-    r.official_salary_uzs = officialSalaryUzs;
-    r.unofficial_salary_uzs = unofficialSalaryUzs;
-    r.unofficial_salary_usd = unofficialSalaryUsd;
+    r.official_salary_currency = breakdown.official_salary_currency;
+    r.official_salary_fx_rate = breakdown.official_salary_fx_rate;
+    r.unofficial_salary_currency = breakdown.unofficial_salary_currency;
 
-    // API güvenliği: group açık olsa bile alt izin yoksa ham maaş alanlarını göndermeyelim.
+    // Normalize edilmiş 6 alan (rapor / dashboard / KPI için)
+    r.total_salary_uzs = breakdown.total_salary_uzs;
+    r.total_salary_usd = breakdown.total_salary_usd;
+    r.official_salary_uzs = breakdown.official_salary_uzs;
+    r.official_salary_usd = breakdown.official_salary_usd;
+    r.unofficial_salary_uzs = breakdown.unofficial_salary_uzs;
+    r.unofficial_salary_usd = breakdown.unofficial_salary_usd;
+
+    // API güvenliği: alt izin yoksa ham DB alanları sızmasın.
     delete r.salary_currency;
     delete r.salary_amount;
     delete r.official_salary_amount;
@@ -662,7 +934,8 @@ async function listEmployees(filters = {}, viewer = null) {
 }
 
 /**
- * Ücret değerlendirme ekranı: maaş alanları (kişi kartı ile uyumlu, USD/UZS dönüşümü yok).
+ * Ücret değerlendirme ekranı: orijinal currency alanlarıyla birlikte normalize edilmiş
+ * 6 rapor alanı (USD/UZS) döndürülür. Tüm hesap TEK helper'dan gelir.
  */
 async function listCompensationEmployees(filters = {}, _viewer = null) {
   const where = [];
@@ -672,30 +945,37 @@ async function listCompensationEmployees(filters = {}, _viewer = null) {
 
   const sql = `SELECT e.id, e.employee_no, e.photo_path,
       COALESCE(NULLIF(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')), ' '), e.full_name) AS person_name,
-      e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount
+      e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+      e.official_salary_currency, e.official_salary_fx_rate
       FROM employees e
       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
       ORDER BY e.full_name ASC, e.id ASC`;
   const [rows] = await pool.query(sql, p);
 
   const out = rows.map((r) => {
-    const currency = String(r.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
-    const totalSalaryAmount = Number(r.salary_amount || 0);
-    const officialSalaryUzs = Number(r.official_salary_amount || 0);
-    const unofficialAmt = Number(r.unofficial_salary_amount || 0);
-    const unofficialSalaryUzs = currency === 'UZS' ? unofficialAmt : null;
-    const unofficialSalaryUsd = currency === 'USD' ? unofficialAmt : null;
-
+    const breakdown = breakdownFromEmployeeRow(r) || {};
     return {
       id: r.id,
       employee_no: r.employee_no,
       photo_path: r.photo_path || null,
       person_name: r.person_name,
-      official_salary_uzs: officialSalaryUzs,
-      unofficial_salary_uzs: unofficialSalaryUzs,
-      unofficial_salary_usd: unofficialSalaryUsd,
-      total_salary_amount: totalSalaryAmount,
-      total_salary_currency: currency,
+
+      // ----- Orijinal kaydedilmiş para birimi alanları (kullanıcının girdiği gibi) -----
+      total_salary_amount: breakdown.total_salary_amount,
+      total_salary_currency: breakdown.total_salary_currency,
+      official_salary_amount: breakdown.official_salary_amount,
+      official_salary_currency: breakdown.official_salary_currency,
+      official_salary_fx_rate: breakdown.official_salary_fx_rate,
+      unofficial_salary_amount: breakdown.unofficial_salary_amount,
+      unofficial_salary_currency: breakdown.unofficial_salary_currency,
+
+      // ----- Normalize edilmiş rapor alanları (KPI / muhasebe için) -----
+      total_salary_uzs: breakdown.total_salary_uzs,
+      total_salary_usd: breakdown.total_salary_usd,
+      official_salary_uzs: breakdown.official_salary_uzs,
+      official_salary_usd: breakdown.official_salary_usd,
+      unofficial_salary_uzs: breakdown.unofficial_salary_uzs,
+      unofficial_salary_usd: breakdown.unofficial_salary_usd,
     };
   });
 
@@ -772,15 +1052,15 @@ async function createEmployee(input) {
       ? null
       : optionalNoteUpperTr(input.address_line);
 
-  const salaryCurrency = String(input?.salary_currency || 'UZS').toUpperCase() === 'USD' ? 'USD' : 'UZS';
-  const salaryAmount = parseMoney2(input?.salary_amount);
-  const officialAmount = parseMoney2(input?.official_salary_amount);
-  if (salaryAmount == null) return err('Toplam maas gecersiz', 'api.hr.salary_amount_invalid');
-  if (officialAmount == null) return err('Resmi maas gecersiz', 'api.hr.official_salary_invalid');
-  if (officialAmount > salaryAmount) {
-    return err('Resmi maas toplam maastan buyuk olamaz', 'api.hr.salary_official_exceeds_total');
-  }
-  const unofficialAmount = computeUnofficial(salaryAmount, officialAmount);
+  const wageOut = derivePersistableWage({
+    total_salary_amount: input?.salary_amount,
+    total_salary_currency: input?.salary_currency || 'UZS',
+    official_salary_amount: input?.official_salary_amount,
+    official_salary_currency: input?.official_salary_currency,
+    official_salary_fx_rate: input?.official_salary_fx_rate,
+  });
+  if (wageOut.error) return wageOut;
+  const wagePersist = wageOut.persist;
 
   const fullName = toUpperTr(`${firstName} ${lastName}`.trim());
 
@@ -791,13 +1071,13 @@ async function createEmployee(input) {
     const [r] = await conn.query(
       `INSERT INTO employees
         (employee_no, full_name, first_name, last_name, nationality, birth_date, gender, marital_status, photo_path, salary_currency,
-         salary_amount, official_salary_amount, unofficial_salary_amount,
+         salary_amount, official_salary_amount, unofficial_salary_amount, official_salary_currency, official_salary_fx_rate,
          country, region_or_city, address_line,
          phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, overtime_eligible, department_id, position_id, user_id,
          telegram_username, telegram_chat_id, telegram_notify_enabled, note)
        VALUES
         (:employee_no, :full_name, :first_name, :last_name, :nationality, :birth_date, :gender, :marital_status, NULL, :salary_currency,
-         :salary_amount, :official_salary_amount, :unofficial_salary_amount,
+         :salary_amount, :official_salary_amount, :unofficial_salary_amount, :official_salary_currency, :official_salary_fx_rate,
          :country, :region_or_city, :address_line,
          :phone, :phone_secondary, :identity_no, :passport_no, :email, :hire_date, :employment_status, :overtime_eligible, :department_id, :position_id, :user_id,
          :telegram_username, :telegram_chat_id, :telegram_notify_enabled, :note)`,
@@ -810,10 +1090,12 @@ async function createEmployee(input) {
         birth_date: birthDate,
         gender,
         marital_status: maritalStatus,
-        salary_currency: salaryCurrency,
-        salary_amount: salaryAmount,
-        official_salary_amount: officialAmount,
-        unofficial_salary_amount: unofficialAmount,
+        salary_currency: wagePersist.salary_currency,
+        salary_amount: wagePersist.salary_amount,
+        official_salary_amount: wagePersist.official_salary_amount,
+        unofficial_salary_amount: wagePersist.unofficial_salary_amount,
+        official_salary_currency: wagePersist.official_salary_currency,
+        official_salary_fx_rate: wagePersist.official_salary_fx_rate,
         country,
         region_or_city: regionOrCity,
         address_line: addressLine,
@@ -850,6 +1132,7 @@ async function getEmployeeById(id) {
   const [rows] = await pool.query(
     `SELECT e.id, e.employee_no, e.full_name, e.first_name, e.last_name, e.nationality, e.birth_date, e.gender, e.marital_status, e.photo_path,
             e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+            e.official_salary_currency, e.official_salary_fx_rate,
             e.country, e.region_or_city, e.address_line,
             e.phone, e.phone_secondary, e.identity_no, e.passport_no, e.email, e.hire_date, e.employment_status, e.overtime_eligible,
             e.department_id, e.position_id, e.user_id,
@@ -861,7 +1144,19 @@ async function getEmployeeById(id) {
   );
   if (!rows.length) return err('Personel bulunamadi', 'api.hr.employee_not_found');
   const emp = enrichEmployeeRow(rows[0]);
-  emp.unofficial_salary_amount = computeUnofficial(emp.salary_amount, emp.official_salary_amount);
+  // Resmi olmayan maaş ve normalize edilmiş 6 alan TEK helper'dan üretilir.
+  const breakdown = breakdownFromEmployeeRow(emp);
+  if (breakdown) {
+    emp.unofficial_salary_amount = breakdown.unofficial_salary_amount;
+    emp.unofficial_salary_currency = breakdown.unofficial_salary_currency;
+    emp.total_salary_uzs = breakdown.total_salary_uzs;
+    emp.total_salary_usd = breakdown.total_salary_usd;
+    emp.official_salary_uzs = breakdown.official_salary_uzs;
+    emp.official_salary_usd = breakdown.official_salary_usd;
+    emp.unofficial_salary_uzs = breakdown.unofficial_salary_uzs;
+    emp.unofficial_salary_usd = breakdown.unofficial_salary_usd;
+    emp.wage_breakdown = breakdown;
+  }
   return { employee: emp };
 }
 
@@ -870,7 +1165,9 @@ async function updateEmployee(id, input) {
   if (!empId) return err('Gecersiz personel', 'api.hr.employee_invalid');
   const [curRows] = await pool.query(
     `SELECT id, employee_no, full_name, first_name, last_name, nationality, birth_date, gender, marital_status, photo_path, salary_currency,
-            salary_amount, official_salary_amount, unofficial_salary_amount, country, region_or_city, address_line,
+            salary_amount, official_salary_amount, unofficial_salary_amount,
+            official_salary_currency, official_salary_fx_rate,
+            country, region_or_city, address_line,
             phone, phone_secondary, identity_no, passport_no, email, hire_date, employment_status, overtime_eligible, department_id, position_id, user_id,
             telegram_username, telegram_chat_id, telegram_notify_enabled, note
      FROM employees WHERE id = :id LIMIT 1`,
@@ -991,32 +1288,49 @@ async function updateEmployee(id, input) {
         : optionalNoteUpperTr(input.address_line);
   }
 
-  if (input?.salary_currency != null) {
-    const sc = String(input.salary_currency).toUpperCase() === 'USD' ? 'USD' : 'UZS';
+  // Maaş ile ilgili bir alan bile değiştiyse TEK helper'dan tüm normalize alanları yeniden üretiyoruz.
+  // Böylece total - official, FX ve unofficial hesabı her yerde aynı kuralla yürür.
+  const wageTouched =
+    input?.salary_amount !== undefined ||
+    input?.salary_currency !== undefined ||
+    input?.official_salary_amount !== undefined ||
+    input?.official_salary_currency !== undefined ||
+    input?.official_salary_fx_rate !== undefined;
+  if (wageTouched) {
+    const wageOut = derivePersistableWage({
+      total_salary_amount:
+        input?.salary_amount !== undefined ? input.salary_amount : cur.salary_amount,
+      total_salary_currency:
+        input?.salary_currency !== undefined ? input.salary_currency : cur.salary_currency,
+      official_salary_amount:
+        input?.official_salary_amount !== undefined
+          ? input.official_salary_amount
+          : cur.official_salary_amount,
+      official_salary_currency:
+        input?.official_salary_currency !== undefined
+          ? input.official_salary_currency
+          : cur.official_salary_currency || cur.salary_currency,
+      official_salary_fx_rate:
+        input?.official_salary_fx_rate !== undefined
+          ? input.official_salary_fx_rate
+          : cur.official_salary_fx_rate != null && Number(cur.official_salary_fx_rate) > 0
+            ? cur.official_salary_fx_rate
+            : 1,
+    });
+    if (wageOut.error) return wageOut;
+    const w = wageOut.persist;
     fields.push('salary_currency = :salary_currency');
-    p.salary_currency = sc;
-  }
-
-  const salaryTouched = input?.salary_amount !== undefined || input?.official_salary_amount !== undefined;
-  if (salaryTouched) {
-    const nextTotal =
-      input.salary_amount !== undefined ? parseMoney2(input.salary_amount) : parseMoney2(cur.salary_amount);
-    const nextOfficial =
-      input.official_salary_amount !== undefined
-        ? parseMoney2(input.official_salary_amount)
-        : parseMoney2(cur.official_salary_amount);
-    if (nextTotal == null) return err('Toplam maas gecersiz', 'api.hr.salary_amount_invalid');
-    if (nextOfficial == null) return err('Resmi maas gecersiz', 'api.hr.official_salary_invalid');
-    if (nextOfficial > nextTotal) {
-      return err('Resmi maas toplam maastan buyuk olamaz', 'api.hr.salary_official_exceeds_total');
-    }
-    const nextUnofficial = computeUnofficial(nextTotal, nextOfficial);
     fields.push('salary_amount = :salary_amount');
     fields.push('official_salary_amount = :official_salary_amount');
     fields.push('unofficial_salary_amount = :unofficial_salary_amount');
-    p.salary_amount = nextTotal;
-    p.official_salary_amount = nextOfficial;
-    p.unofficial_salary_amount = nextUnofficial;
+    fields.push('official_salary_currency = :official_salary_currency');
+    fields.push('official_salary_fx_rate = :official_salary_fx_rate');
+    p.salary_currency = w.salary_currency;
+    p.salary_amount = w.salary_amount;
+    p.official_salary_amount = w.official_salary_amount;
+    p.unofficial_salary_amount = w.unofficial_salary_amount;
+    p.official_salary_currency = w.official_salary_currency;
+    p.official_salary_fx_rate = w.official_salary_fx_rate;
   }
 
   if (input?.phone !== undefined) {
@@ -1627,7 +1941,8 @@ async function listMonthlyAttendance({
     const empIds = summary.map((x) => Number(x.employee_id)).filter((x) => Number.isFinite(x) && x > 0);
     const [salaryRows] = empIds.length
       ? await pool.query(
-          `SELECT id, salary_currency, official_salary_amount, unofficial_salary_amount
+          `SELECT id, salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+                  official_salary_currency, official_salary_fx_rate
            FROM employees
            WHERE id IN (${empIds.map(() => '?').join(',')})`,
           empIds
@@ -1660,13 +1975,14 @@ async function listMonthlyAttendance({
 
     summary.forEach((s) => {
       const sal = salaryByEmp.get(Number(s.employee_id)) || {};
-      const currency = String(sal.salary_currency || '').toUpperCase() === 'USD' ? 'USD' : 'UZS';
-      const officialSalaryUzs = Number(sal.official_salary_amount || 0);
-      const unofficialSalaryAmount = Number(sal.unofficial_salary_amount || 0);
-      const unofficialSalaryUzs = currency === 'UZS' ? unofficialSalaryAmount : null;
-      const unofficialSalaryUsd = currency === 'USD' ? unofficialSalaryAmount : null;
+      // Tek hesap motoru: normalize edilmiş 6 alan üzerinden raporlama yapılır.
+      const breakdown = breakdownFromEmployeeRow(sal) || {};
+      const officialSalaryUzs = breakdown.official_salary_uzs;
+      const unofficialSalaryUzs = breakdown.unofficial_salary_uzs;
+      const unofficialSalaryUsd = breakdown.unofficial_salary_usd;
 
-      const rguUzs = monthlyWorkDays > 0 ? divSafe6(officialSalaryUzs, monthlyWorkDays) : null;
+      const rguUzs =
+        officialSalaryUzs != null && monthlyWorkDays > 0 ? divSafe6(officialSalaryUzs, monthlyWorkDays) : null;
       const grguUzs =
         unofficialSalaryUzs != null && monthlyWorkDays > 0 ? divSafe6(unofficialSalaryUzs, monthlyWorkDays) : null;
       const guUsd =
@@ -1694,7 +2010,9 @@ async function listMonthlyAttendance({
       s.grsu = grsu;
       s.su = su;
       s.ru_uzs_nm =
-        !salaryPerms.rsu || !canPropNormalPay ? null : monthlyNormalPayProportional(officialSalaryUzs, totalNormalHours, monthlyWorkHours);
+        !salaryPerms.rsu || !canPropNormalPay || officialSalaryUzs == null
+          ? null
+          : monthlyNormalPayProportional(officialSalaryUzs, totalNormalHours, monthlyWorkHours);
       s.gr_uzs_nm =
         !salaryPerms.grsu || !canPropNormalPay || unofficialSalaryUzs == null
           ? null
@@ -1706,6 +2024,14 @@ async function listMonthlyAttendance({
       s.fm_uzs =
         rsu == null || grsu == null ? null : mulSafe6(totalOvertimeHours, Number(rsu) + Number(grsu));
       s.fm_usd = su == null ? null : mulSafe6(totalOvertimeHours, su);
+
+      // Normalize alanları satıra da ek olarak verelim (tüketici normalize'e geçince kullansın diye).
+      s.total_salary_uzs = breakdown.total_salary_uzs;
+      s.total_salary_usd = breakdown.total_salary_usd;
+      s.official_salary_uzs = breakdown.official_salary_uzs;
+      s.official_salary_usd = breakdown.official_salary_usd;
+      s.unofficial_salary_uzs = breakdown.unofficial_salary_uzs;
+      s.unofficial_salary_usd = breakdown.unofficial_salary_usd;
 
       if (s.gr_usd_nm != null) summaryTotals.total_gr_usd_nm += Number(s.gr_usd_nm || 0);
       if (s.fm_usd != null) summaryTotals.total_fm_usd += Number(s.fm_usd || 0);
@@ -1991,6 +2317,11 @@ async function deleteWorkStatus(id) {
 }
 
 module.exports = {
+  // Tek maaş hesap motoru (controller / diğer servisler bunu tüketir).
+  computeWageBreakdown,
+  validateWagePayload,
+  derivePersistableWage,
+  breakdownFromEmployeeRow,
   getScope,
   listDepartments,
   createDepartment,

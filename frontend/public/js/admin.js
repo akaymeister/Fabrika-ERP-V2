@@ -702,6 +702,8 @@ async function init() {
     }
   });
 
+  await initBrandLogoCard();
+
   let tunnelPoll = null;
   async function loadTunnelStatus() {
     const r = await api('/api/admin/tunnel/status');
@@ -763,6 +765,142 @@ async function init() {
   window.addEventListener('beforeunload', () => {
     if (tunnelPoll) clearInterval(tunnelPoll);
   });
+}
+
+async function initBrandLogoCard() {
+  const previewImg = document.getElementById('brandLogoImg');
+  const emptyEl = document.getElementById('brandLogoEmpty');
+  const fileInput = document.getElementById('brandLogoInput');
+  const chooseBtn = document.getElementById('brandLogoChooseBtn');
+  const uploadBtn = document.getElementById('brandLogoUploadBtn');
+  const removeBtn = document.getElementById('brandLogoRemoveBtn');
+  const fileNameEl = document.getElementById('brandLogoFileName');
+  const msgEl = document.getElementById('brandLogoMsg');
+  const errEl2 = document.getElementById('brandLogoErr');
+  if (!previewImg || !fileInput || !uploadBtn) return;
+
+  function setPreview(url) {
+    if (url) {
+      previewImg.src = `${url}?_t=${Date.now()}`;
+      previewImg.hidden = false;
+      if (emptyEl) emptyEl.hidden = true;
+      if (removeBtn) removeBtn.hidden = false;
+    } else {
+      previewImg.removeAttribute('src');
+      previewImg.hidden = true;
+      if (emptyEl) emptyEl.hidden = false;
+      if (removeBtn) removeBtn.hidden = true;
+    }
+  }
+
+  function setMsg(text) {
+    if (!msgEl) return;
+    msgEl.textContent = text || '';
+    msgEl.style.display = text ? 'block' : 'none';
+  }
+
+  function setErr(text) {
+    if (!errEl2) return;
+    errEl2.textContent = text || '';
+    errEl2.style.display = text ? 'block' : 'none';
+  }
+
+  async function loadCurrent() {
+    try {
+      const r = await fetch('/api/admin/settings/brand-logo', { credentials: 'same-origin' });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setErr(apiErr(d, 'api.error.unknown'));
+        return;
+      }
+      setPreview(d.logoUrl || '');
+    } catch (_) {
+      setErr(t('api.error.unknown'));
+    }
+  }
+
+  chooseBtn?.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    setMsg('');
+    setErr('');
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) {
+      uploadBtn.disabled = true;
+      if (fileNameEl) fileNameEl.textContent = '';
+      return;
+    }
+    const allowed = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowed.includes(f.type)) {
+      setErr(t('admin.logo.err_invalid_type'));
+      uploadBtn.disabled = true;
+      if (fileNameEl) fileNameEl.textContent = '';
+      fileInput.value = '';
+      return;
+    }
+    if (f.size > 4 * 1024 * 1024) {
+      setErr(t('admin.logo.err_too_big'));
+      uploadBtn.disabled = true;
+      if (fileNameEl) fileNameEl.textContent = '';
+      fileInput.value = '';
+      return;
+    }
+    if (fileNameEl) fileNameEl.textContent = f.name;
+    uploadBtn.disabled = false;
+  });
+
+  uploadBtn.addEventListener('click', async () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    setMsg('');
+    setErr('');
+    uploadBtn.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('logo', f);
+      const r = await fetch('/api/admin/settings/brand-logo', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: fd,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setErr(apiErr(d, 'api.error.unknown'));
+        return;
+      }
+      setPreview(d.logoUrl || '');
+      setMsg(t('admin.logo.uploaded'));
+      fileInput.value = '';
+      if (fileNameEl) fileNameEl.textContent = '';
+    } catch (_) {
+      setErr(t('api.error.unknown'));
+    } finally {
+      uploadBtn.disabled = !(fileInput.files && fileInput.files[0]);
+    }
+  });
+
+  removeBtn?.addEventListener('click', async () => {
+    setMsg('');
+    setErr('');
+    if (!window.confirm(t('admin.logo.confirm_remove'))) return;
+    try {
+      const r = await fetch('/api/admin/settings/brand-logo', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setErr(apiErr(d, 'api.error.unknown'));
+        return;
+      }
+      setPreview('');
+      setMsg(t('admin.logo.removed'));
+    } catch (_) {
+      setErr(t('api.error.unknown'));
+    }
+  });
+
+  await loadCurrent();
 }
 
 init().catch((e) => {

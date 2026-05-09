@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { jsonOk, jsonError } = require('../utils/apiResponse');
 const {
+  computeWageBreakdown,
   getScope,
   listDepartments,
   createDepartment,
@@ -539,6 +540,24 @@ async function removeWorkStatus(req, res) {
   return res.json(jsonOk(out));
 }
 
+/**
+ * Maaş kırılımı preview endpoint'i.
+ *  - Stateless. Form'un canlı önizlemesi için kullanılır.
+ *  - Frontend hesap motoru gibi davranmaz; bu endpoint TEK gerçek hesap motoruna bağlıdır.
+ *  - 200 her zaman döner (isValid + errors içerir). UI hata mesajlarını errors[] üzerinden gösterir.
+ */
+async function postWagePreview(req, res) {
+  const body = req.body || {};
+  const breakdown = computeWageBreakdown({
+    total_salary_amount: body.salary_amount ?? body.total_salary_amount,
+    total_salary_currency: body.salary_currency ?? body.total_salary_currency,
+    official_salary_amount: body.official_salary_amount,
+    official_salary_currency: body.official_salary_currency,
+    official_salary_fx_rate: body.official_salary_fx_rate,
+  });
+  return res.json(jsonOk({ breakdown }));
+}
+
 module.exports = {
   getHrScope,
   getDepartments,
@@ -576,4 +595,5 @@ module.exports = {
   postWorkStatus,
   patchWorkStatus,
   removeWorkStatus,
+  postWagePreview,
 };

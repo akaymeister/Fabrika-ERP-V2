@@ -1,6 +1,27 @@
 (function () {
   const SUPPORTED = ['tr', 'uz', 'ru', 'en'];
+  /** Tarayıcıda seçilen dil; proje içinde bazı sayfalar da aynı anahtarı kullanıyor */
+  const LANG_STORAGE_KEY = 'erp_lang';
   let dict = {};
+
+  function readStoredLang() {
+    try {
+      const raw = String(localStorage.getItem(LANG_STORAGE_KEY) || '').trim().toLowerCase();
+      if (SUPPORTED.includes(raw)) return raw;
+    } catch (_) {
+      /* private mode vb. */
+    }
+    return 'tr';
+  }
+
+  function writeStoredLang(lang) {
+    if (!SUPPORTED.includes(lang)) return;
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch (_) {
+      /* yok say */
+    }
+  }
 
   function ensureLanguageSelect() {
     let sel = document.getElementById('languageSelect');
@@ -31,7 +52,7 @@
     if (sel && SUPPORTED.includes(sel.value)) {
       return sel.value;
     }
-    return 'tr';
+    return readStoredLang();
   }
 
   async function loadDict(lang) {
@@ -152,9 +173,9 @@
   }
 
   async function init() {
-    // ERP V2 kurali: varsayilan dil her zaman Turkce.
+    // Varsayılan: Türkçe. Kullanıcı dil seçtiyse tarayıcıda saklanır (sayfalar arası kalıcı).
     const sel = ensureLanguageSelect();
-    const lang = 'tr';
+    const lang = readStoredLang();
     if (sel && SUPPORTED.includes(lang)) {
       sel.value = lang;
     }
@@ -164,8 +185,10 @@
     if (sel) {
       sel.value = lang;
       sel.addEventListener('change', async () => {
-        setDocumentLang(sel.value);
-        await loadDict(sel.value);
+        const next = SUPPORTED.includes(sel.value) ? sel.value : 'tr';
+        writeStoredLang(next);
+        setDocumentLang(next);
+        await loadDict(next);
         apply(document);
       });
     }

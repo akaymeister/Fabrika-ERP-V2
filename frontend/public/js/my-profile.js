@@ -73,11 +73,22 @@
     }
 
     if (salary) {
+      // Backend'in computeWageBreakdown çıktısını tüketiyoruz; manuel hesap yok.
+      const sObj = emp?.salary || null;
+      const fmt = (v) => {
+        if (v == null || v === '') return '-';
+        const n = Number(v);
+        if (!Number.isFinite(n)) return '-';
+        return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      const wageCur = sObj?.currency || '-';
+      const offCur = sObj?.official_currency || wageCur;
+      const unofCur = sObj?.unofficial_currency || wageCur;
       salary.innerHTML = [
-        row(t('me.salaryCurrency'), emp?.salary?.currency),
-        row(t('me.salaryTotal'), emp?.salary?.total),
-        row(t('me.salaryOfficial'), emp?.salary?.official),
-        row(t('me.salaryUnofficial'), emp?.salary?.unofficial),
+        row(t('me.salaryCurrency'), wageCur),
+        row(t('me.salaryTotal'), sObj?.total != null ? `${fmt(sObj.total)} ${wageCur}` : '-'),
+        row(t('me.salaryOfficial'), sObj?.official != null ? `${fmt(sObj.official)} ${offCur}` : '-'),
+        row(t('me.salaryUnofficial'), sObj?.unofficial != null ? `${fmt(sObj.unofficial)} ${unofCur}` : '-'),
       ].join('');
     }
 
