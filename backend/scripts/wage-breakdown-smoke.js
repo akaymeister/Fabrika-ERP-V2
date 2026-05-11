@@ -105,6 +105,26 @@ const cases = [
       official_salary_fx_rate: null,
     },
   },
+  {
+    name: '9. USD toplam, kartta UZS yazılı ama tutarlar dolar ölçeğinde (yanlış etiket) -> USD–USD',
+    in: {
+      total_salary_amount: 5000,
+      total_salary_currency: 'USD',
+      official_salary_amount: 2000,
+      official_salary_currency: 'UZS',
+      official_salary_fx_rate: 12500,
+    },
+  },
+  {
+    name: '10. Resmi 0 iken UZS etiketi + kur — ana birime zorlanır, karma yok',
+    in: {
+      total_salary_amount: 5000,
+      total_salary_currency: 'USD',
+      official_salary_amount: 0,
+      official_salary_currency: 'UZS',
+      official_salary_fx_rate: 12500,
+    },
+  },
 ];
 
 let allPass = true;
@@ -147,6 +167,19 @@ for (const c of cases) {
   }
   if (c.name.startsWith('8.')) {
     if (!b.isValid || b.unofficial_salary_amount !== 3000) { allPass = false; console.log('FAIL'); }
+  }
+  if (c.name.startsWith('9.')) {
+    if (!b.isValid || b.unofficial_salary_amount !== 3000) { allPass = false; console.log('FAIL'); }
+    if (b.total_salary_usd !== 5000 || b.total_salary_uzs !== null) { allPass = false; console.log('FAIL norm'); }
+    if (b.official_salary_uzs != null || b.official_salary_usd !== 2000) { allPass = false; console.log('FAIL o_norm'); }
+    if (b.fx_used !== 1) { allPass = false; console.log('FAIL fx'); }
+  }
+  if (c.name.startsWith('10.')) {
+    if (!b.isValid || b.unofficial_salary_amount !== 5000) { allPass = false; console.log('FAIL'); }
+    if (b.official_salary_amount !== 0 || b.official_salary_currency !== 'USD' || b.fx_used !== 1) {
+      allPass = false; console.log('FAIL official lock');
+    }
+    if (b.total_salary_uzs != null) { allPass = false; console.log('FAIL no uzs norm'); }
   }
 }
 console.log('=====================================');

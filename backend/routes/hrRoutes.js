@@ -18,7 +18,10 @@ const {
   getEmployees,
   getCompensationEmployees,
   getEmployee,
+  getEmployeeCompensationHistory,
+  getEmployeeCompensationCurrent,
   postEmployee,
+  postCompensationRevision,
   patchEmployee,
   postEmployeePhoto,
   getAssignableUsers,
@@ -45,6 +48,9 @@ const {
   patchWorkStatus,
   removeWorkStatus,
   postWagePreview,
+  getPayrollSnapshot,
+  postPayrollDispute,
+  patchPayrollDispute,
 } = require('../controllers/hrController');
 
 const router = express.Router();
@@ -93,6 +99,13 @@ router.post('/positions', postPosition);
 router.patch('/positions/:id', patchPosition);
 router.get('/employees', getEmployees);
 router.get('/compensation/employees', requirePermission('hr.compensation.view'), getCompensationEmployees);
+router.get('/employees/:id/compensation-history', requirePermission('hr.salary.history_view'), getEmployeeCompensationHistory);
+router.get('/employees/:id/compensation-current', requirePermission('hr.salary.history_view'), getEmployeeCompensationCurrent);
+router.post(
+  '/employees/:id/compensation-revisions',
+  requirePermission('hr.salary.edit'),
+  postCompensationRevision
+);
 router.get('/employees/:id', getEmployee);
 router.post('/employees', postEmployee);
 router.post('/employees/:id/photo', uploadEmployeePhotoMw, postEmployeePhoto);
@@ -123,5 +136,9 @@ router.delete('/work-statuses/:id', removeWorkStatus);
 
 // Maaş kırılımı preview (stateless). Sadece module.hr yetkisi yeterli; tek motor üzerinden hesaplar.
 router.post('/wage/preview', postWagePreview);
+
+router.get('/payroll/snapshot', requirePermission('hr.payroll.view'), getPayrollSnapshot);
+router.post('/payroll/disputes', requirePermission('hr.payroll.edit'), postPayrollDispute);
+router.patch('/payroll/disputes/:id', requirePermission('hr.payroll.edit'), patchPayrollDispute);
 
 module.exports = router;

@@ -112,7 +112,11 @@
         </div>
 
         <section class="emp-form-card erp-card erp-section emp-salary-card">
-        <h3 data-i18n="hr.emp.monthlyWage">Aylık Ücret</h3>
+        <div class="emp-salary-toolbar">
+          <h3 data-i18n="hr.emp.monthlyWage">Aylık Ücret</h3>
+          <button type="button" id="btnOpenRevision" class="btn btn-secondary is-hidden" data-i18n="hr.emp.revisionOpen">Maaşı düzenle / Yeni maaş revizyonu</button>
+        </div>
+        <p id="salaryReadonlyHint" class="muted emp-salary-readonly-hint is-hidden"></p>
         <div class="emp-salary-grid">
           <div class="emp-salary-row">
             <div class="emp-salary-field emp-salary-amount">
@@ -146,6 +150,11 @@
           </div>
           <div class="emp-salary-row">
             <div class="emp-salary-field emp-salary-fx-hint-field">
+              <p id="officialCurrencyLockHint" class="emp-salary-fx-hint app-muted-text is-hidden" data-i18n="hr.emp.officialCurrencyLockedHint"></p>
+            </div>
+          </div>
+          <div class="emp-salary-row">
+            <div class="emp-salary-field emp-salary-fx-hint-field">
               <p id="salaryFxHint" class="emp-salary-fx-hint app-muted-text" data-i18n="hr.emp.salaryFxStandard">Kur standardı: 1 USD = X UZS</p>
             </div>
           </div>
@@ -159,6 +168,24 @@
             <p id="salaryFxErr" class="emp-salary-error login-error" role="alert"></p>
           </div>
         </div>
+        </section>
+
+        <section id="compHistorySection" class="emp-form-card erp-card erp-section is-hidden">
+          <h3 data-i18n="hr.emp.compHistory">Maaş geçmişi</h3>
+          <div class="table-wrap">
+            <table class="erp-table erp-table-dense emp-comp-history-table">
+              <thead>
+                <tr>
+                  <th data-i18n="hr.emp.compHistoryColFrom">Başlangıç</th>
+                  <th data-i18n="hr.emp.compHistoryColTo">Bitiş</th>
+                  <th data-i18n="hr.emp.compHistoryColTotal">Toplam</th>
+                  <th data-i18n="hr.emp.compHistoryColOfficial">Resmi</th>
+                  <th data-i18n="hr.emp.compHistoryColReason">Gerekçe</th>
+                </tr>
+              </thead>
+              <tbody id="compHistoryBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="emp-form-card erp-card erp-section">
@@ -258,6 +285,81 @@
         </div>
       </form>
       <div id="msg" class="muted emp-form-msg"></div>
+    </div>
+
+    <div id="revisionModalBackdrop" class="emp-revision-modal-backdrop" aria-hidden="true">
+      <div class="emp-revision-modal erp-modal" role="dialog" aria-modal="true" aria-labelledby="revisionModalTitle">
+        <div class="erp-modal-header">
+          <h3 id="revisionModalTitle" data-i18n="hr.emp.revisionTitle">Yeni maaş revizyonu</h3>
+        </div>
+        <div class="erp-modal-body">
+          <div class="grid erp-grid erp-grid-2 emp-form-two-col">
+            <div class="erp-field-full">
+              <label for="revEffectiveFrom" data-i18n="hr.emp.revisionEffectiveFrom">Geçerlilik başlangıcı</label>
+              <input id="revEffectiveFrom" type="date" required />
+            </div>
+            <div class="erp-field-full">
+              <label for="revReason" data-i18n="hr.emp.revisionReason">Gerekçe</label>
+              <textarea id="revReason" class="input-upper" rows="3" required></textarea>
+            </div>
+          </div>
+          <div class="emp-salary-grid emp-revision-modal-salary">
+            <div class="emp-salary-row">
+              <div class="emp-salary-field emp-salary-amount">
+                <label for="revSalaryAmount" data-i18n="hr.emp.salaryAmountLabel">Maaş Tutarı</label>
+                <input id="revSalaryAmount" type="text" inputmode="decimal" autocomplete="off" value="0,00" />
+              </div>
+              <div class="emp-salary-field emp-salary-currency-field">
+                <label for="revSalaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
+                <select id="revSalaryCurrency">
+                  <option value="UZS">UZS</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div class="emp-salary-row">
+              <div class="emp-salary-field emp-salary-amount">
+                <label for="revOfficialSalary" data-i18n="hr.emp.salaryOfficial">Resmi maaş</label>
+                <input id="revOfficialSalary" type="text" inputmode="decimal" autocomplete="off" value="0,00" />
+              </div>
+              <div class="emp-salary-field emp-salary-currency-field">
+                <label for="revOfficialSalaryCurrency" data-i18n="hr.emp.salaryCurrency">Para birimi</label>
+                <select id="revOfficialSalaryCurrency">
+                  <option value="UZS">UZS</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+              <div class="emp-salary-field emp-salary-fx-field">
+                <label for="revOfficialSalaryFx" data-i18n="hr.emp.salaryFx">Kur</label>
+                <input id="revOfficialSalaryFx" type="text" inputmode="decimal" autocomplete="off" value="1,00" data-i18n-placeholder="hr.emp.salaryFxPlaceholder" placeholder="örn. 12500" />
+              </div>
+            </div>
+            <div class="emp-salary-row">
+              <div class="emp-salary-field emp-salary-fx-hint-field">
+                <p id="revOfficialCurrencyLockHint" class="emp-salary-fx-hint app-muted-text is-hidden" data-i18n="hr.emp.officialCurrencyLockedHint"></p>
+              </div>
+            </div>
+            <div class="emp-salary-row">
+              <div class="emp-salary-field emp-salary-fx-hint-field">
+                <p id="revSalaryFxHint" class="emp-salary-fx-hint app-muted-text" data-i18n="hr.emp.salaryFxStandard">Kur standardı: 1 USD = X UZS</p>
+              </div>
+            </div>
+            <div class="emp-salary-row">
+              <div class="emp-salary-field emp-salary-amount">
+                <label for="revUnofficialSalary" data-i18n="hr.emp.salaryUnofficial">Resmi olmayan maaş (otomatik)</label>
+                <input id="revUnofficialSalary" type="text" inputmode="decimal" readonly value="0,00" />
+              </div>
+            </div>
+            <div class="emp-salary-row">
+              <p id="revSalaryFxErr" class="emp-salary-error login-error" role="alert"></p>
+            </div>
+          </div>
+        </div>
+        <div class="erp-modal-actions">
+          <button type="button" id="revisionModalCancel" class="btn btn-secondary" data-i18n="hr.emp.revisionCancel">İptal</button>
+          <button type="button" id="revisionModalSubmit" class="btn btn-primary" data-i18n="hr.emp.revisionSave">Revizyonu kaydet</button>
+        </div>
+      </div>
     </div>
       
         </main>

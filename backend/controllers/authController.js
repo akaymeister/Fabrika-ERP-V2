@@ -8,6 +8,7 @@ const { jsonOk, jsonError } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityLogService');
 const { pool } = require('../config/database');
 const { listUserPermissionKeys } = require('../services/accessService');
+const { SESSION_COOKIE_NAME, sessionCookieOptions } = require('../config/session');
 
 async function postLogin(req, res) {
   const username = String(req.body?.username || '').trim();
@@ -61,12 +62,14 @@ async function postLogout(req, res) {
     });
   }
   if (!req.session) {
+    res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions());
     return res.json(jsonOk());
   }
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json(jsonError('SESSION', 'Oturum kapatılamadı', null, 'api.session.destroy_failed'));
     }
+    res.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions());
     return res.json(jsonOk());
   });
 }

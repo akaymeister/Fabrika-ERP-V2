@@ -41,6 +41,8 @@ const HR_SETTING_KEYS = new Set([
   'working_days',
   'sunday_workable',
   'sunday_paid',
+  /** Bordro önizlemesi: 1 USD = X UZS (ay kilidinde sabitlenen kur önceliklidir). */
+  'payroll_usd_uzs_rate',
 ]);
 
 function normalizeNationality(v) {
@@ -141,15 +143,55 @@ function _wageHasFxInput(v) {
  *   - farklı currency: fx zorunlu, fx > 0
  *   - resmi olmayan maaş negatif olamaz
  *   - kur standardı: 1 USD = X UZS
+ *   - Toplam USD iken resmi para birimi yalnızca açıkça UZS seçilmişse karma hesap (UZS normalizasyonu) yapılır;
+ *     aksi halde kart USD–USD kabul edilir; bordro USD/UZS kuru taban maaşa uygulanmaz.
+ *   - Toplam USD + kartta resmi UZS yazılı olsa bile tutarlar so'm (milyonlar) ölçeğinde değilse (tipik veri hatası)
+ *     kart USD–USD sayılır; puantajda ru_uzs_nm / resmi UZS tahakkuku üretilmez.
+ *   - Resmi tutar boş, 0 veya ≤0 ise resmi para birimi toplam maaş birimine zorlanır, kur 1 olur (karma maaş yok).
  *
  * Çıktı her zaman aynı şekilli: isValid bayrağı + (varsa) errors listesi.
  */
 function computeWageBreakdown(input) {
   const errors = [];
   const totalCurrency = _wageNormCurrency(input?.total_salary_currency);
-  const officialCurrency = _wageNormCurrency(input?.official_salary_currency, totalCurrency);
   const totalAmount = _wageParseAmount(input?.total_salary_amount);
-  const officialAmount = _wageParseAmount(input?.official_salary_amount);
+  let officialAmount = _wageParseAmount(input?.official_salary_amount);
+  const offAmtRaw = input?.official_salary_amount;
+  const officialBlank = offAmtRaw == null || String(offAmtRaw).trim() === '';
+  if (officialAmount == null && officialBlank) {
+    officialAmount = 0;
+  }
+  const positiveOfficial = officialAmount != null && officialAmount > 0;
+  const rawOfficial = positiveOfficial ? input?.official_salary_currency : null;
+
+  const explicitUzs =
+    rawOfficial != null &&
+    String(rawOfficial).trim() !== '' &&
+    _wageNormCurrency(rawOfficial) === 'UZS';
+
+  let officialCurrency;
+  if (totalCurrency === 'USD') {
+    if (!explicitUzs) {
+      officialCurrency = 'USD';
+    } else if (
+      totalAmount != null &&
+      officialAmount != null &&
+      totalAmount < 2_000_000 &&
+      officialAmount < 500_000
+    ) {
+      // Resmi tutar gerçek bir aylık resmi UZS (genelde ≥ yüz binler / milyonlar) gibi değil → dolar rakamı yanlış etiketlenmiş.
+      officialCurrency = 'USD';
+    } else {
+      officialCurrency = 'UZS';
+    }
+  } else {
+    const eff =
+      rawOfficial != null && String(rawOfficial).trim() !== ''
+        ? rawOfficial
+        : input?.total_salary_currency;
+    officialCurrency = _wageNormCurrency(eff, totalCurrency);
+  }
+
   const fxParsed = _wageParseFx(input?.official_salary_fx_rate);
   const fxProvided = _wageHasFxInput(input?.official_salary_fx_rate);
 
@@ -321,11 +363,49 @@ function breakdownFromEmployeeRow(row) {
     total_salary_amount: row.salary_amount,
     total_salary_currency: row.salary_currency,
     official_salary_amount: row.official_salary_amount,
-    official_salary_currency: row.official_salary_currency || row.salary_currency,
+    official_salary_currency: row.official_salary_currency,
     official_salary_fx_rate:
       row.official_salary_fx_rate != null && Number(row.official_salary_fx_rate) > 0
         ? row.official_salary_fx_rate
         : 1,
+  });
+}
+
+/** Ay kaydında saklanan veya İK ayarındaki USD/UZS kuru; yoksa personel kartı kuru. */
+function resolveMonthPayrollUsdUzsRate(lockRow, settingMap) {
+  const frozen = lockRow && parseFxRate(lockRow.payroll_usd_uzs_rate);
+  if (frozen != null) return { rate: frozen, source: 'month_locked' };
+  const fromSet = settingMap && parseFxRate(settingMap.payroll_usd_uzs_rate);
+  if (fromSet != null) return { rate: fromSet, source: 'settings' };
+  return { rate: null, source: 'employee' };
+}
+
+/** listMonthlyAttendance: dönem bordrosunda kur önceliği ay sabiti > İK ayarı > personel (maaş satırı history veya employees cache olabilir). */
+function breakdownFromEmployeeRowForPayroll(empRow, monthUsdUzsRate) {
+  if (!empRow) return null;
+  const totalCurrency = _wageNormCurrency(empRow.salary_currency);
+  const rawOff = empRow.official_salary_currency;
+  let offAmt = _wageParseAmount(empRow.official_salary_amount);
+  const offBlank = empRow.official_salary_amount == null || String(empRow.official_salary_amount).trim() === '';
+  if (offAmt == null && offBlank) offAmt = 0;
+  const posOff = offAmt != null && offAmt > 0;
+  const crossUsdUzs =
+    posOff &&
+    totalCurrency === 'USD' &&
+    rawOff != null &&
+    String(rawOff).trim() !== '' &&
+    _wageNormCurrency(rawOff) === 'UZS';
+  let fxArg = empRow.official_salary_fx_rate;
+  if (crossUsdUzs) {
+    const m = parseFxRate(monthUsdUzsRate);
+    if (m != null) fxArg = m;
+  }
+  return computeWageBreakdown({
+    total_salary_amount: empRow.salary_amount,
+    total_salary_currency: empRow.salary_currency,
+    official_salary_amount: empRow.official_salary_amount,
+    official_salary_currency: rawOff,
+    official_salary_fx_rate: fxArg,
   });
 }
 
@@ -473,6 +553,28 @@ function normalizeWorkType(v) {
 function normalizeMonthKey(v) {
   const s = String(v || '').trim();
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(s) ? s : null;
+}
+
+/** month_key YYYY-MM → ayın son günü YYYY-MM-DD (puantaj/bordro maaş versiyonu asOf). */
+function monthKeyToLastDayIso(mk) {
+  const s = normalizeMonthKey(mk);
+  if (!s) return null;
+  const [ys, ms] = s.split('-');
+  const y = parseInt(ys, 10);
+  const mo = parseInt(ms, 10);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || mo < 1 || mo > 12) return null;
+  const d = new Date(y, mo, 0);
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${s}-${dd}`;
+}
+
+/** Yerel sunucu saatiyle month_key (YYYY-MM) geçmiş ay mı (fallback uyarısı için). */
+function isPastMonthKey(mk) {
+  const key = normalizeMonthKey(mk);
+  if (!key) return false;
+  const d = new Date();
+  const cur = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return key < cur;
 }
 
 function normalizeTime(v) {
@@ -639,6 +741,11 @@ function validateHrSettingValue(key, value) {
     if (!Number.isFinite(n) || n < 0) return null;
     return String(Math.round(n * 1000) / 1000);
   }
+  if (key === 'payroll_usd_uzs_rate') {
+    const fx = parseFxRate(s);
+    if (fx == null) return null;
+    return String(Math.round(fx * 1000000) / 1000000);
+  }
   const n = parseNonNegNumber(s);
   if (n == null) return null;
   return String(n);
@@ -661,12 +768,13 @@ function validateAttendanceRule(workStatus, checkIn, checkOut) {
   const strictTime = workStatus === 'worked' || workStatus === 'half_day' || workStatus === 'overtime';
   if (strictTime) {
     if (!checkIn || !checkOut) return err('Giris ve cikis saati zorunlu', 'api.hr.attendance_time_required');
-    if (checkOut <= checkIn) return err('Cikis saati giristen sonra olmali', 'api.hr.attendance_time_order_invalid');
+    // Cikis < giris ise gece tasmasi (ertesi gun) kabul edilir; esitlik hala gecersizdir.
+    if (checkOut === checkIn) return err('Cikis saati giris saati ile ayni olamaz', 'api.hr.attendance_time_order_invalid');
     return null;
   }
   // absent / leave / sick_leave icin saatler opsiyonel; doluysa tutarli olmali
-  if (checkIn && checkOut && checkOut <= checkIn) {
-    return err('Cikis saati giristen sonra olmali', 'api.hr.attendance_time_order_invalid');
+  if (checkIn && checkOut && checkOut === checkIn) {
+    return err('Cikis saati giris saati ile ayni olamaz', 'api.hr.attendance_time_order_invalid');
   }
   return null;
 }
@@ -681,13 +789,176 @@ function computeTotalHours(checkIn, checkOut) {
   if (!checkIn || !checkOut) return 0;
   const cin = String(checkIn).slice(0, 8);
   const cout = String(checkOut).slice(0, 8);
-  if (!cin || !cout || cout <= cin) return 0;
+  if (!cin || !cout) return 0;
   const s = cin.split(':').map((x) => Number(x) || 0);
   const e = cout.split(':').map((x) => Number(x) || 0);
   const m1 = s[0] * 60 + s[1];
-  const m2 = e[0] * 60 + e[1];
-  if (m2 <= m1) return 0;
-  return Math.round(((m2 - m1) / 60) * 100) / 100;
+  let m2 = e[0] * 60 + e[1];
+  // Gece tasmasi: 08:00 -> 04:00 gibi cikis ertesi gun kabul edilir.
+  if (m2 < m1) m2 += 24 * 60;
+  return Math.round((Math.max(0, m2 - m1) / 60) * 100) / 100;
+}
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+function parseWorkingDays(raw) {
+  const list = String(raw || '')
+    .split(',')
+    .map((x) => x.trim().toLowerCase())
+    .filter((x) => ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].includes(x));
+  return list.length ? list : ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+}
+
+function timeToMinutesAny(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  const hhmm = s.slice(0, 5);
+  return parseTimeMinutes(hhmm);
+}
+
+function safeEndMinutes(startRaw, endRaw) {
+  const start = timeToMinutesAny(startRaw);
+  let end = timeToMinutesAny(endRaw);
+  if (start == null || end == null) return null;
+  if (end < start) end += 24 * 60;
+  return { start, end };
+}
+
+function overlapMinutes(rangeStart, rangeEnd, itemStart, itemEnd) {
+  const s = Math.max(rangeStart, itemStart);
+  const e = Math.min(rangeEnd, itemEnd);
+  return Math.max(0, e - s);
+}
+
+function breakOverlapMinutes(rangeStart, rangeEnd, breakStart, breakEnd) {
+  const br = safeEndMinutes(breakStart, breakEnd);
+  if (!br) return 0;
+  return overlapMinutes(rangeStart, rangeEnd, br.start, br.end);
+}
+
+function dayKeyFromDateLocal(dateRaw) {
+  const d = new Date(`${String(dateRaw || '').slice(0, 10)}T00:00:00`);
+  if (!Number.isFinite(d.getTime())) return '';
+  return DAY_KEYS[d.getDay()] || '';
+}
+
+function toHours2(minutes) {
+  return Math.round((Math.max(0, Number(minutes) || 0) / 60) * 100) / 100;
+}
+
+function computeStandardDailyMinutes(settings = {}) {
+  const range = safeEndMinutes(settings.standard_start_time || settings.daily_start_time, settings.standard_end_time || settings.daily_end_time);
+  if (!range) return 0;
+  const b1 = breakOverlapMinutes(range.start, range.end, settings.break_1_start_time, settings.break_1_end_time);
+  const b2 = breakOverlapMinutes(range.start, range.end, settings.break_2_start_time, settings.break_2_end_time);
+  const lunch = breakOverlapMinutes(range.start, range.end, settings.lunch_start_time, settings.lunch_end_time);
+  const deduction = Math.round(parseDecimalLoose(settings.time_deduction_hours) * 60);
+  return Math.max(0, range.end - range.start - b1 - b2 - lunch - deduction);
+}
+
+function computeNormalDayMinutesByRules(checkIn, checkOut, settings = {}) {
+  const range = safeEndMinutes(checkIn, checkOut);
+  if (!range) return { normalMinutes: 0, overtimeMinutes: 0 };
+  const stdEnd = timeToMinutesAny(settings.standard_end_time || settings.daily_end_time || '18:00') ?? 18 * 60;
+  const normalEnd = Math.min(range.end, stdEnd);
+  const normalBase = Math.max(0, normalEnd - range.start);
+  const normalBreaks =
+    breakOverlapMinutes(range.start, normalEnd, settings.break_1_start_time, settings.break_1_end_time) +
+    breakOverlapMinutes(range.start, normalEnd, settings.break_2_start_time, settings.break_2_end_time) +
+    breakOverlapMinutes(range.start, normalEnd, settings.lunch_start_time, settings.lunch_end_time);
+  const deduction = Math.round(parseDecimalLoose(settings.time_deduction_hours) * 60);
+  const normalMinutes = Math.max(0, normalBase - normalBreaks - deduction);
+  const overtimeBase = Math.max(0, range.end - stdEnd);
+  const break3Overtime = breakOverlapMinutes(stdEnd, range.end, settings.break_3_start_time, settings.break_3_end_time);
+  const overtimeMinutes = Math.max(0, overtimeBase - break3Overtime);
+  return { normalMinutes, overtimeMinutes };
+}
+
+function computeSundayOvertimeMinutesByRules(checkIn, checkOut, settings = {}) {
+  const range = safeEndMinutes(checkIn, checkOut);
+  if (!range) return 0;
+  const totalBase = Math.max(0, range.end - range.start);
+  const breaks =
+    breakOverlapMinutes(range.start, range.end, settings.break_1_start_time, settings.break_1_end_time) +
+    breakOverlapMinutes(range.start, range.end, settings.break_2_start_time, settings.break_2_end_time) +
+    breakOverlapMinutes(range.start, range.end, settings.lunch_start_time, settings.lunch_end_time);
+  let result = Math.max(0, totalBase - breaks);
+  // Pazar çalışmasında da genel zaman kesintisi uygulanır.
+  const deduction = Math.round(parseDecimalLoose(settings.time_deduction_hours) * 60);
+  result = Math.max(0, result - deduction);
+  const stdEnd = timeToMinutesAny(settings.standard_end_time || settings.daily_end_time || '18:00') ?? 18 * 60;
+  if (range.end > stdEnd) {
+    result = Math.max(0, result - breakOverlapMinutes(stdEnd, range.end, settings.break_3_start_time, settings.break_3_end_time));
+  }
+  return result;
+}
+
+function parseBool01Loose(v) {
+  if (v === true || v === 1 || v === '1' || String(v || '').toLowerCase() === 'true') return true;
+  if (v === false || v === 0 || v === '0' || String(v || '').toLowerCase() === 'false') return false;
+  return null;
+}
+
+function computeDailyTotalHoursByRules({
+  workDate,
+  workStatus,
+  checkIn,
+  checkOut,
+  settings = {},
+  statusMultipliers = new Map(),
+  sundayWorkableOverride = null,
+  sundayPaidOverride = null,
+} = {}) {
+  const out = computeDailyHoursBreakdownByRules({
+    workDate,
+    workStatus,
+    checkIn,
+    checkOut,
+    settings,
+    statusMultipliers,
+    sundayWorkableOverride,
+    sundayPaidOverride,
+  });
+  return out.totalHours;
+}
+
+function computeDailyHoursBreakdownByRules({
+  workDate,
+  workStatus,
+  checkIn,
+  checkOut,
+  settings = {},
+  statusMultipliers = new Map(),
+  sundayWorkableOverride = null,
+  sundayPaidOverride = null,
+} = {}) {
+  const status = String(workStatus || '').trim().toLowerCase();
+  const dayKey = dayKeyFromDateLocal(workDate);
+  const isSunday = dayKey === 'sun';
+  const workingDays = parseWorkingDays(settings.working_days);
+  const sundayWorkableBase = String(settings.sunday_workable || '0') === '1' || workingDays.includes('sun');
+  const sundayPaidBase = String(settings.sunday_paid || '0') === '1';
+  const sundayWorkable = sundayWorkableOverride == null ? sundayWorkableBase : !!sundayWorkableOverride;
+  const sundayPaid = sundayPaidOverride == null ? sundayPaidBase : !!sundayPaidOverride;
+  const dayAllowed = workingDays.includes(dayKey);
+  const disallowEntry = isSunday ? !sundayWorkable : !dayAllowed;
+  if (disallowEntry) return { totalHours: 0, overtimeHours: 0 };
+  if (status === 'absent' || status === 'unpaid_leave') return { totalHours: 0, overtimeHours: 0 };
+  if (isSunday && !sundayPaid) return { totalHours: 0, overtimeHours: 0 };
+  const mulRaw = Number(statusMultipliers.get(status));
+  const multiplier = Number.isFinite(mulRaw) && mulRaw >= 0 ? mulRaw : 1;
+  const standardDailyMinutes = computeStandardDailyMinutes(settings);
+  if (!isSunday && status === 'paid_leave') return { totalHours: toHours2(standardDailyMinutes * multiplier), overtimeHours: 0 };
+  if (isSunday) {
+    const sundayOtMinutes =
+      status === 'paid_leave' ? standardDailyMinutes : computeSundayOvertimeMinutesByRules(checkIn, checkOut, settings);
+    return { totalHours: 0, overtimeHours: toHours2(sundayOtMinutes * multiplier) };
+  }
+  const calc = computeNormalDayMinutesByRules(checkIn, checkOut, settings);
+  return {
+    totalHours: toHours2(calc.normalMinutes * multiplier),
+    overtimeHours: toHours2(calc.overtimeMinutes * multiplier),
+  };
 }
 
 async function isAttendanceMonthLocked(monthKey) {
@@ -982,7 +1253,7 @@ async function listCompensationEmployees(filters = {}, _viewer = null) {
   return { rows: out };
 }
 
-async function createEmployee(input) {
+async function createEmployee(input, actorUserId = null) {
   let firstName = toUpperTr(input?.first_name);
   let lastName = toUpperTr(input?.last_name);
   if ((!firstName || !lastName) && input?.full_name) {
@@ -1116,8 +1387,43 @@ async function createEmployee(input) {
         note,
       }
     );
+    const newId = r.insertId;
+    try {
+      await conn.query(
+        `INSERT INTO employee_compensation_history (
+           employee_id, effective_from, effective_to,
+           salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+           official_salary_currency, official_salary_fx_rate,
+           reason, created_by
+         )
+         SELECT
+           e.id,
+           COALESCE(DATE(e.hire_date), DATE(e.created_at), CURDATE()),
+           NULL,
+           e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+           COALESCE(NULLIF(TRIM(e.official_salary_currency), ''), NULLIF(TRIM(e.salary_currency), ''), 'UZS'),
+           COALESCE(e.official_salary_fx_rate, 1),
+           'EMPLOYEE_CREATE_INITIAL',
+           :actor
+         FROM employees e
+         WHERE e.id = :newId`,
+        {
+          newId,
+          actor:
+            actorUserId != null && Number.isFinite(Number(actorUserId)) && Number(actorUserId) > 0
+              ? Number(actorUserId)
+              : null,
+        }
+      );
+    } catch (e) {
+      if (e.code === 'ER_NO_SUCH_TABLE') {
+        await conn.rollback();
+        return err('Maaş geçmişi tablosu yok; migrasyon calistirin', 'api.hr.compensation_history_table_missing');
+      }
+      throw e;
+    }
     await conn.commit();
-    return { id: r.insertId, employee_no: employeeNo };
+    return { id: newId, employee_no: employeeNo };
   } catch (e) {
     await conn.rollback();
     throw e;
@@ -1160,7 +1466,7 @@ async function getEmployeeById(id) {
   return { employee: emp };
 }
 
-async function updateEmployee(id, input) {
+async function updateEmployee(id, input, viewer = null) {
   const empId = parseId(id);
   if (!empId) return err('Gecersiz personel', 'api.hr.employee_invalid');
   const [curRows] = await pool.query(
@@ -1288,49 +1594,25 @@ async function updateEmployee(id, input) {
         : optionalNoteUpperTr(input.address_line);
   }
 
-  // Maaş ile ilgili bir alan bile değiştiyse TEK helper'dan tüm normalize alanları yeniden üretiyoruz.
-  // Böylece total - official, FX ve unofficial hesabı her yerde aynı kuralla yürür.
+  // Faz 2A: Maaş alanları PATCH ile güncellenmez; POST .../compensation-revisions kullanılır.
   const wageTouched =
     input?.salary_amount !== undefined ||
     input?.salary_currency !== undefined ||
     input?.official_salary_amount !== undefined ||
     input?.official_salary_currency !== undefined ||
-    input?.official_salary_fx_rate !== undefined;
+    input?.official_salary_fx_rate !== undefined ||
+    input?.unofficial_salary_amount !== undefined;
   if (wageTouched) {
-    const wageOut = derivePersistableWage({
-      total_salary_amount:
-        input?.salary_amount !== undefined ? input.salary_amount : cur.salary_amount,
-      total_salary_currency:
-        input?.salary_currency !== undefined ? input.salary_currency : cur.salary_currency,
-      official_salary_amount:
-        input?.official_salary_amount !== undefined
-          ? input.official_salary_amount
-          : cur.official_salary_amount,
-      official_salary_currency:
-        input?.official_salary_currency !== undefined
-          ? input.official_salary_currency
-          : cur.official_salary_currency || cur.salary_currency,
-      official_salary_fx_rate:
-        input?.official_salary_fx_rate !== undefined
-          ? input.official_salary_fx_rate
-          : cur.official_salary_fx_rate != null && Number(cur.official_salary_fx_rate) > 0
-            ? cur.official_salary_fx_rate
-            : 1,
-    });
-    if (wageOut.error) return wageOut;
-    const w = wageOut.persist;
-    fields.push('salary_currency = :salary_currency');
-    fields.push('salary_amount = :salary_amount');
-    fields.push('official_salary_amount = :official_salary_amount');
-    fields.push('unofficial_salary_amount = :unofficial_salary_amount');
-    fields.push('official_salary_currency = :official_salary_currency');
-    fields.push('official_salary_fx_rate = :official_salary_fx_rate');
-    p.salary_currency = w.salary_currency;
-    p.salary_amount = w.salary_amount;
-    p.official_salary_amount = w.official_salary_amount;
-    p.unofficial_salary_amount = w.unofficial_salary_amount;
-    p.official_salary_currency = w.official_salary_currency;
-    p.official_salary_fx_rate = w.official_salary_fx_rate;
+    const uid = viewer?.id;
+    const slug = viewer?.role?.slug;
+    const canEditSalary = uid != null && (await userHasPermission(uid, slug, 'hr.salary.edit'));
+    if (!canEditSalary) {
+      return err('Maaş düzenlemek için yetkiniz yok', 'api.hr.salary_edit_forbidden');
+    }
+    return err(
+      'Maaş güncellemesi için POST /api/hr/employees/:id/compensation-revisions kullanin',
+      'api.hr.salary_patch_forbidden_use_revision'
+    );
   }
 
   if (input?.phone !== undefined) {
@@ -1768,6 +2050,16 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
     let affected = 0;
     const allowedStatuses = await getAllowedCodes('hr_work_statuses', true);
     const allowedTypes = await getAllowedCodes('hr_work_types', true);
+    const { settings: attendanceSettings, workStatuses } = await getHrSettingsBundle({ includeInactive: true });
+    const statusMultipliers = new Map();
+    (workStatuses || []).forEach((s) => {
+      const key = String(s.code || '').trim().toLowerCase();
+      if (!key) return;
+      const mul = Number(s.multiplier);
+      statusMultipliers.set(key, Number.isFinite(mul) && mul >= 0 ? mul : 1);
+    });
+    if (!statusMultipliers.has('paid_leave')) statusMultipliers.set('paid_leave', 1);
+    if (!statusMultipliers.has('unpaid_leave')) statusMultipliers.set('unpaid_leave', 0);
     for (const row of entries) {
       const employeeId = parseId(row?.employee_id);
       if (!employeeId) continue;
@@ -1789,10 +2081,21 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
         await conn.rollback();
         return vErr;
       }
-      const totalHoursRaw = Number(row?.total_hours);
-      const totalHours = Number.isFinite(totalHoursRaw) && totalHoursRaw >= 0 ? totalHoursRaw : computeTotalHours(checkIn, checkOut);
-      const overtimeRaw = Number(row?.overtime_hours);
-      const rawOvertimeHours = Number.isFinite(overtimeRaw) && overtimeRaw >= 0 ? overtimeRaw : 0;
+      // Nihai kaynak backend hesap motoru olmalidir; frontend saat degerleri kabul edilmez.
+      const sundayWorkableOverride = parseBool01Loose(row?.sunday_workable_override);
+      const sundayPaidOverride = parseBool01Loose(row?.sunday_paid_override);
+      const hourBreakdown = computeDailyHoursBreakdownByRules({
+        workDate: d,
+        workStatus,
+        checkIn,
+        checkOut,
+        settings: attendanceSettings,
+        statusMultipliers,
+        sundayWorkableOverride,
+        sundayPaidOverride,
+      });
+      const totalHours = Number(hourBreakdown?.totalHours || 0);
+      const rawOvertimeHours = Number(hourBreakdown?.overtimeHours || 0);
       const rawOvertimeMinutes = Math.max(0, Math.round(rawOvertimeHours * 60));
       const [empRows] = await conn.query('SELECT overtime_eligible FROM employees WHERE id = :id LIMIT 1', { id: employeeId });
       const overtimeEligible = isOvertimeEligible(empRows[0]?.overtime_eligible);
@@ -1926,6 +2229,8 @@ async function listMonthlyAttendance({
     total_gr_usd_nm: null,
     total_fm_usd: null,
     total_ru_uzs_nm: null,
+    total_gr_uzs_nm: null,
+    total_fm_uzs_nm: null,
     total_non_official_uzs: null,
     total_unofficial_usd: null,
   };
@@ -1937,29 +2242,123 @@ async function listMonthlyAttendance({
   summaryTotals.total_normal_hours = Math.round(summaryTotals.total_normal_hours * 100) / 100;
   summaryTotals.total_overtime_hours = Math.round(summaryTotals.total_overtime_hours * 100) / 100;
 
+  const [monthLockRowsForPayroll] = await pool.query(
+    'SELECT month_key, is_locked, payroll_usd_uzs_rate FROM attendance_month_locks WHERE month_key = :mk LIMIT 1',
+    { mk }
+  );
+  const monthLockRow = monthLockRowsForPayroll[0] || null;
+  const isLocked =
+    monthLockRow &&
+    (monthLockRow.is_locked === true ||
+      monthLockRow.is_locked === 1 ||
+      monthLockRow.is_locked === '1' ||
+      Number(monthLockRow.is_locked) === 1);
+  const [payrollFxSettingRows] = await pool.query(
+    `SELECT setting_value FROM hr_settings WHERE setting_key = 'payroll_usd_uzs_rate' LIMIT 1`
+  );
+  const payrollFxMiniMap = { payroll_usd_uzs_rate: payrollFxSettingRows[0]?.setting_value };
+  const monthFxResolvedGlobal = resolveMonthPayrollUsdUzsRate(monthLockRow, payrollFxMiniMap);
+  let payrollUsdUzsMeta = {
+    effectiveRate: monthFxResolvedGlobal.rate,
+    source: monthFxResolvedGlobal.source,
+    monthStoredRate: monthLockRow?.payroll_usd_uzs_rate ?? null,
+  };
+  let monthPayrollRate = monthFxResolvedGlobal.rate;
+  /** @type {{ missingHistoryEmployeeIds: number[], month_key: string, month_end_iso: string|null, past_month: boolean }|null} */
+  let compensation_debug = null;
+
   if (canViewSalaryGroup && summary.length) {
     const empIds = summary.map((x) => Number(x.employee_id)).filter((x) => Number.isFinite(x) && x > 0);
-    const [salaryRows] = empIds.length
-      ? await pool.query(
-          `SELECT id, salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
-                  official_salary_currency, official_salary_fx_rate
-           FROM employees
-           WHERE id IN (${empIds.map(() => '?').join(',')})`,
-          empIds
-        )
-      : [[]];
-    const salaryByEmp = new Map(salaryRows.map((r) => [Number(r.id), r]));
+    const monthEndIso = monthKeyToLastDayIso(mk);
+    /** @type {Map<number, object>} employee_id → maaş satırı (employee_compensation_history veya employees) */
+    const salaryByEmp = new Map();
+    const historyMatchedEmployeeIds = new Set();
+
+    if (empIds.length && monthEndIso) {
+      const ph = empIds.map(() => '?').join(',');
+      try {
+        const [historyRows] = await pool.query(
+          `SELECT h.employee_id,
+                  h.salary_currency, h.salary_amount, h.official_salary_amount, h.unofficial_salary_amount,
+                  h.official_salary_currency, h.official_salary_fx_rate
+           FROM employee_compensation_history h
+           INNER JOIN (
+             SELECT employee_id, MAX(effective_from) AS mx
+             FROM employee_compensation_history
+             WHERE employee_id IN (${ph})
+               AND effective_from <= ?
+               AND (effective_to IS NULL OR effective_to >= ?)
+             GROUP BY employee_id
+           ) t ON t.employee_id = h.employee_id AND t.mx = h.effective_from`,
+          [...empIds, monthEndIso, monthEndIso]
+        );
+        for (const r of historyRows || []) {
+          const hid = Number(r.employee_id);
+          salaryByEmp.set(hid, r);
+          historyMatchedEmployeeIds.add(hid);
+        }
+      } catch (e) {
+        if (e.code === 'ER_NO_SUCH_TABLE') {
+          // TODO Faz 3B: employee_compensation_history yoksa migrasyon; şimdilik employees cache kullanılıyor.
+          console.warn(`[PAYROLL_HISTORY_TABLE_MISSING] month=${mk} — tum personel employees fallback`);
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    const missingHistoryEmployeeIds = empIds.filter((id) => !historyMatchedEmployeeIds.has(id));
+    if (missingHistoryEmployeeIds.length) {
+      const past = isPastMonthKey(mk);
+      for (const fid of missingHistoryEmployeeIds) {
+        if (past) {
+          console.warn(`[PAYROLL_HISTORY_FALLBACK] employee_id=${fid} month=${mk}`);
+        } else {
+          console.warn(
+            `[PAYROLL_HISTORY_FALLBACK] employee_id=${fid} month=${mk} scope=current_or_future reason=no_history_row_at_month_end`
+          );
+        }
+      }
+    }
+
+    if (missingHistoryEmployeeIds.length) {
+      // TODO Faz 3B: history backfill tamamlaninca fallback kaldirilabilir veya yalnizca acil mod.
+      const [salaryRows] = await pool.query(
+        `SELECT id, salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+                official_salary_currency, official_salary_fx_rate
+         FROM employees
+         WHERE id IN (${missingHistoryEmployeeIds.map(() => '?').join(',')})`,
+        missingHistoryEmployeeIds
+      );
+      for (const r of salaryRows || []) {
+        salaryByEmp.set(Number(r.id), r);
+      }
+    }
+
+    compensation_debug = {
+      missingHistoryEmployeeIds: [...missingHistoryEmployeeIds],
+      month_key: mk,
+      month_end_iso: monthEndIso,
+      past_month: isPastMonthKey(mk),
+    };
     const [settingRows] = await pool.query(
       `SELECT setting_key, setting_value
        FROM hr_settings
        WHERE setting_key IN ('monthly_work_days', 'monthly_work_hours', 'standard_start_time', 'standard_end_time', 'daily_start_time', 'daily_end_time',
                              'break_1_start_time', 'break_1_end_time', 'break_2_start_time', 'break_2_end_time', 'lunch_start_time', 'lunch_end_time',
-                             'time_deduction_hours')`
+                             'time_deduction_hours', 'payroll_usd_uzs_rate')`
     );
     const settingMap = {};
     settingRows.forEach((r) => {
       settingMap[String(r.setting_key)] = r.setting_value;
     });
+    const monthFxResolvedInner = resolveMonthPayrollUsdUzsRate(monthLockRow, settingMap);
+    monthPayrollRate = monthFxResolvedInner.rate;
+    payrollUsdUzsMeta = {
+      effectiveRate: monthFxResolvedInner.rate,
+      source: monthFxResolvedInner.source,
+      monthStoredRate: monthLockRow?.payroll_usd_uzs_rate ?? null,
+    };
     const monthlyWorkDays = Number(settingMap.monthly_work_days || 0);
     const monthlyWorkHours = Number(settingMap.monthly_work_hours || 0);
     const standardDailyHours =
@@ -1970,13 +2369,19 @@ async function listMonthlyAttendance({
     summaryTotals.total_gr_usd_nm = 0;
     summaryTotals.total_fm_usd = 0;
     summaryTotals.total_ru_uzs_nm = 0;
+    summaryTotals.total_gr_uzs_nm = 0;
+    summaryTotals.total_fm_uzs_nm = 0;
     summaryTotals.total_non_official_uzs = 0;
     summaryTotals.total_unofficial_usd = 0;
 
     summary.forEach((s) => {
-      const sal = salaryByEmp.get(Number(s.employee_id)) || {};
+      const eidSum = Number(s.employee_id);
+      const sal = salaryByEmp.get(eidSum) || {};
+      s.compensation_source = historyMatchedEmployeeIds.has(eidSum) ? 'history' : 'employees_fallback';
+      // TODO Faz 3B+: Ay içinde birden fazla maaş versiyonu olursa gün bazlı prorate veya kilit anı snapshot gerekebilir.
+      // Faz 3A: ay sonu (month_key son günü) itibarıyla geçerli tek history satırı; yoksa employees cache.
       // Tek hesap motoru: normalize edilmiş 6 alan üzerinden raporlama yapılır.
-      const breakdown = breakdownFromEmployeeRow(sal) || {};
+      const breakdown = breakdownFromEmployeeRowForPayroll(sal, monthPayrollRate) || {};
       const officialSalaryUzs = breakdown.official_salary_uzs;
       const unofficialSalaryUzs = breakdown.unofficial_salary_uzs;
       const unofficialSalaryUsd = breakdown.unofficial_salary_usd;
@@ -2021,8 +2426,13 @@ async function listMonthlyAttendance({
         !salaryPerms.su || !canPropNormalPay || unofficialSalaryUsd == null
           ? null
           : monthlyNormalPayProportional(unofficialSalaryUsd, totalNormalHours, monthlyWorkHours);
+      // FM UZS: resmi ve/veya gayri resmi saatlik oranların toplamı (yalnızca biri tanımlıysa diğeri 0 kabul edilir).
+      // Eski hata: rsu veya grsu tek başına null iken tüm fm_uzs null dönüyordu; sadece resmi veya sadece gayri resmi maaşlı personelde tahakkuk kayboluyordu.
+      const rsuN = rsu != null && Number.isFinite(Number(rsu)) ? Number(rsu) : 0;
+      const grsuN = grsu != null && Number.isFinite(Number(grsu)) ? Number(grsu) : 0;
+      const otRateUzs = rsuN + grsuN;
       s.fm_uzs =
-        rsu == null || grsu == null ? null : mulSafe6(totalOvertimeHours, Number(rsu) + Number(grsu));
+        totalOvertimeHours > 0 && otRateUzs > 0 ? mulSafe6(totalOvertimeHours, otRateUzs) : null;
       s.fm_usd = su == null ? null : mulSafe6(totalOvertimeHours, su);
 
       // Normalize alanları satıra da ek olarak verelim (tüketici normalize'e geçince kullansın diye).
@@ -2036,6 +2446,8 @@ async function listMonthlyAttendance({
       if (s.gr_usd_nm != null) summaryTotals.total_gr_usd_nm += Number(s.gr_usd_nm || 0);
       if (s.fm_usd != null) summaryTotals.total_fm_usd += Number(s.fm_usd || 0);
       if (s.ru_uzs_nm != null) summaryTotals.total_ru_uzs_nm += Number(s.ru_uzs_nm || 0);
+      if (s.gr_uzs_nm != null) summaryTotals.total_gr_uzs_nm += Number(s.gr_uzs_nm || 0);
+      if (s.fm_uzs != null) summaryTotals.total_fm_uzs_nm += Number(s.fm_uzs || 0);
       if (s.gr_uzs_nm != null) summaryTotals.total_non_official_uzs += Number(s.gr_uzs_nm || 0);
       if (s.fm_uzs != null) summaryTotals.total_non_official_uzs += Number(s.fm_uzs || 0);
     });
@@ -2043,6 +2455,8 @@ async function listMonthlyAttendance({
     summaryTotals.total_gr_usd_nm = roundInternal6(summaryTotals.total_gr_usd_nm);
     summaryTotals.total_fm_usd = roundInternal6(summaryTotals.total_fm_usd);
     summaryTotals.total_ru_uzs_nm = roundInternal6(summaryTotals.total_ru_uzs_nm);
+    summaryTotals.total_gr_uzs_nm = roundInternal6(summaryTotals.total_gr_uzs_nm);
+    summaryTotals.total_fm_uzs_nm = roundInternal6(summaryTotals.total_fm_uzs_nm);
     summaryTotals.total_non_official_uzs = roundInternal6(summaryTotals.total_non_official_uzs);
     summaryTotals.total_unofficial_usd = roundInternal6(
       (summaryTotals.total_gr_usd_nm || 0) + (summaryTotals.total_fm_usd || 0)
@@ -2071,13 +2485,15 @@ async function listMonthlyAttendance({
       group: canViewSalaryGroup,
       ...salaryPerms,
     },
-    isLocked: await isAttendanceMonthLocked(mk),
+    isLocked,
+    payrollUsdUzs: payrollUsdUzsMeta,
+    compensation_debug,
   };
 }
 
 async function listAttendanceLocks() {
   const [rows] = await pool.query(
-    `SELECT l.id, l.month_key, l.is_locked, l.locked_at, l.unlocked_at, l.note,
+    `SELECT l.id, l.month_key, l.is_locked, l.locked_at, l.unlocked_at, l.note, l.payroll_usd_uzs_rate,
             ul.username AS locked_by_username, uu.username AS unlocked_by_username
      FROM attendance_month_locks l
      LEFT JOIN users ul ON ul.id = l.locked_by
@@ -2097,16 +2513,20 @@ async function listAttendanceProjects() {
   return { projects: rows };
 }
 
-async function lockAttendanceMonth({ month, note } = {}, actorId) {
+async function lockAttendanceMonth({ month, note, payroll_usd_uzs_rate } = {}, actorId) {
   const mk = normalizeMonthKey(month);
   if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+  const fx = parseFxRate(payroll_usd_uzs_rate);
+  if (fx == null) {
+    return err('Puantaj kilidi için dönem USD/UZS kuru zorunlu (1 USD = … UZS)', 'api.hr.payroll_usd_uzs_rate_required');
+  }
   await pool.query(
-    `INSERT INTO attendance_month_locks (month_key, is_locked, locked_at, locked_by, unlocked_at, unlocked_by, note)
-     VALUES (:month_key, 1, NOW(), :actor_id, NULL, NULL, :note)
-     ON DUPLICATE KEY UPDATE is_locked = 1, locked_at = NOW(), locked_by = :actor_id, unlocked_at = NULL, unlocked_by = NULL, note = :note`,
-    { month_key: mk, actor_id: actorId || null, note: optionalNoteUpperTr(note) || null }
+    `INSERT INTO attendance_month_locks (month_key, is_locked, locked_at, locked_by, unlocked_at, unlocked_by, note, payroll_usd_uzs_rate)
+     VALUES (:month_key, 1, NOW(), :actor_id, NULL, NULL, :note, :fx)
+     ON DUPLICATE KEY UPDATE is_locked = 1, locked_at = NOW(), locked_by = :actor_id, unlocked_at = NULL, unlocked_by = NULL, note = :note, payroll_usd_uzs_rate = :fx`,
+    { month_key: mk, actor_id: actorId || null, note: optionalNoteUpperTr(note) || null, fx }
   );
-  return { ok: true, month: mk, isLocked: true };
+  return { ok: true, month: mk, isLocked: true, payroll_usd_uzs_rate: fx };
 }
 
 async function unlockAttendanceMonth({ month, note } = {}, actorId) {
@@ -2316,6 +2736,571 @@ async function deleteWorkStatus(id) {
   return { ok: true };
 }
 
+const PAYROLL_DISPUTE_TYPES = new Set(['overtime', 'workday', 'deduction', 'other']);
+const PAYROLL_DISPUTE_STATUSES = new Set(['open', 'approved', 'rejected', 'resolved']);
+
+/**
+ * Karttaki toplam aylık maaş (tek tutar) → USD bütçe: resmi/gayri resmi dağılım veya mesai yok.
+ * Öncelik: breakdown.total_salary_usd; yoksa total_salary_uzs / dönem kuru; yoksa total_salary_amount + para birimi.
+ */
+function rosterBudgetMonthlySalaryUsd(bd, fxNum) {
+  if (!bd || bd.isValid === false) return { usd: null, needFx: false, skip: true };
+  const totalCurNorm = String(bd.total_salary_currency || '').trim().toUpperCase();
+  if (totalCurNorm === 'USD') {
+    if (bd.total_salary_usd != null && Number.isFinite(Number(bd.total_salary_usd))) {
+      const u = Number(bd.total_salary_usd);
+      if (u === 0) return { usd: null, needFx: false, skip: true };
+      return { usd: u, needFx: false, skip: false };
+    }
+    const amtUsd = bd.total_salary_amount != null ? Number(bd.total_salary_amount) : NaN;
+    if (Number.isFinite(amtUsd) && amtUsd !== 0) {
+      return { usd: amtUsd, needFx: false, skip: false };
+    }
+    return { usd: null, needFx: false, skip: true };
+  }
+  if (bd.total_salary_usd != null && Number.isFinite(Number(bd.total_salary_usd))) {
+    const u = Number(bd.total_salary_usd);
+    if (u === 0) return { usd: null, needFx: false, skip: true };
+    return { usd: u, needFx: false, skip: false };
+  }
+  if (bd.total_salary_uzs != null && Number.isFinite(Number(bd.total_salary_uzs))) {
+    const uz = Number(bd.total_salary_uzs);
+    if (uz === 0) return { usd: null, needFx: false, skip: true };
+    if (fxNum == null || !Number.isFinite(Number(fxNum)) || Number(fxNum) <= 0) {
+      return { usd: null, needFx: true, skip: false };
+    }
+    return { usd: uz / Number(fxNum), needFx: false, skip: false };
+  }
+  const cur = String(bd.total_salary_currency || '').trim().toUpperCase();
+  const amt = bd.total_salary_amount != null ? Number(bd.total_salary_amount) : NaN;
+  if (!Number.isFinite(amt) || amt === 0) return { usd: null, needFx: false, skip: true };
+  if (cur === 'USD') return { usd: amt, needFx: false, skip: false };
+  if (cur === 'UZS') {
+    if (fxNum == null || !Number.isFinite(Number(fxNum)) || Number(fxNum) <= 0) {
+      return { usd: null, needFx: true, skip: false };
+    }
+    return { usd: amt / Number(fxNum), needFx: false, skip: false };
+  }
+  return { usd: null, needFx: false, skip: true };
+}
+
+/**
+ * Personel listesiyle aynı: employment_status=active, bordro filtreleri (proje puantaja özeldir, dahil edilmez).
+ * Toplam: yalnızca karttaki aylık toplam maaşın USD karşılıkları toplamı (bütçe bilgisi; tahakkuk/mesai dahil değil).
+ */
+async function computePayrollActiveRosterStats(filters = {}, payrollFxEffective, viewer = null) {
+  const canViewSalaryGroup = await userHasPermission(viewer?.id, viewer?.role?.slug, 'hr.salary.view_group');
+  const rosterFilters = { ...(filters || {}) };
+  delete rosterFilters.projectId;
+  delete rosterFilters.month;
+
+  const where = ["e.employment_status = 'active'"];
+  const p = {};
+  const rosterEid = parseId(rosterFilters.employeeId);
+  if (rosterEid) {
+    where.push('e.id = :roster_employee_id');
+    p.roster_employee_id = rosterEid;
+  }
+  const fErr = applyEmployeeAttendanceFilters(rosterFilters, where, p);
+  if (fErr) return fErr;
+
+  const [cntRows] = await pool.query(`SELECT COUNT(*) AS c FROM employees e WHERE ${where.join(' AND ')}`, p);
+  const headcount = Number(cntRows[0]?.c || 0);
+
+  const fxNum =
+    payrollFxEffective != null &&
+    String(payrollFxEffective).trim() !== '' &&
+    Number.isFinite(Number(payrollFxEffective)) &&
+    Number(payrollFxEffective) > 0
+      ? Number(payrollFxEffective)
+      : null;
+
+  let totalSalaryUsd = null;
+  let missingFx = false;
+
+  if (canViewSalaryGroup && headcount > 0) {
+    const [rows] = await pool.query(
+      `SELECT e.id, e.salary_currency, e.salary_amount, e.official_salary_amount, e.unofficial_salary_amount,
+              e.official_salary_currency, e.official_salary_fx_rate
+       FROM employees e
+       WHERE ${where.join(' AND ')}`,
+      p
+    );
+    let sum = 0;
+    let any = false;
+    for (const emp of rows) {
+      const bd = breakdownFromEmployeeRowForPayroll(emp, fxNum);
+      const r = rosterBudgetMonthlySalaryUsd(bd, fxNum);
+      if (r.skip) continue;
+      if (r.needFx) {
+        missingFx = true;
+        continue;
+      }
+      if (r.usd != null && Number.isFinite(r.usd)) {
+        sum += r.usd;
+        any = true;
+      }
+    }
+    if (missingFx) {
+      totalSalaryUsd = null;
+    } else {
+      totalSalaryUsd = any ? roundInternal6(sum) : null;
+    }
+  }
+
+  return {
+    headcount,
+    total_salary_usd: canViewSalaryGroup ? totalSalaryUsd : null,
+    missing_fx: !!(canViewSalaryGroup && missingFx),
+  };
+}
+
+/**
+ * Aylık puantaj özeti + departman + bordro itirazları (payroll_disputes tablosu).
+ */
+async function listPayrollSnapshot(filters = {}, viewer = null) {
+  const out = await listMonthlyAttendance(filters, viewer);
+  if (out.error) return out;
+  const mk = out.month;
+  let disputeRows = [];
+  try {
+    const [dr] = await pool.query(
+      `SELECT d.id, d.period_month, d.employee_id, d.dispute_date, d.request_type, d.description,
+              d.status, d.resolution_note, d.created_at, d.updated_at,
+              d.created_by, d.updated_by,
+              e.employee_no, e.first_name, e.last_name, e.full_name,
+              COALESCE(NULLIF(CONCAT(COALESCE(e.first_name, ''), ' ', COALESCE(e.last_name, '')), ' '), e.full_name) AS employee_name
+       FROM payroll_disputes d
+       INNER JOIN employees e ON e.id = d.employee_id
+       WHERE d.period_month = :mk
+       ORDER BY d.created_at DESC`,
+      { mk }
+    );
+    disputeRows = dr;
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      disputeRows = [];
+    } else {
+      throw e;
+    }
+  }
+  disputeRows.forEach((row) => {
+    const mkSafe = String(row.period_month || '').replace(/[^0-9]/g, '');
+    row.request_no = mkSafe ? `ITZ-${mkSafe}-${String(row.id).padStart(5, '0')}` : `ITZ-${String(row.id).padStart(5, '0')}`;
+    row.employee_display = formatEmployeeLabel(row);
+  });
+  let openCount = 0;
+  const openByEmp = new Map();
+  disputeRows.forEach((d) => {
+    if (String(d.status || '').toLowerCase() === 'open') {
+      openCount += 1;
+      const eid = Number(d.employee_id);
+      openByEmp.set(eid, (openByEmp.get(eid) || 0) + 1);
+    }
+  });
+  const empIds = out.summary.map((s) => Number(s.employee_id)).filter((x) => Number.isFinite(x) && x > 0);
+  let deptByEmp = new Map();
+  if (empIds.length) {
+    const [drows] = await pool.query(
+      `SELECT e.id AS employee_id, d.name AS department_name
+       FROM employees e
+       LEFT JOIN departments d ON d.id = e.department_id
+       WHERE e.id IN (${empIds.map(() => '?').join(',')})`,
+      empIds
+    );
+    deptByEmp = new Map(drows.map((r) => [Number(r.employee_id), r.department_name]));
+  }
+  out.summary.forEach((s) => {
+    const eid = Number(s.employee_id);
+    s.department_name = deptByEmp.get(eid) || null;
+    s.payroll_open_disputes = openByEmp.get(eid) || 0;
+  });
+  out.payroll_disputes = disputeRows;
+  out.payroll_open_dispute_count = openCount;
+
+  const rosterStats = await computePayrollActiveRosterStats(filters, out.payrollUsdUzs?.effectiveRate, viewer);
+  if (rosterStats && rosterStats.error) return rosterStats;
+  out.active_roster = rosterStats || { headcount: 0, total_salary_usd: null, missing_fx: false };
+
+  return out;
+}
+
+async function createPayrollDispute(body = {}, actorId = null) {
+  const mk = normalizeMonthKey(body?.period_month);
+  if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+  const employeeId = parseId(body?.employee_id);
+  if (!employeeId) return err('Personel secimi gecersiz', 'api.hr.payroll_dispute_employee_invalid');
+  const requestTypeRaw = String(body?.request_type || 'other').trim().toLowerCase();
+  const requestType = PAYROLL_DISPUTE_TYPES.has(requestTypeRaw) ? requestTypeRaw : 'other';
+  const descriptionRaw = String(body?.description || '').trim();
+  if (!descriptionRaw || descriptionRaw.length < 3) {
+    return err('Aciklama en az 3 karakter olmalidir', 'api.hr.payroll_dispute_desc_short');
+  }
+  const description = toUpperTr(descriptionRaw);
+  let disputeDate = null;
+  if (body?.dispute_date != null && String(body.dispute_date).trim() !== '') {
+    const d = String(body.dispute_date).slice(0, 10);
+    disputeDate = /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+  }
+  const [[emp]] = await pool.query(
+    `SELECT id, employment_status FROM employees WHERE id = :id LIMIT 1`,
+    { id: employeeId }
+  );
+  if (!emp) return err('Personel bulunamadi', 'api.hr.employee_not_found');
+  if (String(emp.employment_status || '') === 'terminated') {
+    return err('Isten cikmis personel icin itiraz acilamaz', 'api.hr.payroll_dispute_terminated');
+  }
+  try {
+    const [insRes] = await pool.query(
+      `INSERT INTO payroll_disputes (period_month, employee_id, dispute_date, request_type, description, status, created_by, updated_by)
+       VALUES (:period_month, :employee_id, :dispute_date, :request_type, :description, 'open', :created_by, :updated_by)`,
+      {
+        period_month: mk,
+        employee_id: employeeId,
+        dispute_date: disputeDate,
+        request_type: requestType,
+        description,
+        created_by: actorId || null,
+        updated_by: actorId || null,
+      }
+    );
+    const newId = Number(insRes && insRes.insertId) || null;
+    return { ok: true, id: newId };
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return err('payroll_disputes tablosu yok; migrasyon calistirin', 'api.hr.payroll_disputes_table_missing');
+    }
+    throw e;
+  }
+}
+
+async function updatePayrollDispute(id, body = {}, actorId = null) {
+  const did = parseId(id);
+  if (!did) return err('Kayit gecersiz', 'api.hr.payroll_dispute_invalid');
+  const fields = [];
+  const p = { id: did, updated_by: actorId || null };
+  if (body?.status !== undefined) {
+    const st = String(body.status || '').trim().toLowerCase();
+    if (!PAYROLL_DISPUTE_STATUSES.has(st)) return err('Durum gecersiz', 'api.hr.payroll_dispute_status_invalid');
+    fields.push('status = :status');
+    p.status = st;
+  }
+  if (body?.resolution_note !== undefined) {
+    const note = optionalNoteUpperTr(body.resolution_note);
+    fields.push('resolution_note = :resolution_note');
+    p.resolution_note = note;
+  }
+  if (!fields.length) return err('Guncellenecek alan yok', 'api.hr.nothing_to_update');
+  fields.push('updated_by = :updated_by');
+  try {
+    const [r] = await pool.query(`UPDATE payroll_disputes SET ${fields.join(', ')} WHERE id = :id`, p);
+    if (!r.affectedRows) return err('Kayit bulunamadi', 'api.hr.payroll_dispute_not_found');
+    return { ok: true };
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return err('payroll_disputes tablosu yok; migrasyon calistirin', 'api.hr.payroll_disputes_table_missing');
+    }
+    throw e;
+  }
+}
+
+// =============================================================================
+//  EMPLOYEE COMPENSATION HISTORY (Faz 1 okuma + Faz 2A revizyon; Faz 3A listMonthlyAttendance ay sonu history)
+// =============================================================================
+
+/**
+ * Personelin tüm maaş geçmişi satırları (en yeni effective_from üstte).
+ * @param {number|string} employeeId
+ * @returns {Promise<{ rows: object[] }|{ error: string, messageKey?: string }>}
+ */
+async function listCompensationHistory(employeeId) {
+  const eid = parseId(employeeId);
+  if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, employee_id, effective_from, effective_to, salary_currency, salary_amount,
+              official_salary_amount, unofficial_salary_amount, official_salary_currency, official_salary_fx_rate,
+              reason, created_by, created_at, updated_at
+       FROM employee_compensation_history
+       WHERE employee_id = :eid
+       ORDER BY effective_from DESC, id DESC`,
+      { eid }
+    );
+    return { rows: rows || [] };
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return err('Maaş geçmişi tablosu yok; migrasyon calistirin', 'api.hr.compensation_history_table_missing');
+    }
+    throw e;
+  }
+}
+
+/**
+ * Belirli bir tarihte geçerli tek compensation satırı (yoksa null).
+ * @param {number|string} employeeId
+ * @param {string|Date|null} [asOfDate] YYYY-MM-DD; boşsa CURDATE()
+ * @returns {Promise<{ row: object|null }|{ error: string, messageKey?: string }>}
+ */
+async function getCurrentCompensation(employeeId, asOfDate) {
+  const eid = parseId(employeeId);
+  if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
+  let asof = null;
+  if (asOfDate != null && String(asOfDate).trim() !== '') {
+    const s = String(asOfDate).trim().slice(0, 10);
+    asof = /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+  }
+  if (!asof) {
+    const [drows] = await pool.query('SELECT CURDATE() AS d');
+    asof = String(drows[0].d).slice(0, 10);
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, employee_id, effective_from, effective_to, salary_currency, salary_amount,
+              official_salary_amount, unofficial_salary_amount, official_salary_currency, official_salary_fx_rate,
+              reason, created_by, created_at, updated_at
+       FROM employee_compensation_history
+       WHERE employee_id = :eid
+         AND effective_from <= :asof
+         AND (effective_to IS NULL OR effective_to >= :asof)
+       ORDER BY effective_from DESC
+       LIMIT 1`,
+      { eid, asof }
+    );
+    return { row: rows && rows[0] ? rows[0] : null };
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return err('Maaş geçmişi tablosu yok; migrasyon calistirin', 'api.hr.compensation_history_table_missing');
+    }
+    throw e;
+  }
+}
+
+/**
+ * Faz 3A debug: month_key için ay sonu itibarıyla hangi history satırı seçilir (listMonthlyAttendance ile aynı mantık).
+ *
+ * @param {number|string} employeeId
+ * @param {string} monthKey YYYY-MM
+ * @returns {Promise<{ employee_id: number, month_key: string, as_of: string, row: object|null }|{ error: string, messageKey?: string }>}
+ */
+async function getCompensationBandForMonth(employeeId, monthKey) {
+  const mk = normalizeMonthKey(monthKey);
+  const eid = parseId(employeeId);
+  if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
+  if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+  const asOf = monthKeyToLastDayIso(mk);
+  if (!asOf) return err('Ay gecersiz', 'api.hr.month_required');
+  const out = await getCurrentCompensation(eid, asOf);
+  if (out.error) return out;
+  return { employee_id: eid, month_key: mk, as_of: asOf, row: out.row || null };
+}
+
+/**
+ * Geçmiş tarihli effective_from, puantajı kilitli bir ay ile çakışıyorsa revizyon engellenir (bugünden önceki tarihler).
+ * @returns {null|{ error: string, messageKey?: string }}
+ */
+async function compensationEffectiveMonthLockedIfSo(executor, effectiveFromStr) {
+  const [[{ td }]] = await executor.query(`SELECT CURDATE() AS td`);
+  const todayStr = String(td).slice(0, 10);
+  if (effectiveFromStr >= todayStr) return null;
+
+  const mk = effectiveFromStr.slice(0, 7);
+  const [rows] = await executor.query(
+    `SELECT is_locked FROM attendance_month_locks WHERE month_key = :mk LIMIT 1`,
+    { mk }
+  );
+  const row = rows[0];
+  if (row && (Number(row.is_locked) === 1 || row.is_locked === true || row.is_locked === '1')) {
+    return err(
+      'Gecmis tarihli baslangic, kilitli bir ay ile cakisiyor; revizyon reddedildi',
+      'api.hr.compensation_revision_locked_month'
+    );
+  }
+  return null;
+}
+
+/**
+ * Yeni maaş revizyonu: history INSERT, önceki açık satırın effective_to kapanması, employees cache güncellemesi.
+ * Puantaj özeti (listMonthlyAttendance) ay sonu history kullanır; employees yalnızca cache / fallback.
+ *
+ * @param {number|string} employeeId
+ * @param {object} payload effective_from, salary_*, official_*, reason (zorunlu)
+ * @param {number|null} actorUserId
+ */
+async function createCompensationRevision(employeeId, payload, actorUserId = null) {
+  const eid = parseId(employeeId);
+  if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
+
+  const rawFrom = payload?.effective_from;
+  if (rawFrom == null || String(rawFrom).trim() === '') {
+    return err('Gecerlilik baslangici zorunlu', 'api.hr.compensation_revision_effective_required');
+  }
+  const effectiveFromStr = String(rawFrom).trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveFromStr)) {
+    return err('Gecerlilik baslangici gecersiz (YYYY-MM-DD)', 'api.hr.compensation_revision_effective_invalid');
+  }
+
+  const reasonRaw = payload?.reason;
+  if (reasonRaw == null || String(reasonRaw).trim() === '') {
+    return err('Gerekce zorunlu', 'api.hr.compensation_revision_reason_required');
+  }
+  const reason = toUpperTr(String(reasonRaw).trim());
+  if (!reason || String(reason).trim().length < 3) {
+    return err('Gerekce en az 3 karakter olmali', 'api.hr.compensation_revision_reason_short');
+  }
+  if (String(reason).length > 500) {
+    return err('Gerekce en fazla 500 karakter olabilir', 'api.hr.compensation_revision_reason_too_long');
+  }
+
+  const wageOut = derivePersistableWage({
+    total_salary_amount: payload?.salary_amount,
+    total_salary_currency: payload?.salary_currency || 'UZS',
+    official_salary_amount: payload?.official_salary_amount,
+    official_salary_currency: payload?.official_salary_currency,
+    official_salary_fx_rate: payload?.official_salary_fx_rate,
+  });
+  if (wageOut.error) return wageOut;
+  const w = wageOut.persist;
+  if (payload?.unofficial_salary_amount !== undefined && String(payload.unofficial_salary_amount).trim() !== '') {
+    const pUn = parseMoney2(payload.unofficial_salary_amount);
+    if (pUn == null) {
+      return err('Resmi olmayan maaş gecersiz', 'api.hr.compensation_revision_unofficial_invalid');
+    }
+    const diff = Math.abs(pUn - Number(w.unofficial_salary_amount));
+    if (diff > 0.02) {
+      return err(
+        'Resmi olmayan maaş toplam/resmi/kur ile uyusmuyor',
+        'api.hr.compensation_revision_unofficial_mismatch'
+      );
+    }
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [[emp]] = await conn.query(`SELECT id FROM employees WHERE id = :id LIMIT 1`, { id: eid });
+    if (!emp) {
+      await conn.rollback();
+      return err('Personel bulunamadi', 'api.hr.employee_not_found');
+    }
+
+    const lockErr = await compensationEffectiveMonthLockedIfSo(conn, effectiveFromStr);
+    if (lockErr) {
+      await conn.rollback();
+      return lockErr;
+    }
+
+    const [[dup]] = await conn.query(
+      `SELECT id FROM employee_compensation_history WHERE employee_id = :eid AND effective_from = :ef LIMIT 1`,
+      { eid, ef: effectiveFromStr }
+    );
+    if (dup && dup.id != null) {
+      await conn.rollback();
+      return err('Bu baslangic tarihinde zaten kayit var', 'api.hr.compensation_revision_duplicate_effective');
+    }
+
+    const [[mx]] = await conn.query(
+      `SELECT MAX(effective_from) AS mx FROM employee_compensation_history WHERE employee_id = :eid`,
+      { eid }
+    );
+    const maxD = mx && mx.mx != null ? String(mx.mx).slice(0, 10) : null;
+    if (maxD && effectiveFromStr <= maxD) {
+      await conn.rollback();
+      return err(
+        'Yeni revizyon baslangici, mevcut son kayittan sonraki bir tarih olmalidir',
+        'api.hr.compensation_revision_effective_after_latest'
+      );
+    }
+
+    await conn.query(
+      `UPDATE employee_compensation_history
+       SET effective_to = DATE_SUB(:newFrom, INTERVAL 1 DAY), updated_at = CURRENT_TIMESTAMP
+       WHERE employee_id = :eid
+         AND effective_to IS NULL
+         AND effective_from < :newFrom`,
+      { eid, newFrom: effectiveFromStr }
+    );
+
+    const actId =
+      actorUserId != null && Number.isFinite(Number(actorUserId)) && Number(actorUserId) > 0
+        ? Number(actorUserId)
+        : null;
+
+    await conn.query(
+      `INSERT INTO employee_compensation_history (
+         employee_id, effective_from, effective_to,
+         salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+         official_salary_currency, official_salary_fx_rate,
+         reason, created_by
+       ) VALUES (
+         :eid, :ef, NULL,
+         :sc, :sa, :osa, :usa,
+         :osc, :osfx,
+         :reason, :created_by
+       )`,
+      {
+        eid,
+        ef: effectiveFromStr,
+        sc: w.salary_currency,
+        sa: w.salary_amount,
+        osa: w.official_salary_amount,
+        usa: w.unofficial_salary_amount,
+        osc: w.official_salary_currency,
+        osfx: w.official_salary_fx_rate,
+        reason,
+        created_by: actId,
+      }
+    );
+
+    await conn.query(
+      `UPDATE employees SET
+         salary_currency = :sc,
+         salary_amount = :sa,
+         official_salary_amount = :osa,
+         unofficial_salary_amount = :usa,
+         official_salary_currency = :osc,
+         official_salary_fx_rate = :osfx,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = :eid`,
+      {
+        eid,
+        sc: w.salary_currency,
+        sa: w.salary_amount,
+        osa: w.official_salary_amount,
+        usa: w.unofficial_salary_amount,
+        osc: w.official_salary_currency,
+        osfx: w.official_salary_fx_rate,
+      }
+    );
+
+    const [[openRow]] = await conn.query(
+      `SELECT COUNT(*) AS c FROM employee_compensation_history WHERE employee_id = :eid AND effective_to IS NULL`,
+      { eid }
+    );
+    const openN = Number(openRow && openRow.c) || 0;
+    if (openN > 1) {
+      console.warn(
+        `[COMPENSATION_HISTORY_MULTI_OPEN] employee_id=${eid} effective_to_null_rows=${openN} after_revision_effective_from=${effectiveFromStr}`
+      );
+      // TODO Faz 3B: veri onarımı / audit; tek açık uç (effective_to IS NULL) olmalı
+    }
+
+    await conn.commit();
+    return { ok: true, employee_id: eid, effective_from: effectiveFromStr };
+  } catch (e) {
+    await conn.rollback();
+    if (e.code === 'ER_DUP_ENTRY') {
+      return err('Bu baslangic tarihinde zaten kayit var', 'api.hr.compensation_revision_duplicate_effective');
+    }
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      return err('Maaş geçmişi tablosu yok; migrasyon calistirin', 'api.hr.compensation_history_table_missing');
+    }
+    throw e;
+  } finally {
+    conn.release();
+  }
+}
+
 module.exports = {
   // Tek maaş hesap motoru (controller / diğer servisler bunu tüketir).
   computeWageBreakdown,
@@ -2333,6 +3318,10 @@ module.exports = {
   listCompensationEmployees,
   createEmployee,
   getEmployeeById,
+  getCurrentCompensation,
+  getCompensationBandForMonth,
+  listCompensationHistory,
+  createCompensationRevision,
   updateEmployee,
   updateEmployeePhoto,
   listAssignableUsers,
@@ -2358,4 +3347,7 @@ module.exports = {
   createWorkStatus,
   updateWorkStatus,
   deleteWorkStatus,
+  listPayrollSnapshot,
+  createPayrollDispute,
+  updatePayrollDispute,
 };

@@ -36,7 +36,7 @@ async function getMyProfile(userId) {
       total_salary_amount: row.salary_amount,
       total_salary_currency: row.salary_currency,
       official_salary_amount: row.official_salary_amount,
-      official_salary_currency: row.official_salary_currency || row.salary_currency,
+      official_salary_currency: row.official_salary_currency,
       official_salary_fx_rate:
         row.official_salary_fx_rate != null && Number(row.official_salary_fx_rate) > 0
           ? row.official_salary_fx_rate

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -122,6 +122,21 @@
           <button type="button" id="btnLoadMonthly" class="version-btn app-button app-button-secondary" data-i18n="hr.att.monthly.load">Listele</button>
         </div>
       </div>
+      <div class="attm-filter-row" style="margin-top:8px;gap:8px">
+        <button
+          type="button"
+          id="btnImportMonthlyExcel"
+          class="version-btn app-button app-button-secondary"
+          data-i18n="hr.att.monthly.uploadExcelFile"
+        >Excel dosya yükle</button>
+        <button
+          type="button"
+          id="btnDownloadMonthlyExcelFormat"
+          class="version-btn app-button app-button-secondary"
+          data-i18n="hr.att.monthly.downloadExcelFormat"
+        >Yüklenecek Excel formatı</button>
+        <input id="monthlyExcelFile" type="file" accept=".xlsx,.xls,.csv" class="is-hidden" />
+      </div>
       <p id="monthlyMsg" class="attm-msg-slot"></p>
     </section>
 
@@ -180,10 +195,50 @@
       </div>
     </div>
   </div>
+  <div id="attmImportModal" class="attm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="attmImportModalTitle">
+    <div class="attm-modal attm-import-modal">
+      <h3 id="attmImportModalTitle" data-i18n="hr.att.monthly.importModalTitle">Excel içe aktarım önizleme</h3>
+      <p class="attm-modal-help" data-i18n="hr.att.monthly.importModalHelp">Eksik personel ve proje alanlarını tamamlayın, sonra kaydedin.</p>
+      <div class="attm-import-head-row">
+        <div>
+          <label for="attmImportTargetMonth" data-i18n="hr.att.monthly.importTargetMonth">Yüklenecek ay</label>
+          <input id="attmImportTargetMonth" class="app-input" type="month" />
+        </div>
+        <p id="attmImportSummary" class="attm-import-summary"></p>
+      </div>
+      <div class="attm-import-table-wrap">
+        <table class="app-table attm-import-table">
+          <thead>
+            <tr>
+              <th data-i18n="hr.att.monthly.importColUse">Aktar</th>
+              <th data-i18n="hr.att.colDate">Tarih</th>
+              <th data-i18n="hr.att.colEmployee">Personel</th>
+              <th data-i18n="hr.att.colProject">Proje</th>
+              <th data-i18n="hr.att.colCheckIn">Giriş</th>
+              <th data-i18n="hr.att.colCheckOut">Çıkış</th>
+              <th data-i18n="hr.att.colStatus">Durum</th>
+              <th data-i18n="hr.att.colWorkType">İş tipi</th>
+              <th data-i18n="hr.att.colNote">Not</th>
+              <th data-i18n="hr.att.monthly.importColRowStatus">Satır durumu</th>
+            </tr>
+          </thead>
+          <tbody id="attmImportBody"></tbody>
+        </table>
+      </div>
+      <datalist id="attmImportEmployeeOptions"></datalist>
+      <datalist id="attmImportProjectOptions"></datalist>
+      <p id="attmImportErr" class="attm-modal-err" aria-live="polite"></p>
+      <div class="attm-modal-actions">
+        <button type="button" id="attmImportCancel" class="logout-btn app-button app-button-secondary" data-i18n="hr.att.monthly.modalCancel">Vazgeç</button>
+        <button type="button" id="attmImportSave" class="version-btn app-button app-button-primary" data-i18n="hr.att.monthly.importSave">Kaydet</button>
+      </div>
+    </div>
+  </div>
   <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/location-data.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="/js/hr-attendance-monthly.js" defer></script>
   <script>
     function start() {

@@ -19,6 +19,7 @@
   const unofficialSalary = document.getElementById('unofficialSalary');
   const salaryFxHint = document.getElementById('salaryFxHint');
   const salaryFxErr = document.getElementById('salaryFxErr');
+  const officialCurrencyLockHint = document.getElementById('officialCurrencyLockHint');
   const countryCode = document.getElementById('countryCode');
   const regionSelect = document.getElementById('regionSelect');
   const addressLine = document.getElementById('addressLine');
@@ -38,6 +39,25 @@
   const telegramNotifyEnabled = document.getElementById('telegramNotifyEnabled');
   const note = document.getElementById('note');
 
+  const btnOpenRevision = document.getElementById('btnOpenRevision');
+  const salaryReadonlyHint = document.getElementById('salaryReadonlyHint');
+  const compHistorySection = document.getElementById('compHistorySection');
+  const compHistoryBody = document.getElementById('compHistoryBody');
+  const revisionModalBackdrop = document.getElementById('revisionModalBackdrop');
+  const revisionModalCancel = document.getElementById('revisionModalCancel');
+  const revisionModalSubmit = document.getElementById('revisionModalSubmit');
+  const revEffectiveFrom = document.getElementById('revEffectiveFrom');
+  const revReason = document.getElementById('revReason');
+  const revSalaryAmount = document.getElementById('revSalaryAmount');
+  const revSalaryCurrency = document.getElementById('revSalaryCurrency');
+  const revOfficialSalary = document.getElementById('revOfficialSalary');
+  const revOfficialSalaryCurrency = document.getElementById('revOfficialSalaryCurrency');
+  const revOfficialSalaryFx = document.getElementById('revOfficialSalaryFx');
+  const revUnofficialSalary = document.getElementById('revUnofficialSalary');
+  const revSalaryFxHint = document.getElementById('revSalaryFxHint');
+  const revSalaryFxErr = document.getElementById('revSalaryFxErr');
+  const revOfficialCurrencyLockHint = document.getElementById('revOfficialCurrencyLockHint');
+
   const params = new URLSearchParams(window.location.search);
   const editingId = params.get('id');
 
@@ -45,6 +65,11 @@
   let positions = [];
   let users = [];
   let currentPhotoPath = null;
+  let canSalaryEdit = false;
+  let canHistoryView = false;
+  let _revWagePreviewTimer = null;
+  let _revWagePreviewSeq = 0;
+  let _lastRevisionBreakdown = null;
 
   function t(k) {
     return window.i18n && typeof window.i18n.t === 'function' ? window.i18n.t(k) : k;
@@ -69,6 +94,321 @@
       return;
     }
     window.alert(text);
+  }
+
+  async function loadHrFormPermissions() {
+    canSalaryEdit = false;
+    canHistoryView = false;
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      const u = data && data.user;
+      if (!u) return;
+      if (u.isSuperAdmin === true) {
+        canSalaryEdit = true;
+        canHistoryView = true;
+        return;
+      }
+      const list = Array.isArray(u.permissions) ? u.permissions : [];
+      canSalaryEdit = list.includes('hr.salary.edit');
+      canHistoryView = list.includes('hr.salary.history_view');
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function setSalaryFieldsReadonly(ro) {
+    [salaryAmount, officialSalary, officialSalaryFx].forEach((el) => {
+      if (!el) return;
+      el.readOnly = ro;
+      el.classList.toggle('is-readonly', ro);
+    });
+    if (salaryCurrency) salaryCurrency.disabled = ro;
+    if (officialSalaryCurrency) officialSalaryCurrency.disabled = ro;
+  }
+
+  function refreshSalaryEditChrome() {
+    const isEdit = !!editingId;
+    if (isEdit) {
+      setSalaryFieldsReadonly(true);
+      if (salaryReadonlyHint) {
+        salaryReadonlyHint.classList.remove('is-hidden');
+        const hintKey = canSalaryEdit ? 'hr.emp.salaryReadonlyHint' : 'hr.emp.salaryReadonlyNoPermHint';
+        salaryReadonlyHint.removeAttribute('data-i18n');
+        salaryReadonlyHint.textContent = t(hintKey);
+      }
+    } else {
+      setSalaryFieldsReadonly(false);
+      salaryReadonlyHint?.classList.add('is-hidden');
+    }
+    if (btnOpenRevision) {
+      if (isEdit && canSalaryEdit) btnOpenRevision.classList.remove('is-hidden');
+      else btnOpenRevision.classList.add('is-hidden');
+    }
+    if (compHistorySection) {
+      if (isEdit && canHistoryView) compHistorySection.classList.remove('is-hidden');
+      else compHistorySection.classList.add('is-hidden');
+    }
+  }
+
+  function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function renderCompensationHistoryTable(rows) {
+    if (!compHistoryBody) return;
+    if (!rows || !rows.length) {
+      compHistoryBody.innerHTML = `<tr><td colspan="5" class="muted">${escHtml(t('hr.emp.compHistoryEmpty'))}</td></tr>`;
+      return;
+    }
+    compHistoryBody.innerHTML = rows
+      .map((r) => {
+        const from = r.effective_from ? String(r.effective_from).slice(0, 10) : '-';
+        const to = r.effective_to ? String(r.effective_to).slice(0, 10) : '—';
+        const sc = String(r.salary_currency || '').toUpperCase();
+        const total = `${fmtTrMoney(Number(r.salary_amount), 2)} ${escHtml(sc)}`;
+        const oc = String(r.official_salary_currency || '').toUpperCase();
+        const off = `${fmtTrMoney(Number(r.official_salary_amount), 2)} ${escHtml(oc)}`;
+        const reason = escHtml(r.reason || '');
+        return `<tr><td>${escHtml(from)}</td><td>${escHtml(to)}</td><td>${total}</td><td>${off}</td><td>${reason}</td></tr>`;
+      })
+      .join('');
+  }
+
+  async function loadCompensationHistory() {
+    if (!compHistoryBody || !editingId || !canHistoryView) return;
+    const res = await fetch(`/api/hr/employees/${encodeURIComponent(editingId)}/compensation-history`, {
+      credentials: 'same-origin',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      compHistoryBody.innerHTML = `<tr><td colspan="5" class="muted">${escHtml(t('hr.att.loadFailed'))}</td></tr>`;
+      return;
+    }
+    const rows = data.rows || [];
+    renderCompensationHistoryTable(rows);
+  }
+
+  /**
+   * Dil seçimi (i18n.js) loadDict + apply tamamlandıktan sonra (macrotask):
+   * salt okunur ipucu, maaş FX ipuçları, revizyon modalı ve geçmiş tablo başlıkları güncellenir.
+   */
+  async function applyEmployeeFormDynamicI18n() {
+    refreshSalaryEditChrome();
+    if (window.i18n && typeof window.i18n.apply === 'function') {
+      if (compHistorySection) window.i18n.apply(compHistorySection);
+      if (revisionModalBackdrop) window.i18n.apply(revisionModalBackdrop);
+    }
+    syncOfficialSalaryAuxFields();
+    schedulePreview();
+    syncRevOfficialSalaryAuxFields();
+    scheduleRevPreview();
+    await loadCompensationHistory();
+  }
+
+  function bindLanguageSelectForEmpFormI18n() {
+    const languageSelect = document.getElementById('languageSelect');
+    if (!languageSelect || languageSelect.dataset.empFormLangBound === '1') return;
+    languageSelect.dataset.empFormLangBound = '1';
+    languageSelect.addEventListener('change', () => {
+      window.setTimeout(() => {
+        void applyEmployeeFormDynamicI18n();
+      }, 0);
+    });
+  }
+
+  function closeRevisionModal() {
+    if (!revisionModalBackdrop) return;
+    revisionModalBackdrop.classList.remove('is-open');
+    revisionModalBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  function setRevSalaryFxState(fxApplicable) {
+    if (revOfficialSalaryFx) {
+      if (fxApplicable) {
+        revOfficialSalaryFx.removeAttribute('readonly');
+        revOfficialSalaryFx.classList.remove('is-readonly');
+      } else {
+        revOfficialSalaryFx.setAttribute('readonly', 'readonly');
+        revOfficialSalaryFx.classList.add('is-readonly');
+        setMoneyValue(revOfficialSalaryFx, 1, 2);
+      }
+    }
+    if (revSalaryFxHint) {
+      const k = fxApplicable ? 'hr.emp.salaryFxStandard' : 'hr.emp.salaryFxAuto';
+      revSalaryFxHint.setAttribute('data-i18n', k);
+      revSalaryFxHint.textContent = t(k);
+    }
+  }
+
+  function clearRevSalaryError() {
+    if (revSalaryFxErr) revSalaryFxErr.textContent = '';
+  }
+
+  function setRevSalaryError(messageKey) {
+    if (!revSalaryFxErr) return;
+    if (!messageKey) {
+      revSalaryFxErr.textContent = '';
+      return;
+    }
+    const txt = t(messageKey);
+    revSalaryFxErr.textContent = txt && txt !== messageKey ? txt : messageKey;
+  }
+
+  function applyRevBreakdownToUI(breakdown) {
+    _lastRevisionBreakdown = breakdown || null;
+    if (!breakdown) {
+      setMoneyValue(revUnofficialSalary, 0, 2);
+      setRevSalaryError(null);
+      return;
+    }
+    setRevSalaryFxState(!!breakdown.fx_applicable);
+    if (breakdown.unofficial_salary_amount != null) {
+      setMoneyValue(revUnofficialSalary, Number(breakdown.unofficial_salary_amount), 2);
+    } else {
+      setMoneyValue(revUnofficialSalary, 0, 2);
+    }
+    if (Array.isArray(breakdown.errors) && breakdown.errors.length) {
+      setRevSalaryError(breakdown.errors[0].messageKey || 'api.hr.salary_amount_invalid');
+    } else {
+      clearRevSalaryError();
+    }
+  }
+
+  async function fetchRevWagePreview() {
+    const seq = ++_revWagePreviewSeq;
+    const mainCur = revSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS';
+    const offAmt = readMoney(revOfficialSalary);
+    const pos = offAmt > 0;
+    const offCur = pos ? (revOfficialSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS') : mainCur;
+    const sameCurrency = mainCur === offCur;
+    const fxRaw = revOfficialSalaryFx ? parseTrDecimal(revOfficialSalaryFx.value) : null;
+    const payload = {
+      salary_amount: readMoney(revSalaryAmount),
+      salary_currency: mainCur,
+      official_salary_amount: offAmt,
+      official_salary_currency: offCur,
+      official_salary_fx_rate: sameCurrency ? 1 : Number.isFinite(fxRaw) && fxRaw > 0 ? fxRaw : null,
+    };
+    try {
+      const res = await window.hrApi('/api/hr/wage/preview', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (seq !== _revWagePreviewSeq) return;
+      const breakdown = res?.data?.data?.breakdown || res?.data?.breakdown || null;
+      applyRevBreakdownToUI(breakdown);
+    } catch (_) {
+      if (seq !== _revWagePreviewSeq) return;
+    }
+  }
+
+  function scheduleRevPreview() {
+    if (_revWagePreviewTimer) clearTimeout(_revWagePreviewTimer);
+    _revWagePreviewTimer = setTimeout(fetchRevWagePreview, 250);
+  }
+
+  function applyRevCurrencyParityVisuals() {
+    const sameCurrency = (revSalaryCurrency?.value || 'UZS') === (revOfficialSalaryCurrency?.value || 'UZS');
+    setRevSalaryFxState(!sameCurrency);
+  }
+
+  function syncRevOfficialSalaryAuxFields() {
+    const mainCur = revSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS';
+    const offAmt = readMoney(revOfficialSalary);
+    const pos = offAmt > 0;
+    if (revOfficialSalaryCurrency) {
+      revOfficialSalaryCurrency.disabled = !pos;
+      revOfficialSalaryCurrency.classList.toggle('is-readonly', !pos);
+      if (!pos) {
+        revOfficialSalaryCurrency.value = mainCur;
+      }
+    }
+    if (!pos && revOfficialSalaryFx) {
+      setMoneyValue(revOfficialSalaryFx, 1, 2);
+    }
+    if (revOfficialCurrencyLockHint) {
+      revOfficialCurrencyLockHint.classList.toggle('is-hidden', pos);
+      if (window.i18n && window.i18n.apply) window.i18n.apply(revOfficialCurrencyLockHint);
+    }
+    if (pos) {
+      applyRevCurrencyParityVisuals();
+    } else {
+      setRevSalaryFxState(false);
+    }
+  }
+
+  function openRevisionModal() {
+    if (!editingId || !canSalaryEdit || !revisionModalBackdrop) return;
+    revSalaryCurrency.value = salaryCurrency.value === 'USD' ? 'USD' : 'UZS';
+    setMoneyValue(revSalaryAmount, readMoney(salaryAmount), 2);
+    setMoneyValue(revOfficialSalary, readMoney(officialSalary), 2);
+    if (revOfficialSalaryCurrency) {
+      revOfficialSalaryCurrency.value = officialSalaryCurrency.value === 'USD' ? 'USD' : 'UZS';
+    }
+    const fx = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : 1;
+    setMoneyValue(revOfficialSalaryFx, Number.isFinite(fx) && fx > 0 ? fx : 1, 2);
+    if (revEffectiveFrom) {
+      revEffectiveFrom.value = new Date().toISOString().slice(0, 10);
+    }
+    if (revReason) revReason.value = '';
+    _lastRevisionBreakdown = null;
+    clearRevSalaryError();
+    syncRevOfficialSalaryAuxFields();
+    scheduleRevPreview();
+    revisionModalBackdrop.classList.add('is-open');
+    revisionModalBackdrop.setAttribute('aria-hidden', 'false');
+    if (window.i18n && window.i18n.apply) window.i18n.apply(revisionModalBackdrop);
+  }
+
+  async function submitRevisionModal() {
+    if (!editingId) return;
+    if (!revEffectiveFrom?.value || !String(revEffectiveFrom.value).trim()) {
+      showPopup(t('api.hr.compensation_revision_effective_required'), true);
+      return;
+    }
+    if (!revReason?.value || !String(revReason.value).trim()) {
+      showPopup(t('api.hr.compensation_revision_reason_required'), true);
+      return;
+    }
+    if (_lastRevisionBreakdown && Array.isArray(_lastRevisionBreakdown.errors) && _lastRevisionBreakdown.errors.length) {
+      const k = _lastRevisionBreakdown.errors[0].messageKey || 'api.hr.salary_amount_invalid';
+      showPopup(t(k) !== k ? t(k) : k, true);
+      return;
+    }
+    const mainCur = revSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS';
+    const offAmt = readMoney(revOfficialSalary);
+    const pos = offAmt > 0;
+    const offCur = pos ? (revOfficialSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS') : mainCur;
+    const sameCurrency = mainCur === offCur;
+    const fxRaw = revOfficialSalaryFx ? parseTrDecimal(revOfficialSalaryFx.value) : null;
+    const fxVal = sameCurrency ? 1 : Number.isFinite(fxRaw) && fxRaw > 0 ? fxRaw : 1;
+    const body = {
+      effective_from: String(revEffectiveFrom.value).trim().slice(0, 10),
+      reason: revReason.value.trim(),
+      salary_amount: readMoney(revSalaryAmount),
+      salary_currency: mainCur,
+      official_salary_amount: offAmt,
+      official_salary_currency: offCur,
+      official_salary_fx_rate: fxVal,
+    };
+    const res = await window.hrApi(`/api/hr/employees/${encodeURIComponent(editingId)}/compensation-revisions`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!res.ok || !res.data?.ok) {
+      const errText = (window.i18n?.apiErrorText && window.i18n.apiErrorText(res.data)) || res.data?.message || '—';
+      showPopup(errText, true);
+      return;
+    }
+    closeRevisionModal();
+    showMsg(t('hr.emp.revisionSaved'));
+    showPopup(t('hr.emp.revisionSaved'), false);
+    await loadEmployee();
+    await loadCompensationHistory();
   }
 
   function syncRegions(preserveValue) {
@@ -214,14 +554,18 @@
 
   async function fetchWagePreview() {
     const seq = ++_wagePreviewSeq;
-    const sameCurrency = (salaryCurrency?.value || 'UZS') === (officialSalaryCurrency?.value || 'UZS');
+    const mainCur = salaryCurrency?.value === 'USD' ? 'USD' : 'UZS';
+    const offAmt = readMoney(officialSalary);
+    const pos = offAmt > 0;
+    const offCur = pos ? (officialSalaryCurrency?.value === 'USD' ? 'USD' : 'UZS') : mainCur;
+    const sameCurrency = mainCur === offCur;
     const fxRaw = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : null;
     const payload = {
       salary_amount: readMoney(salaryAmount),
-      salary_currency: salaryCurrency?.value || 'UZS',
-      official_salary_amount: readMoney(officialSalary),
-      official_salary_currency: officialSalaryCurrency?.value || 'UZS',
-      official_salary_fx_rate: sameCurrency ? 1 : (Number.isFinite(fxRaw) && fxRaw > 0 ? fxRaw : null),
+      salary_currency: mainCur,
+      official_salary_amount: offAmt,
+      official_salary_currency: offCur,
+      official_salary_fx_rate: sameCurrency ? 1 : Number.isFinite(fxRaw) && fxRaw > 0 ? fxRaw : null,
     };
     try {
       const res = await window.hrApi('/api/hr/wage/preview', {
@@ -245,6 +589,32 @@
   function applyCurrencyParityVisuals() {
     const sameCurrency = (salaryCurrency?.value || 'UZS') === (officialSalaryCurrency?.value || 'UZS');
     setSalaryFxState(!sameCurrency);
+  }
+
+  /** Resmi tutar > 0 değilse resmi para birimi = ana maaş birimi, kur 1; seçim kilitlenir. */
+  function syncOfficialSalaryAuxFields() {
+    const mainCur = salaryCurrency?.value === 'USD' ? 'USD' : 'UZS';
+    const offAmt = readMoney(officialSalary);
+    const pos = offAmt > 0;
+    if (officialSalaryCurrency) {
+      officialSalaryCurrency.disabled = !pos;
+      officialSalaryCurrency.classList.toggle('is-readonly', !pos);
+      if (!pos) {
+        officialSalaryCurrency.value = mainCur;
+      }
+    }
+    if (!pos && officialSalaryFx) {
+      setMoneyValue(officialSalaryFx, 1, 2);
+    }
+    if (officialCurrencyLockHint) {
+      officialCurrencyLockHint.classList.toggle('is-hidden', pos);
+      if (window.i18n && window.i18n.apply) window.i18n.apply(officialCurrencyLockHint);
+    }
+    if (pos) {
+      applyCurrencyParityVisuals();
+    } else {
+      setSalaryFxState(false);
+    }
   }
 
   async function loadDepsAndPositions() {
@@ -321,6 +691,7 @@
       employeeNoDisplay.value = '';
       currentPhotoPath = null;
       updatePhotoPreviewFromPath(null);
+      refreshSalaryEditChrome();
       return;
     }
     const res = await window.hrApi(`/api/hr/employees/${encodeURIComponent(editingId)}`);
@@ -351,7 +722,7 @@
     if (e.unofficial_salary_amount != null) {
       setMoneyValue(unofficialSalary, Number(e.unofficial_salary_amount), 2);
     }
-    applyCurrencyParityVisuals();
+    syncOfficialSalaryAuxFields();
     schedulePreview();
     countryCode.value = e.country || '';
     syncRegions(e.region_or_city || '');
@@ -376,26 +747,17 @@
     addressLine.value = e.address_line || '';
     currentPhotoPath = e.photo_path || null;
     updatePhotoPreviewFromPath(currentPhotoPath);
+    refreshSalaryEditChrome();
   }
 
   function buildPayload() {
-    return {
+    const base = {
       first_name: firstName.value,
       last_name: lastName.value,
       birth_date: birthDate.value || null,
       gender: gender.value || null,
       marital_status: maritalStatus.value || null,
       nationality: nationality.value || null,
-      salary_currency: salaryCurrency.value,
-      salary_amount: readMoney(salaryAmount),
-      official_salary_amount: readMoney(officialSalary),
-      official_salary_currency: officialSalaryCurrency
-        ? (officialSalaryCurrency.value === 'USD' ? 'USD' : 'UZS')
-        : (salaryCurrency.value === 'USD' ? 'USD' : 'UZS'),
-      official_salary_fx_rate: (() => {
-        const v = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : null;
-        return Number.isFinite(v) && v > 0 ? v : 1;
-      })(),
       country: countryCode.value || null,
       region_or_city: regionSelect.value || null,
       address_line: addressLine.value || null,
@@ -414,6 +776,28 @@
       telegram_chat_id: telegramChatId?.value || null,
       telegram_notify_enabled: telegramNotifyEnabled?.value === '0' ? 0 : 1,
       note: note.value || null,
+    };
+    if (editingId) return base;
+    return {
+      ...base,
+      salary_currency: salaryCurrency.value,
+      salary_amount: readMoney(salaryAmount),
+      official_salary_amount: readMoney(officialSalary),
+      official_salary_currency: (() => {
+        const main = salaryCurrency.value === 'USD' ? 'USD' : 'UZS';
+        const oa = readMoney(officialSalary);
+        if (!(oa > 0)) return main;
+        return officialSalaryCurrency ? (officialSalaryCurrency.value === 'USD' ? 'USD' : 'UZS') : main;
+      })(),
+      official_salary_fx_rate: (() => {
+        const main = salaryCurrency.value === 'USD' ? 'USD' : 'UZS';
+        const oa = readMoney(officialSalary);
+        if (!(oa > 0)) return 1;
+        const oc = officialSalaryCurrency ? (officialSalaryCurrency.value === 'USD' ? 'USD' : 'UZS') : main;
+        if (main === oc) return 1;
+        const v = officialSalaryFx ? parseTrDecimal(officialSalaryFx.value) : null;
+        return Number.isFinite(v) && v > 0 ? v : 1;
+      })(),
     };
   }
 
@@ -458,8 +842,8 @@
   async function saveEmployee(e) {
     e.preventDefault();
     if (!validateRequiredFields()) return;
-    // Frontend uyarısı (asıl karar backend'de). Son preview'da hata varsa kayıt göndermeyelim.
-    if (_lastBreakdown && Array.isArray(_lastBreakdown.errors) && _lastBreakdown.errors.length) {
+    // Yeni personelde maaş POST ile gider; düzenlemede PATCH maaş içermez.
+    if (!editingId && _lastBreakdown && Array.isArray(_lastBreakdown.errors) && _lastBreakdown.errors.length) {
       const k = _lastBreakdown.errors[0].messageKey || 'api.hr.salary_amount_invalid';
       const txt = t(k);
       showMsg(txt && txt !== k ? txt : k, false);
@@ -486,21 +870,34 @@
       return;
     }
     await loadEmployee();
+    await loadCompensationHistory();
     if (photoFile) photoFile.value = '';
   }
 
   async function initHrEmployeeFormPage() {
+    await loadHrFormPermissions();
     await loadDepsAndPositions();
     await loadUsers();
     await loadEmployee();
+    await loadCompensationHistory();
     countryCode?.addEventListener('change', () => syncRegions(null));
     departmentId?.addEventListener('change', syncPositions);
     // Frontend manuel maaş matematiği yapmıyor; tüm hesap backend'den geliyor.
-    salaryAmount?.addEventListener('input', schedulePreview);
-    officialSalary?.addEventListener('input', schedulePreview);
+    salaryAmount?.addEventListener('input', () => {
+      syncOfficialSalaryAuxFields();
+      schedulePreview();
+    });
+    officialSalary?.addEventListener('input', () => {
+      syncOfficialSalaryAuxFields();
+      schedulePreview();
+    });
+    officialSalary?.addEventListener('blur', () => {
+      syncOfficialSalaryAuxFields();
+      schedulePreview();
+    });
     officialSalaryFx?.addEventListener('input', schedulePreview);
     salaryCurrency?.addEventListener('change', () => {
-      applyCurrencyParityVisuals();
+      syncOfficialSalaryAuxFields();
       schedulePreview();
     });
     officialSalaryCurrency?.addEventListener('change', () => {
@@ -510,7 +907,7 @@
     attachMoneyFormatter(salaryAmount, 2);
     attachMoneyFormatter(officialSalary, 2);
     attachMoneyFormatter(officialSalaryFx, 2);
-    applyCurrencyParityVisuals();
+    syncOfficialSalaryAuxFields();
     photoFile?.addEventListener('change', () => {
       const f = photoFile.files && photoFile.files[0];
       if (f && photoPreview) {
@@ -522,6 +919,46 @@
     firstName?.addEventListener('input', () => updatePhotoPreviewFromPath(currentPhotoPath));
     lastName?.addEventListener('input', () => updatePhotoPreviewFromPath(currentPhotoPath));
     form?.addEventListener('submit', saveEmployee);
+
+    btnOpenRevision?.addEventListener('click', openRevisionModal);
+    revisionModalCancel?.addEventListener('click', closeRevisionModal);
+    revisionModalSubmit?.addEventListener('click', () => {
+      submitRevisionModal();
+    });
+    revisionModalBackdrop?.addEventListener('click', (ev) => {
+      if (ev.target === revisionModalBackdrop) closeRevisionModal();
+    });
+    const revDialog = revisionModalBackdrop?.querySelector('.emp-revision-modal');
+    revDialog?.addEventListener('click', (ev) => ev.stopPropagation());
+
+    attachMoneyFormatter(revSalaryAmount, 2);
+    attachMoneyFormatter(revOfficialSalary, 2);
+    attachMoneyFormatter(revOfficialSalaryFx, 2);
+    revSalaryAmount?.addEventListener('input', () => {
+      syncRevOfficialSalaryAuxFields();
+      scheduleRevPreview();
+    });
+    revOfficialSalary?.addEventListener('input', () => {
+      syncRevOfficialSalaryAuxFields();
+      scheduleRevPreview();
+    });
+    revOfficialSalary?.addEventListener('blur', () => {
+      syncRevOfficialSalaryAuxFields();
+      scheduleRevPreview();
+    });
+    revOfficialSalaryFx?.addEventListener('input', scheduleRevPreview);
+    revSalaryCurrency?.addEventListener('change', () => {
+      syncRevOfficialSalaryAuxFields();
+      scheduleRevPreview();
+    });
+    revOfficialSalaryCurrency?.addEventListener('change', () => {
+      applyRevCurrencyParityVisuals();
+      scheduleRevPreview();
+    });
+    syncRevOfficialSalaryAuxFields();
+
+    bindLanguageSelectForEmpFormI18n();
+
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
   }
 

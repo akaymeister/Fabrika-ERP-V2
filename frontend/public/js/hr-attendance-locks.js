@@ -1,5 +1,6 @@
 (function () {
   const monthEl = document.getElementById('lockMonth');
+  const lockUsdEl = document.getElementById('lockUsdUzsRate');
   const noteEl = document.getElementById('lockNote');
   const btnLock = document.getElementById('btnLockMonth');
   const btnUnlock = document.getElementById('btnUnlockMonth');
@@ -28,20 +29,33 @@
     const rows = data.data?.locks || data.locks || [];
     bodyEl.innerHTML = rows.length
       ? rows
-          .map(
-            (r) =>
-              `<tr><td>${r.month_key}</td><td>${Number(r.is_locked) === 1 ? t('hr.att.locks.stateLocked') : t('hr.att.locks.stateUnlocked')}</td><td>${r.note || '-'}</td></tr>`
-          )
+          .map((r) => {
+            const fx =
+              r.payroll_usd_uzs_rate != null && Number.isFinite(Number(r.payroll_usd_uzs_rate))
+                ? String(r.payroll_usd_uzs_rate)
+                : '—';
+            return `<tr><td>${r.month_key}</td><td>${Number(r.is_locked) === 1 ? t('hr.att.locks.stateLocked') : t('hr.att.locks.stateUnlocked')}</td><td>${fx}</td><td>${r.note || '-'}</td></tr>`;
+          })
           .join('')
-      : `<tr><td colspan="3">${t('hr.att.noRows')}</td></tr>`;
+      : `<tr><td colspan="4">${t('hr.att.noRows')}</td></tr>`;
   }
 
   async function postAction(url) {
     const month = monthEl && monthEl.value ? monthEl.value : '';
     if (!month) return showMsg(t('hr.att.locks.pickMonth'), true);
+    const body = { month, note: noteEl?.value || null };
+    if (url.includes('/lock')) {
+      const raw = lockUsdEl && String(lockUsdEl.value).trim().replace(',', '.');
+      const n = Number(raw);
+      if (!raw || !Number.isFinite(n) || n <= 0) {
+        showMsg(t('hr.payroll.payUsdUzsLockRequired'), true);
+        return;
+      }
+      body.payroll_usd_uzs_rate = n;
+    }
     const { ok, data } = await window.hrApi(url, {
       method: 'POST',
-      body: JSON.stringify({ month, note: noteEl?.value || null }),
+      body: JSON.stringify(body),
     });
     if (!ok || !data?.ok) {
       showMsg(

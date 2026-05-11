@@ -6,19 +6,172 @@
   <title data-i18n="hr.payroll.title">Bordro yönetimi</title>
   <link rel="stylesheet" href="/style.css" />
   <style>
-    .payroll-placeholder-card {
-      margin-top: 16px;
-      padding: 28px 24px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 12px;
-      background: #f8fafc;
-      text-align: center;
-      max-width: 560px;
+    .payroll-filters { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 10px; max-width: 100%; }
+    .payroll-filters-fx-row { grid-column: 1 / -1; max-width: 520px; }
+    .payroll-filters-fx-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 6px; }
+    .payroll-filters-fx-actions .app-input { flex: 1; min-width: 160px; max-width: 280px; }
+    .payroll-filters > * { min-width: 0; }
+    @media (max-width: 900px) { .payroll-filters { grid-template-columns: 1fr; } }
+    .payroll-table-wrap {
+      margin-top: 12px;
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
     }
-    .payroll-placeholder-card p { margin: 0; font-size: var(--font-size-ui); color: #475569; line-height: 1.5; }
+    .payroll-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      line-height: 1.3;
+      min-width: 1040px;
+    }
+    .payroll-table th, .payroll-table td {
+      border: 1px solid #e2e8f0;
+      padding: 6px 8px;
+      vertical-align: middle;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .payroll-table thead th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .payroll-table tbody tr:nth-child(even) { background: #fafbfc; }
+    .payroll-table .payroll-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .payroll-disclaimer {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #1e3a8a;
+      line-height: 1.35;
+    }
+    .payroll-disp-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .payroll-disp-badge.is-open { background: #fef3c7; color: #92400e; }
+    .payroll-disp-badge.is-done { background: #dcfce7; color: #166534; }
+    .payroll-disp-badge.is-no { background: #f1f5f9; color: #475569; }
+    .payroll-disp-badge.is-rejected { background: #fee2e2; color: #991b1b; }
+    .payroll-actions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .payroll-actions-bar .payroll-actions-spacer { flex: 1; min-width: 8px; }
+    .payroll-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 16px;
+    }
+    .payroll-modal-backdrop.is-open { display: flex; }
+    .payroll-modal {
+      background: #fff;
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      padding: 18px 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .payroll-modal h3 { margin: 0 0 12px; font-size: 1rem; }
+    .payroll-modal .app-form-row { margin-bottom: 10px; }
+    .payroll-modal label { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; }
+    .payroll-modal input, .payroll-modal select, .payroll-modal textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 13px;
+    }
+    .payroll-modal textarea { min-height: 72px; resize: vertical; }
+    .payroll-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+    .payroll-actions-gap button { margin-right: 6px; }
+    .payroll-actions-gap button:last-child { margin-right: 0; }
+    .payroll-kpi-top-wrap {
+      margin-bottom: 16px;
+    }
+    .payroll-day-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .payroll-day-summary .sd-item { font-size: 11px; color: #64748b; }
+    .payroll-day-summary .sd-item strong {
+      display: block;
+      font-size: 13px;
+      color: #0f172a;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .payroll-day-summary-note { font-size: 11px; color: #64748b; margin-bottom: 10px; }
+    .payroll-due-stack { line-height: 1.35; vertical-align: top; white-space: normal; }
+    .payroll-day-modal {
+      max-height: min(88vh, 920px);
+      display: flex;
+      flex-direction: column;
+    }
+    .payroll-day-modal-body {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      gap: 8px;
+    }
+    .payroll-day-details-scroll {
+      min-height: 0;
+      max-height: min(50vh, 460px);
+      overflow: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0;
+      background: #fff;
+    }
+    .payroll-mini-line { display: block; line-height: 1.3; }
+    .payroll-mini-label { color: #64748b; margin-right: 4px; font-size: 10px; }
+    .payroll-mini-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .payroll-mini-badge .payroll-mini-label {
+      color: #1d4ed8;
+      font-weight: 700;
+      margin-right: 2px;
+      font-size: 10px;
+    }
   </style>
 </head>
-<body class="app-shell app-master-page app-ui-v3">
+<body class="app-shell app-master-page app-ui-v3 payroll-live-page">
   <div class="container app-layout-v3">
     <div class="app-sidebar">
       <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
@@ -34,7 +187,7 @@
       <header class="topbar dashboard-topbar">
         <div class="topbar-left">
         <h1 data-i18n="hr.payroll.title">Bordro yönetimi</h1>
-        <p class="subtitle" data-i18n="hr.payroll.sub">Bordro modülü</p>
+        <p class="subtitle" data-i18n="hr.payroll.sub">Puantaj temelli dönem özeti ve itiraz kayıtları</p>
       </div>
         <div class="topbar-right">
         <select id="languageSelect" aria-label="Language" style="max-width:120px;padding:8px;border-radius:8px">
@@ -49,16 +202,253 @@
       <div class="app-content">
         <main class="app-master-main">
 
-        <section class="card">
-          <div class="payroll-placeholder-card">
-            <p data-i18n="hr.payroll.placeholder">Bordro modülü hazırlık aşamasındadır.</p>
+        <div class="payroll-kpi-top-wrap" id="payKpiWrap">
+          <p class="muted" style="margin:0 0 10px;font-size:12px" data-i18n="hr.payroll.kpiSectionTop"></p>
+          <div class="payroll-kpi-rows">
+            <div class="payroll-live-kpi-grid payroll-live-kpi-row1 summary-section">
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiActiveSalaryUsd"></span>
+                <strong id="payKpiActiveSalaryUsd">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiActiveHead"></span>
+                <strong id="payKpiHead">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiNormalHours"></span>
+                <strong id="payKpiNormH">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiOtHours"></span>
+                <strong id="payKpiOtH">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiOpenDisp"></span>
+                <strong id="payKpiDisp">—</strong>
+              </div>
+            </div>
+            <div class="payroll-live-kpi-grid payroll-live-kpi-row2 summary-section">
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiAccrualTotalUsd"></span>
+                <strong id="payKpiAccTotalUsd">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiTotalUnofficialUsd"></span>
+                <strong id="payKpiUnofficialUsd">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiTotalOfficialUsd"></span>
+                <strong id="payKpiOfficialUsd">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiTotalOvertimeUsd"></span>
+                <strong id="payKpiTotalOvertimeUsd">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiTotalOfficialUz"></span>
+                <strong id="payKpiOfficialUz">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiTotalUnofficialNormalUz"></span>
+                <strong id="payKpiGrUz">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiFmAccrualUz"></span>
+                <strong id="payKpiFmUz">—</strong>
+              </div>
+              <div class="summary-card">
+                <span class="summary-label" data-i18n="hr.payroll.kpiAccrual"></span>
+                <strong id="payKpiAcc">—</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="card app-card attm-block">
+          <div class="app-card-header section-header">
+            <h3 class="app-card-title" data-i18n="hr.payroll.cardPeriodTitle">Aktif bordro dönemi</h3>
+            <p class="app-muted-text" data-i18n="hr.payroll.cardPeriodDesc">Dönem seçimi, puantaj kilidi ve hesapların güncellenmesi bu alandan yönetilir.</p>
+          </div>
+          <div class="app-page-toolbar attm-filter-toolbar">
+            <div class="app-toolbar-left attm-inline-5 app-filterbar">
+              <div>
+                <label for="payMonth" data-i18n="hr.payroll.month">Dönem</label>
+                <input id="payMonth" class="app-input" type="month" />
+              </div>
+              <div>
+                <label for="payPeriodDisplay" data-i18n="hr.payroll.labelPeriodShort">Seçili dönem</label>
+                <input id="payPeriodDisplay" class="app-input" type="text" readonly />
+              </div>
+              <div>
+                <label for="payStateRead" data-i18n="hr.payroll.state">Durum</label>
+                <input id="payStateRead" class="app-input" type="text" readonly data-i18n="hr.payroll.stateReady" />
+              </div>
+            </div>
+            <div class="app-toolbar-right">
+              <button type="button" id="btnPayRecalc" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.btnRecalc">Hesapları yenile</button>
+              <button type="button" id="btnPayLock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnLock">Dönemi kilitle</button>
+              <button type="button" id="btnPayUnlock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnUnlock">Kilidi aç</button>
+            </div>
+          </div>
+          <p class="muted" data-i18n="hr.payroll.filters">Filtreler</p>
+          <div class="payroll-filters">
+            <div>
+              <label for="paySearch" data-i18n="hr.emp.search">İsim ara</label>
+              <input id="paySearch" type="text" data-i18n-placeholder="hr.emp.search" class="app-input" />
+            </div>
+            <div>
+              <label for="payDep" data-i18n="hr.emp.filterDept">Departman</label>
+              <select id="payDep" class="app-input"><option value="" data-i18n="hr.emp.filterDept">Departman</option></select>
+            </div>
+            <div>
+              <label for="payPayDateInfo" data-i18n="hr.payroll.payDateLabel">Ödeme tarihi (plan)</label>
+              <input id="payPayDateInfo" class="app-input" type="text" readonly data-i18n="hr.payroll.payDatePlaceholder" />
+            </div>
+            <button type="button" id="btnPayLoad" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.btnApplyFilters">Listeyi getir</button>
+            <div class="payroll-filters-fx-row">
+              <div>
+                <label for="payUsdUzsRate" data-i18n="hr.payroll.payUsdUzsLabel"></label>
+                <div class="payroll-filters-fx-actions">
+                  <input id="payUsdUzsRate" class="app-input" type="number" min="0" step="0.000001" inputmode="decimal" />
+                  <button type="button" id="btnPaySaveDefaultFx" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.btnSaveDefaultFx"></button>
+                </div>
+                <p id="payUsdUzsRateHint" class="muted" style="margin:6px 0 0;font-size:11px;line-height:1.35"></p>
+              </div>
+            </div>
+          </div>
+          <div class="payroll-actions-bar">
+            <a id="linkPayMonthly" class="version-btn app-button app-button-secondary" href="/hr-attendance-monthly.html" data-i18n="hr.payroll.linkMonthly">Aylık puantaj</a>
+            <a id="linkPayLocks" class="version-btn app-button app-button-secondary" href="/hr-attendance-locks.html" data-i18n="hr.payroll.linkLocks">Ay kilitleri</a>
+            <a class="version-btn app-button app-button-secondary" href="/payroll-design-mockup.html" target="_blank" rel="noopener noreferrer" data-i18n="hr.payroll.linkMockup">Tasarım örneği</a>
+            <span class="payroll-actions-spacer"></span>
+          </div>
+          <p class="payroll-disclaimer" data-i18n="hr.payroll.disclaimer"></p>
+          <p id="payMsg" class="api-msg" style="min-height:1.2em;margin-top:10px"></p>
+        </section>
+
+        <section class="card app-card attm-block" style="margin-top:16px">
+          <div class="app-card-header section-header">
+            <h3 class="app-card-title" data-i18n="hr.payroll.sectionLines">Bordro satırları</h3>
+            <p class="app-muted-text" data-i18n="hr.payroll.cardLinesDesc">Çalışılan gün, normal ve fazla mesai saatleri ile tahakkuk; tutarlar maaş görüntüleme yetkilerinize göre listelenir.</p>
+          </div>
+          <div class="payroll-table-wrap">
+            <table class="payroll-table">
+              <thead>
+                <tr>
+                  <th data-i18n="hr.payroll.colEmployee">Personel</th>
+                  <th data-i18n="hr.payroll.colDepartment">Departman</th>
+                  <th data-i18n="hr.payroll.colWorkedDays">Hakediş günü</th>
+                  <th data-i18n="hr.payroll.colNormalHours">Normal saat</th>
+                  <th data-i18n="hr.payroll.colOtHours">FM saat</th>
+                  <th data-i18n="hr.payroll.colNormalWorkDue"></th>
+                  <th data-i18n="hr.payroll.colMonthlyOvertimeDue"></th>
+                  <th data-i18n="hr.payroll.colMonthlyTotalDue"></th>
+                  <th data-i18n="hr.payroll.colNormalUsdEq"></th>
+                  <th data-i18n="hr.payroll.colOvertimeUsdEq"></th>
+                  <th data-i18n="hr.payroll.colTotalUsdEq"></th>
+                  <th data-i18n="hr.payroll.colDisputes">Açık itiraz</th>
+                  <th data-i18n="hr.payroll.colDetail">Detay</th>
+                </tr>
+              </thead>
+              <tbody id="payBody"></tbody>
+            </table>
           </div>
         </section>
-      
+
+        <section class="card app-card attm-block" style="margin-top:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <h3 class="app-card-title section-header" style="margin:0;font-size:0.95rem" data-i18n="hr.payroll.sectionDisputes">Hakediş itirazları</h3>
+              <p class="app-muted-text" style="margin:4px 0 0;font-size:11px" data-i18n="hr.payroll.cardDisputesHint">İK yönetim yetkisi olan kullanıcılar da itiraz oluşturabilir ve durum güncelleyebilir.</p>
+            </div>
+            <button type="button" id="btnPayNewDispute" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnNewDispute">İtiraz aç</button>
+          </div>
+          <div class="payroll-table-wrap" style="margin-top:10px">
+            <table class="payroll-table">
+              <thead>
+                <tr>
+                  <th data-i18n="hr.payroll.dispColNo">Talep no</th>
+                  <th data-i18n="hr.payroll.colEmployee">Personel</th>
+                  <th data-i18n="hr.payroll.dispColDay">Gün</th>
+                  <th data-i18n="hr.payroll.dispColType">Tip</th>
+                  <th data-i18n="hr.payroll.dispColDesc">Açıklama</th>
+                  <th data-i18n="hr.payroll.dispColStatus">Durum</th>
+                  <th data-i18n="hr.payroll.dispColAction">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="payDispBody"></tbody>
+            </table>
+          </div>
+        </section>
+
         </main>
       </div>
     </div>
   </div>
+
+  <div id="payDispModal" class="payroll-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="payDispModalTitle">
+    <div class="payroll-modal">
+      <h3 id="payDispModalTitle" data-i18n="hr.payroll.modalNewTitle">Yeni itiraz</h3>
+      <div class="app-form-row">
+        <label for="payDispEmp" data-i18n="hr.payroll.formEmployee">Personel</label>
+        <select id="payDispEmp"></select>
+      </div>
+      <div class="app-form-row">
+        <label for="payDispDay" data-i18n="hr.payroll.formDay">Gün (isteğe bağlı)</label>
+        <input id="payDispDay" type="date" />
+      </div>
+      <div class="app-form-row">
+        <label for="payDispType" data-i18n="hr.payroll.formType">Talep tipi</label>
+        <select id="payDispType">
+          <option value="overtime" data-i18n="hr.payroll.typeOvertime">Fazla mesai</option>
+          <option value="workday" data-i18n="hr.payroll.typeWorkday">Hakediş günü</option>
+          <option value="deduction" data-i18n="hr.payroll.typeDeduction">Kesinti</option>
+          <option value="other" data-i18n="hr.payroll.typeOther">Diğer</option>
+        </select>
+      </div>
+      <div class="app-form-row">
+        <label for="payDispDesc" data-i18n="hr.payroll.formDesc">Açıklama</label>
+        <textarea id="payDispDesc"></textarea>
+      </div>
+      <div class="payroll-modal-actions">
+        <button type="button" id="payDispCancel" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.modalCancel">İptal</button>
+        <button type="button" id="payDispSave" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.formSubmit">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="payDayModal" class="attm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="payDayModalTitle">
+    <div class="attm-modal payroll-mock-day-modal payroll-day-modal" style="max-width:min(920px,96vw)">
+      <div class="payroll-mock-modal-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+        <h3 id="payDayModalTitle" data-i18n="hr.payroll.dayModalTitle">Günlük puantaj dökümü</h3>
+        <button type="button" id="payDayModalClose" class="version-btn app-button app-button-secondary" data-i18n="common.close">Kapat</button>
+      </div>
+      <div class="payroll-day-modal-body">
+        <p class="attm-modal-help" data-i18n="hr.payroll.dayModalHelp">Seçilen personel için dönem içi puantaj satırları. Düzeltme için aylık puantaj ekranına geçin.</p>
+        <p id="payDayModalEmp" class="app-muted-text" aria-live="polite"></p>
+        <p id="payDaySummaryNote" class="payroll-day-summary-note is-hidden" data-i18n="hr.payroll.daySummaryNoSalary"></p>
+        <div id="payDaySummary" class="payroll-day-summary"></div>
+        <div class="payroll-day-details-scroll">
+          <div class="attm-summary-table-wrap" style="margin-top:0">
+            <table class="app-table attm-summary-table">
+              <thead>
+                <tr>
+                  <th data-i18n="hr.payroll.dayColDate">Tarih</th>
+                  <th data-i18n="hr.payroll.dayColIn">Giriş</th>
+                  <th data-i18n="hr.payroll.dayColOut">Çıkış</th>
+                  <th data-i18n="hr.payroll.dayColNormal">Normal saat</th>
+                  <th data-i18n="hr.payroll.dayColOt">Fazla mesai</th>
+                  <th data-i18n="hr.payroll.dayColStatus">Durum</th>
+                </tr>
+              </thead>
+              <tbody id="payDayBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script src="/js/i18n.js" defer></script>
   <script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>

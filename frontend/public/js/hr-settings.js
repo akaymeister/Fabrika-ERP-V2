@@ -32,6 +32,7 @@
     'working_days',
     'sunday_workable',
     'sunday_paid',
+    'payroll_usd_uzs_rate',
   ];
   const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   const TIME_PAIRS = [
@@ -250,7 +251,7 @@
     const payload = {};
     SETTING_KEYS.filter((k) => !['working_days', 'sunday_workable', 'sunday_paid'].includes(k)).forEach((k) => {
       const raw = val(k);
-      payload[k] = /_hours$/.test(k) ? raw.replace(',', '.') : raw;
+      payload[k] = /_hours$/.test(k) || k === 'payroll_usd_uzs_rate' ? raw.replace(',', '.') : raw;
     });
     if (document.getElementById('sunday_workable')?.checked && !document.getElementById('wd_sun')?.checked) {
       document.getElementById('wd_sun').checked = true;

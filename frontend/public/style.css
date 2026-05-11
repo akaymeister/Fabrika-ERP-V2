@@ -4358,6 +4358,45 @@ body.app-ui-v3 table.app-table tbody tr:hover td {
   background: #f8fafc;
 }
 
+/* Dar ekranda form kontrolleri sıkışıp üst üste binmesin. */
+@media (max-width: 1280px) {
+  body.app-ui-v3 table.app-table {
+    table-layout: auto;
+  }
+
+  body.app-ui-v3 table.app-table thead th,
+  body.app-ui-v3 table.app-table tbody td {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    vertical-align: top;
+  }
+
+  body.app-ui-v3 table.app-table tbody td input,
+  body.app-ui-v3 table.app-table tbody td select,
+  body.app-ui-v3 table.app-table tbody td textarea {
+    min-width: 120px;
+    max-width: 100%;
+  }
+
+  body.app-ui-v3.app-master-page .topbar.dashboard-topbar .topbar-right {
+    flex-wrap: wrap;
+    white-space: normal;
+    overflow: visible;
+  }
+
+  body.app-ui-v3 .global-user-tools,
+  body.app-ui-v3 .global-user-wrap {
+    overflow: visible;
+    z-index: 120;
+  }
+
+  body.app-ui-v3 .global-user-dropdown,
+  body.app-ui-v3 .global-notif-dropdown {
+    z-index: 140;
+  }
+}
+
 body.app-ui-v3 .app-badge {
   display: inline-flex;
   align-items: center;
@@ -7772,6 +7811,77 @@ body.app-ui-v3 .attm-modal-actions {
   flex-wrap: wrap;
 }
 
+body.app-ui-v3 .attm-import-modal {
+  width: min(1100px, calc(100vw - 24px));
+  max-width: 1100px;
+}
+
+body.app-ui-v3 .attm-import-head-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+body.app-ui-v3 .attm-import-summary {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+}
+
+body.app-ui-v3 .attm-import-table-wrap {
+  max-height: 55vh;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+body.app-ui-v3 .attm-import-table {
+  min-width: 1480px;
+  font-size: 12px;
+}
+
+body.app-ui-v3 .attm-import-table th,
+body.app-ui-v3 .attm-import-table td {
+  vertical-align: top;
+  padding: 6px;
+}
+
+body.app-ui-v3 .attm-import-table input,
+body.app-ui-v3 .attm-import-table select {
+  width: 100%;
+  min-width: 110px;
+  box-sizing: border-box;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+body.app-ui-v3 .attm-import-table input[type='checkbox'] {
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 4px auto 0;
+  display: block;
+}
+
+body.app-ui-v3 .attm-import-table .is-bad {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+body.app-ui-v3 .attm-import-row-status {
+  font-size: 11px;
+  color: #334155;
+  line-height: 1.25;
+  min-width: 170px;
+  display: block;
+}
+
 @media (max-width: 1200px) {
   body.app-ui-v3 .attm-daily-table th:nth-child(6),
   body.app-ui-v3 .attm-daily-table td:nth-child(6),
@@ -8068,6 +8178,41 @@ body.app-ui-v3 .att-edit-reason-banner .att-edit-reason-body {
 
   body.app-ui-v3 .att-toolbar-row .att-toolbar-save {
     justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1280px) {
+  /* Günlük/aylık puantajda dar ekranda input satırları üst üste binmesin. */
+  body.app-ui-v3 .att-toolbar-row {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  body.app-ui-v3 .att-toolbar-row .att-inline-5 {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  body.app-ui-v3 .attm-summary-table-wrap,
+  body.app-ui-v3 .att-table-wrap,
+  body.app-ui-v3 .att-scroll,
+  body.app-ui-v3 .attm-import-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  body.app-ui-v3 .attm-summary-table-wrap table.app-table,
+  body.app-ui-v3 .att-table,
+  body.app-ui-v3 .attm-import-table {
+    table-layout: auto !important;
+    min-width: 980px;
+  }
+
+  body.app-ui-v3 .attm-summary-table-wrap table.app-table thead th,
+  body.app-ui-v3 .attm-summary-table-wrap table.app-table tbody td,
+  body.app-ui-v3 .att-table thead th,
+  body.app-ui-v3 .att-table tbody td {
+    white-space: nowrap;
   }
 }
 
@@ -8700,7 +8845,8 @@ body.app-ui-v3.hr-employee-form-page .emp-salary-card .emp-salary-error {
   color: #b91c1c;
 }
 
-body.app-ui-v3.hr-employee-form-page .emp-salary-card input.is-readonly {
+body.app-ui-v3.hr-employee-form-page .emp-salary-card input.is-readonly,
+body.app-ui-v3.hr-employee-form-page .emp-salary-card select.is-readonly {
   background: #f1f5f9;
   color: #475569;
   cursor: not-allowed;
@@ -9384,6 +9530,77 @@ body.payroll-mock-page .payroll-mock-kpi-grid .summary-card {
   min-height: 72px;
 }
 
+/* --- hr-payroll.html (canlı bordro, mockup KPI düzeni ile uyumlu) --- */
+body.payroll-live-page .payroll-kpi-top-wrap .summary-section {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+body.payroll-live-page .payroll-kpi-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+body.payroll-live-page .payroll-live-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+body.payroll-live-page .payroll-live-kpi-row1 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body.payroll-live-page .payroll-live-kpi-row2 {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  body.payroll-live-page .payroll-live-kpi-row1,
+  body.payroll-live-page .payroll-live-kpi-row2 {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+body.payroll-live-page .payroll-kpi-top-wrap .summary-card {
+  min-height: 0;
+  padding: 10px 12px;
+  gap: 4px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+body.payroll-live-page .payroll-kpi-top-wrap .summary-label {
+  font-size: 11px;
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+body.payroll-live-page .payroll-kpi-top-wrap .summary-card strong {
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+body.payroll-live-page .payroll-live-detail-btn {
+  margin-left: 8px;
+  padding: 4px 10px;
+  font-size: var(--font-size-meta);
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+body.payroll-live-page .payroll-live-detail-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 body.payroll-mock-page .payroll-mock-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -9567,4 +9784,55 @@ body.payroll-mock-page .payroll-mock-policy-list {
   color: #475569;
   font-size: var(--font-size-ui);
   line-height: 1.55;
+}
+
+/* hr-employee-form — maaş salt okunur + revizyon modalı */
+body.hr-employee-form-page .emp-salary-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+body.hr-employee-form-page .emp-salary-toolbar h3 {
+  margin: 0;
+}
+
+body.hr-employee-form-page .emp-salary-readonly-hint {
+  margin: 0 0 12px;
+  font-size: var(--font-size-meta);
+}
+
+body.hr-employee-form-page .emp-comp-history-table {
+  width: 100%;
+}
+
+body.hr-employee-form-page .emp-revision-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.hr-employee-form-page .emp-revision-modal-backdrop.is-open {
+  display: flex;
+}
+
+body.hr-employee-form-page .emp-revision-modal {
+  max-width: 560px;
+  width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+body.hr-employee-form-page .emp-revision-modal-salary {
+  margin-top: 12px;
 }

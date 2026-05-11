@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -40,14 +40,19 @@
     <section class="card">
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
         <div><label for="lockMonth" data-i18n="hr.att.monthly.month">Ay</label><input id="lockMonth" type="month" /></div>
+        <div>
+          <label for="lockUsdUzsRate" data-i18n="hr.att.locks.payUsdUzsLabel"></label>
+          <input id="lockUsdUzsRate" type="number" min="0" step="0.000001" inputmode="decimal" style="display:block;margin-top:4px;min-width:160px;padding:8px;border-radius:8px;border:1px solid #cbd5e1" />
+        </div>
         <input id="lockNote" type="text" data-i18n-placeholder="common.note" placeholder="Not" style="min-width:260px" />
         <button type="button" id="btnLockMonth" class="version-btn" data-i18n="hr.att.locks.btnLock">Kilitle</button>
         <button type="button" id="btnUnlockMonth" class="logout-btn" data-i18n="hr.att.locks.btnUnlock">Kilidi ac</button>
       </div>
+      <p class="muted" style="margin:8px 0 0;font-size:11px" data-i18n="hr.att.locks.payUsdUzsHint"></p>
       <p id="locksMsg" style="min-height:1.2em"></p>
       <div style="overflow-x:auto">
         <table><thead><tr>
-          <th data-i18n="hr.att.monthly.month">Ay</th><th data-i18n="hr.att.locks.colLockState">Kilit durumu</th><th data-i18n="common.note">Not</th>
+          <th data-i18n="hr.att.monthly.month">Ay</th><th data-i18n="hr.att.locks.colLockState">Kilit durumu</th><th data-i18n="hr.att.locks.colUsdUzsRate">Kur</th><th data-i18n="common.note">Not</th>
         </tr></thead><tbody id="locksBody"></tbody></table>
       </div>
     </section>

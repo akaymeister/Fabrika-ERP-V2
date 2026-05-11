@@ -5,6 +5,7 @@
   const dailyBody = document.getElementById('dailyBody');
   const msgEl = document.getElementById('msg');
   const lockHint = document.getElementById('lockHint');
+  const overnightHintEl = document.getElementById('overnightHint');
   const missingCountEl = document.getElementById('missingCount');
   const attNatFilter = document.getElementById('attNatFilter');
   const attDepFilter = document.getElementById('attDepFilter');
@@ -153,6 +154,27 @@
     return h * 60 + m;
   }
 
+  function isOvernightInput(checkInRaw, checkOutRaw) {
+    const inMin = timeToMinutes(checkInRaw);
+    const outMin = timeToMinutes(checkOutRaw);
+    if (inMin == null || outMin == null) return false;
+    return outMin < inMin;
+  }
+
+  function refreshOvernightHint() {
+    if (!overnightHintEl || !dailyBody) return;
+    const anyOvernight = [...dailyBody.querySelectorAll('tr[data-i]')].some((tr) =>
+      isOvernightInput(tr.querySelector('.x-in')?.value, tr.querySelector('.x-out')?.value)
+    );
+    if (!anyOvernight) {
+      overnightHintEl.style.display = 'none';
+      overnightHintEl.textContent = '';
+      return;
+    }
+    overnightHintEl.style.display = 'block';
+    overnightHintEl.textContent = t('hr.att.overnightHint');
+  }
+
   function diffMinutes(start, end) {
     const startMinutes = timeToMinutes(start);
     let endMinutes = timeToMinutes(end);
@@ -280,6 +302,8 @@
       breakOverlapMinutes(range.start, range.end, attendanceRules.break2) +
       breakOverlapMinutes(range.start, range.end, attendanceRules.lunch);
     let result = clampMin(totalBase - breaks, 0);
+    // Pazar çalışmasında da genel zaman kesintisi uygulanır.
+    result = clampMin(result - toNum(attendanceRules.timeDeductionMinutes), 0);
     const stdEnd = timeToMinutes(attendanceRules.standardEnd || '18:00') ?? (18 * 60);
     if (range.end > stdEnd) {
       result = clampMin(result - breakOverlapMinutes(stdEnd, range.end, attendanceRules.break3), 0);
@@ -465,6 +489,7 @@
   function renderDailyRows() {
     if (!dailyRows.length) {
       dailyBody.innerHTML = `<tr><td colspan="9">${t('hr.att.empty')}</td></tr>`;
+      refreshOvernightHint();
       return;
     }
     dailyBody.innerHTML = dailyRows
@@ -509,6 +534,7 @@
       applyRowRules(tr, idx);
     });
     renderMissingCount();
+    refreshOvernightHint();
   }
 
   function renderMissingCount() {
@@ -602,7 +628,9 @@
   function collectRow(tr, idx) {
     const src = dailyRows[idx];
     if (!src || !src.employee_id) return null;
-    return {
+    const date = String(workDateEl?.value || '').slice(0, 10);
+    const sundayRule = dayKeyFromDate(date) === 'sun' ? getSundayRuleByDate(date) : null;
+    const payload = {
       employee_id: src.employee_id,
       project_id: tr.querySelector('.x-project')?.value || null,
       work_status: tr.querySelector('.x-status')?.value || 'worked',
@@ -613,6 +641,11 @@
       overtime_hours: parseDecimalHourInput(tr.querySelector('.x-ot')?.value || 0),
       note: tr.dataset.note || null,
     };
+    if (sundayRule) {
+      payload.sunday_workable_override = sundayRule.workable ? 1 : 0;
+      payload.sunday_paid_override = sundayRule.paid ? 1 : 0;
+    }
+    return payload;
   }
 
   async function saveRowByIndex(idx) {
@@ -724,6 +757,7 @@
       if (!tr || rowReadOnly()) return;
       const idx = String(tr.getAttribute('data-i'));
       applyRowRules(tr, Number(idx));
+      refreshOvernightHint();
       dirtyRows.add(idx);
       await saveRowByIndex(Number(idx));
     });
@@ -757,6 +791,7 @@
         if (inNext) inNext.value = inVal;
         if (outNext) outNext.value = outVal;
         applyRowRules(nextTr, idx + 1);
+        refreshOvernightHint();
         dirtyRows.add(String(idx + 1));
         await saveRowByIndex(idx + 1);
       }

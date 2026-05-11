@@ -39,6 +39,12 @@ const {
   createWorkStatus,
   updateWorkStatus,
   deleteWorkStatus,
+  listPayrollSnapshot,
+  createPayrollDispute,
+  updatePayrollDispute,
+  listCompensationHistory,
+  getCurrentCompensation,
+  createCompensationRevision,
 } = require('../services/hrService');
 const { logActivity } = require('../services/activityLogService');
 const { toUpperTr } = require('../utils/textNormalize');
@@ -196,14 +202,48 @@ async function getEmployee(req, res) {
   return res.json(jsonOk(out));
 }
 
+async function getEmployeeCompensationHistory(req, res) {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json(jsonError('VALIDATION', 'Gecersiz personel', null, 'api.hr.employee_invalid'));
+  }
+  const ex = await getEmployeeById(id);
+  if (ex.error) {
+    const status = ex.messageKey === 'api.hr.employee_not_found' ? 404 : 400;
+    return res.status(status).json(validationOut(ex));
+  }
+  const out = await listCompensationHistory(id);
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
+async function getEmployeeCompensationCurrent(req, res) {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json(jsonError('VALIDATION', 'Gecersiz personel', null, 'api.hr.employee_invalid'));
+  }
+  const ex = await getEmployeeById(id);
+  if (ex.error) {
+    const status = ex.messageKey === 'api.hr.employee_not_found' ? 404 : 400;
+    return res.status(status).json(validationOut(ex));
+  }
+  const asOf = req.query && req.query.asOf != null ? String(req.query.asOf).trim() : null;
+  const out = await getCurrentCompensation(id, asOf || undefined);
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
 async function postEmployee(req, res) {
   try {
     const body = req.body || {};
-    const out = await createEmployee({
-      ...body,
-      first_name: body.first_name,
-      last_name: body.last_name,
-    });
+    const out = await createEmployee(
+      {
+        ...body,
+        first_name: body.first_name,
+        last_name: body.last_name,
+      },
+      req.session?.user?.id ?? null
+    );
     if (out.error) return res.status(400).json(validationOut(out));
     await logActivity(req, {
       action_type: 'CREATE',
@@ -232,12 +272,19 @@ async function patchEmployee(req, res) {
   const id = parseInt(String(req.params.id), 10);
   try {
     const body = req.body || {};
-    const out = await updateEmployee(id, {
-      ...body,
-      first_name: body.first_name,
-      last_name: body.last_name,
-    });
-    if (out.error) return res.status(400).json(validationOut(out));
+    const out = await updateEmployee(
+      id,
+      {
+        ...body,
+        first_name: body.first_name,
+        last_name: body.last_name,
+      },
+      req.session?.user || null
+    );
+    if (out.error) {
+      const st = out.messageKey === 'api.hr.salary_edit_forbidden' ? 403 : 400;
+      return res.status(st).json(validationOut(out));
+    }
     await logActivity(req, {
       action_type: 'UPDATE',
       module_name: 'hr',
@@ -256,6 +303,31 @@ async function patchEmployee(req, res) {
     if (e.code === 'ER_NO_REFERENCED_ROW_2') {
       return res.status(400).json(jsonError('VALIDATION', 'Iliskili kayit bulunamadi', null, 'api.hr.reference_not_found'));
     }
+    throw e;
+  }
+}
+
+async function postCompensationRevision(req, res) {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json(jsonError('VALIDATION', 'Gecersiz personel', null, 'api.hr.employee_invalid'));
+  }
+  try {
+    const out = await createCompensationRevision(id, req.body || {}, req.session?.user?.id ?? null);
+    if (out.error) {
+      const st = out.messageKey === 'api.hr.employee_not_found' ? 404 : 400;
+      return res.status(st).json(validationOut(out));
+    }
+    await logActivity(req, {
+      action_type: 'CREATE',
+      module_name: 'hr',
+      table_name: 'employee_compensation_history',
+      record_id: id,
+      new_data: req.body || {},
+      description: 'Maaş revizyonu eklendi',
+    });
+    return res.status(201).json(jsonOk(out));
+  } catch (e) {
     throw e;
   }
 }
@@ -558,6 +630,53 @@ async function postWagePreview(req, res) {
   return res.json(jsonOk({ breakdown }));
 }
 
+async function getPayrollSnapshot(req, res) {
+  const out = await listPayrollSnapshot(
+    {
+      month: req.query?.month,
+      employeeId: req.query?.employeeId,
+      projectId: req.query?.projectId,
+      nationality: req.query?.nationality,
+      country: req.query?.country,
+      region_or_city: req.query?.region,
+      department_id: req.query?.departmentId,
+      position_id: req.query?.positionId,
+      search: req.query?.search,
+    },
+    req.session?.user || null
+  );
+  if (out.error) return res.status(400).json(validationOut(out));
+  return res.json(jsonOk(out));
+}
+
+async function postPayrollDispute(req, res) {
+  const out = await createPayrollDispute(req.body || {}, req.session?.user?.id || null);
+  if (out.error) return res.status(400).json(validationOut(out));
+  await logActivity(req, {
+    action_type: 'CREATE',
+    module_name: 'hr',
+    table_name: 'payroll_disputes',
+    record_id: out.id || null,
+    new_data: req.body || {},
+    description: 'Bordro itirazi olusturuldu',
+  });
+  return res.status(201).json(jsonOk(out));
+}
+
+async function patchPayrollDispute(req, res) {
+  const out = await updatePayrollDispute(req.params.id, req.body || {}, req.session?.user?.id || null);
+  if (out.error) return res.status(400).json(validationOut(out));
+  await logActivity(req, {
+    action_type: 'UPDATE',
+    module_name: 'hr',
+    table_name: 'payroll_disputes',
+    record_id: parseInt(String(req.params.id), 10) || null,
+    new_data: req.body || {},
+    description: 'Bordro itirazi guncellendi',
+  });
+  return res.json(jsonOk(out));
+}
+
 module.exports = {
   getHrScope,
   getDepartments,
@@ -569,7 +688,10 @@ module.exports = {
   getEmployees,
   getCompensationEmployees,
   getEmployee,
+  getEmployeeCompensationHistory,
+  getEmployeeCompensationCurrent,
   postEmployee,
+  postCompensationRevision,
   patchEmployee,
   postEmployeePhoto,
   getAssignableUsers,
@@ -596,4 +718,7 @@ module.exports = {
   patchWorkStatus,
   removeWorkStatus,
   postWagePreview,
+  getPayrollSnapshot,
+  postPayrollDispute,
+  patchPayrollDispute,
 };
