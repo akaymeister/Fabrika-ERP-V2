@@ -60,7 +60,7 @@
       </div>
 
       <div class="hero-stats">
-        <div class="stat-box">
+        <div class="stat-box" data-perm-any="module.stock stock.hub.view stock.products.view stock.movements.view stock.reports.view">
           <span class="stat-label" data-i18n="dashboard.kpiStockValue">Toplam stok değeri</span>
           <strong id="heroStockValue">—</strong>
         </div>
@@ -76,32 +76,32 @@
     </section>
 
     <div class="summary-section" id="dashboardKpiRow">
-      <div class="summary-card">
+      <div class="summary-card" data-perm-any="module.stock stock.hub.view stock.products.view stock.movements.view stock.reports.view">
         <span class="summary-label" data-i18n="dashboard.kpiStockValue">Toplam stok değeri</span>
         <strong id="kpiStockValue">—</strong>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" data-perm-any="module.stock stock.hub.view stock.products.view">
         <span class="summary-label" data-i18n="dashboard.kpiProducts">Toplam ürün</span>
         <strong id="kpiProductCount">—</strong>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" data-perm-any="module.projects projects.hub.view projects.control.view">
         <span class="summary-label" data-i18n="dashboard.kpiProjects">Aktif proje</span>
         <strong id="kpiActiveProjects">—</strong>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" data-perm-any="module.purchasing module.purchasing.request module.purchasing.approve purchasing.hub.view purchasing.request.view purchasing.request.approve purchasing.processing.view purchasing.order.view">
         <span class="summary-label" data-i18n="dashboard.kpiPurchases">Bekleyen satınalma talebi</span>
         <strong id="kpiPendingPurchases">—</strong>
       </div>
     </div>
 
-    <section class="module-section">
+    <section class="module-section" id="dashboardModulesSection">
       <div class="section-header">
         <h3 data-i18n="dashboard.modules">Ana modüller</h3>
         <p data-i18n="dashboard.modulesSub">Sisteme giriş noktaları (geliştirme sırasına göre aktifleşecek)</p>
       </div>
 
-      <div class="dashboard-grid">
-        <div class="dashboard-card primary-card">
+      <div class="dashboard-grid" id="dashboardCardsGrid">
+        <div class="dashboard-card primary-card" data-perm-any="module.stock stock.hub.view stock.products.view stock.brands.view stock.warehouses.view stock.in.view stock.out.view stock.movements.view stock.reports.view">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">ST</div>
@@ -121,7 +121,7 @@
           </div>
         </div>
 
-        <div class="dashboard-card primary-card">
+        <div class="dashboard-card primary-card" data-perm-any="module.purchasing module.purchasing.request module.purchasing.approve module.purchasing.receipt purchasing.hub.view purchasing.request.view purchasing.request.create purchasing.request.approve purchasing.processing.view purchasing.order.view purchasing.receipt.view purchasing.suppliers.view">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">SA</div>
@@ -140,7 +140,7 @@
           </div>
         </div>
 
-        <div class="dashboard-card">
+        <div class="dashboard-card" data-perm-any="module.projects projects.hub.view projects.control.view">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">PR</div>
@@ -158,7 +158,7 @@
           </div>
         </div>
 
-        <div class="dashboard-card primary-card">
+        <div class="dashboard-card primary-card" data-perm-any="module.hr hr.hub.view hr.employees.view hr.attendance.view hr.payroll.view hr.compensation.view">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">İK</div>
@@ -184,7 +184,7 @@
           </div>
         </div>
 
-        <div class="dashboard-card">
+        <div class="dashboard-card" data-perm-any="admin.full">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">MU</div>
@@ -199,7 +199,7 @@
           </div>
         </div>
 
-        <div class="dashboard-card">
+        <div class="dashboard-card" data-perm-any="admin.full">
           <div class="card-head">
             <div class="card-title-wrap">
               <div class="module-icon" aria-hidden="true">EV</div>
@@ -214,9 +214,21 @@
           </div>
         </div>
       </div>
+
+      <div
+        id="dashboardEmptyState"
+        class="dashboard-empty-state"
+        hidden
+        data-i18n="dashboard.empty"
+      >Size atanmış dashboard kartı bulunmuyor.</div>
     </section>
 
-    <section class="card" style="margin-top: 24px;">
+    <section
+      class="card"
+      id="dashboardActivitySection"
+      style="margin-top: 24px;"
+      data-perm-any="module.stock stock.hub.view stock.products.view stock.movements.view stock.in.view stock.out.view"
+    >
       <div class="section-header">
         <h3 data-i18n="dashboard.recentMov">Son stok hareketleri</h3>
         <p data-i18n="dashboard.recentMovSub">Depo giriş/çıkış kayıtları (en fazla 10 hareket)</p>
@@ -245,7 +257,7 @@
   </div>
 
   <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/app.js" defer></script>
   <footer class="site-footer">
     <p>

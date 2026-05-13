@@ -50,7 +50,7 @@
         <strong data-i18n="hr.att.daily.editReasonBanner">Düzenleme açıklaması</strong>
         <div id="editReasonText" class="att-edit-reason-body"></div>
       </div>
-      <div id="sundayOverrideBox" class="att-sunday-override">
+      <div id="sundayOverrideBox" class="att-sunday-override" data-perm-any="module.hr hr.attendance.edit">
         <div class="att-sunday-row">
           <button type="button" id="btnSundayOpen" class="btn btn-secondary btn-sm" data-i18n="hr.att.sunday.open">Pazar çalışmasını aç</button>
           <button type="button" id="btnSundayClose" class="btn btn-danger btn-sm" data-i18n="hr.att.sunday.close">Pazar çalışmasını kapat</button>
@@ -76,7 +76,7 @@
       </div>
       <div class="app-toolbar-right att-toolbar-save">
         <button type="button" id="btnLoadDaily" class="btn btn-secondary" data-i18n="hr.att.daily.load">Listele</button>
-        <button type="button" id="btnSaveDaily" class="btn btn-primary" data-i18n="hr.att.daily.save">Kaydet</button>
+        <button type="button" id="btnSaveDaily" class="btn btn-primary" data-i18n="hr.att.daily.save" data-perm-any="module.hr hr.attendance.edit">Kaydet</button>
       </div>
       </div>
       <p id="lockHint" class="text-dense att-lock-hint" data-i18n="hr.att.locked.hint">Bu ay kilitli</p>
@@ -108,7 +108,7 @@
   </div>
 <script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-attendance.js" defer></script>
   <script>

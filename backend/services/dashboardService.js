@@ -16,57 +16,80 @@ async function hasColumn(tableName, columnName) {
 /**
  * Modül 1 — Dashboard: özet KPI ve son hareketler.
  * Boş veritabanında güvenli (0 değerler / boş liste).
+ *
+ * @param {{canStock?: boolean, canProjects?: boolean, canPurchasing?: boolean}} [scope]
+ *   Permission-aware filtre. Eksik alanlar `null` döner; frontend bunlara
+ *   bakarak ilgili KPI kartını gizler. Eğer scope verilmezse (geriye uyumluluk)
+ *   tüm alanlar hesaplanır.
  */
-async function getKpis() {
-  const hasStockM2 = await hasColumn('products', 'stock_m2');
-  const stockQtyExpr = hasStockM2 ? 'COALESCE(p.stock_m2, p.stock_qty)' : 'p.stock_qty';
-  const [[prodAgg]] = await pool.query(
-    `SELECT
-       COALESCE(SUM((${stockQtyExpr}) * p.unit_price), 0) AS list_stock_value,
-       COUNT(p.id) AS product_count
-     FROM products p`
-  );
+async function getKpis(scope) {
+  const all = !scope;
+  const canStock = all || !!scope.canStock;
+  const canProjects = all || !!scope.canProjects;
+  const canPurchasing = all || !!scope.canPurchasing;
 
-  let totalStockValue = 0;
-  const hasCostLayers = await hasColumn('stock_cost_layers', 'qty_m2_remaining');
-  if (hasCostLayers) {
-    const [[layerRow]] = await pool.query(
-      `SELECT COALESCE(SUM(qty_m2_remaining * cost_uzs_per_m2), 0) AS fifo_value
-       FROM stock_cost_layers`
-    );
-    const fifoVal = Number(layerRow && layerRow.fifo_value) || 0;
-    if (fifoVal > 0) {
-      totalStockValue = fifoVal;
-    }
-  }
-  if (totalStockValue <= 0) {
-    totalStockValue = Number(prodAgg.list_stock_value) || 0;
-  }
-
-  const [[proj]] = await pool.query(
-    `SELECT COUNT(*) AS active_project_count
-     FROM projects
-     WHERE status = 'active'`
-  );
-
-  let pendingPurchaseCount = 0;
-  try {
-    pendingPurchaseCount = await countPendingRequests();
-  } catch (_) {
-    const [[pr]] = await pool.query(
-      `SELECT COUNT(*) AS pending_purchase_count
-       FROM purchase_requests
-       WHERE status = 'submitted'`
-    );
-    pendingPurchaseCount = Number(pr.pending_purchase_count) || 0;
-  }
-
-  return {
-    totalStockValue,
-    productCount: Number(prodAgg.product_count) || 0,
-    activeProjectCount: Number(proj.active_project_count) || 0,
-    pendingPurchaseCount: Number(pendingPurchaseCount) || 0,
+  const out = {
+    totalStockValue: null,
+    productCount: null,
+    activeProjectCount: null,
+    pendingPurchaseCount: null,
   };
+
+  if (canStock) {
+    const hasStockM2 = await hasColumn('products', 'stock_m2');
+    const stockQtyExpr = hasStockM2 ? 'COALESCE(p.stock_m2, p.stock_qty)' : 'p.stock_qty';
+    const [[prodAgg]] = await pool.query(
+      `SELECT
+         COALESCE(SUM((${stockQtyExpr}) * p.unit_price), 0) AS list_stock_value,
+         COUNT(p.id) AS product_count
+       FROM products p`
+    );
+
+    let totalStockValue = 0;
+    const hasCostLayers = await hasColumn('stock_cost_layers', 'qty_m2_remaining');
+    if (hasCostLayers) {
+      const [[layerRow]] = await pool.query(
+        `SELECT COALESCE(SUM(qty_m2_remaining * cost_uzs_per_m2), 0) AS fifo_value
+         FROM stock_cost_layers`
+      );
+      const fifoVal = Number(layerRow && layerRow.fifo_value) || 0;
+      if (fifoVal > 0) {
+        totalStockValue = fifoVal;
+      }
+    }
+    if (totalStockValue <= 0) {
+      totalStockValue = Number(prodAgg.list_stock_value) || 0;
+    }
+
+    out.totalStockValue = totalStockValue;
+    out.productCount = Number(prodAgg.product_count) || 0;
+  }
+
+  if (canProjects) {
+    const [[proj]] = await pool.query(
+      `SELECT COUNT(*) AS active_project_count
+       FROM projects
+       WHERE status = 'active'`
+    );
+    out.activeProjectCount = Number(proj.active_project_count) || 0;
+  }
+
+  if (canPurchasing) {
+    let pendingPurchaseCount = 0;
+    try {
+      pendingPurchaseCount = await countPendingRequests();
+    } catch (_) {
+      const [[pr]] = await pool.query(
+        `SELECT COUNT(*) AS pending_purchase_count
+         FROM purchase_requests
+         WHERE status = 'submitted'`
+      );
+      pendingPurchaseCount = Number(pr.pending_purchase_count) || 0;
+    }
+    out.pendingPurchaseCount = Number(pendingPurchaseCount) || 0;
+  }
+
+  return out;
 }
 
 async function getRecentMovements(limit = 10) {

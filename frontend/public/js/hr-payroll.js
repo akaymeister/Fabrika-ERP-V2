@@ -830,6 +830,12 @@
         if (payDayModal && payDayModal.classList.contains('attm-modal-open')) closeDayModal();
       }
     });
+    // Statik aksiyon butonları gating (btnPayRecalc, lock/unlock, fx save, new dispute,
+    // disp save modal). canEditDispute / canUnlockAttendance JS gating'i ile birlikte
+    // ikinci güvenlik katmanı sağlar.
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(document);
+    }
     await loadSnapshot({ silent: true });
   }
 

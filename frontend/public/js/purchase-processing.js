@@ -666,7 +666,7 @@
         const canCancel = !cancelled && recv <= 0.0001;
         const cancelBtn = cancelled
           ? '—'
-          : `<button type="button" class="btn btn-danger btn-sm po-line-cancel text-ui" data-action="cancel-line" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
+          : `<button type="button" class="btn btn-danger btn-sm po-line-cancel text-ui" data-action="cancel-line" data-perm-any="module.purchasing module.purchasing.approve purchasing.order.price_edit" data-oi="${esc(it.id)}" ${canCancel ? '' : 'disabled title="' + esc(tK('purch.proc.cancelLineDisabledReceipt')) + '"'}">${esc(tK('purch.proc.btnCancelLine'))}</button>`;
         const supSelectedId = String(it.line_supplier_id || order.supplier_id || '');
         const supSelectedRow = suppliers.find((s) => String(s.id) === supSelectedId);
         const supLabel = supSelectedRow ? fmtDisplayUpper(supSelectedRow.name || '') : '';
@@ -697,6 +697,10 @@
       })
       .join('');
 
+    // Dinamik cancel-line buton gating'i (data-perm-any taşır).
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(linesDetailBody);
+    }
     linesDetailBody.querySelectorAll('.po-line-sup').forEach((el) => {
       const i = parseInt(el.getAttribute('data-i'), 10);
       lineInputs[i].supEl = el;
@@ -1375,6 +1379,11 @@
   (async function init() {
     if (window.initPurchasingPageNav) {
       await window.initPurchasingPageNav('proc');
+    }
+    // Statik aksiyon butonları için permission gating (btnStart, btnSavePricing,
+    // btnCompleteOrder, btnReviseOrder). data-perm-any taşımayanlar etkilenmez.
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(document);
     }
     const sc = window.getPurchasingScope ? getPurchasingScope() : { canPurchasing: true };
     if (sc.canPurchasing) {

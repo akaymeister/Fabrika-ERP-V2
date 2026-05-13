@@ -38,17 +38,74 @@ const typeLabel = (movType) => {
 };
 
 async function loadUser() {
-  const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
-  if (res.status === 401) {
+  // authContext tek permission gerçeği — login durumu da onun üzerinden okunur.
+  const ctx = window.authContext;
+  if (!ctx) {
+    const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (res.status === 401) {
+      window.location.href = '/login.html';
+      return null;
+    }
+    const data = await res.json();
+    if (!data?.user) {
+      window.location.href = '/login.html';
+      return null;
+    }
+    return data.user;
+  }
+  const user = await ctx.load();
+  if (!user) {
     window.location.href = '/login.html';
     return null;
   }
-  const data = await res.json();
-  if (!data?.user) {
-    window.location.href = '/login.html';
-    return null;
+  return user;
+}
+
+/**
+ * Dashboard permission gating.
+ * `data-perm-any="key1 key2 ..."` taşıyan her eleman, kullanıcının bu izinlerden
+ * en az birine sahip olmasıyla görünür. Super admin her elemanı görür
+ * (authContext.hasAny isSuperAdmin shortcut'u var).
+ *
+ * Görünür modül kartı sayısı = 0 ise empty state gösterilir.
+ */
+function applyDashboardPermissionGating() {
+  const ctx = window.authContext;
+  if (!ctx) return;
+
+  // Per-element gating — Faz 6 ortak helper'ı; data-perm-resolved set eder
+  // (CSS [data-perm-any]:not([data-perm-resolved]) flicker-önleme kuralı
+  // gating çalıştıktan sonra elemanı görünür yapabilsin).
+  if (typeof ctx.applyActionPermissionGating === 'function') {
+    ctx.applyActionPermissionGating(document);
   }
-  return data.user;
+
+  const cardsGrid = document.getElementById('dashboardCardsGrid');
+  const emptyEl = document.getElementById('dashboardEmptyState');
+  if (cardsGrid && emptyEl) {
+    const visibleCards = cardsGrid.querySelectorAll('.dashboard-card:not([hidden])').length;
+    emptyEl.hidden = visibleCards > 0;
+    cardsGrid.style.display = visibleCards > 0 ? '' : 'none';
+  }
+
+  const kpiRow = document.getElementById('dashboardKpiRow');
+  if (kpiRow) {
+    const visibleKpis = kpiRow.querySelectorAll('.summary-card:not([hidden])').length;
+    kpiRow.style.display = visibleKpis > 0 ? '' : 'none';
+  }
+}
+
+function hasAnyStockView() {
+  const ctx = window.authContext;
+  if (!ctx) return false;
+  return ctx.hasAny([
+    'module.stock',
+    'stock.hub.view',
+    'stock.products.view',
+    'stock.movements.view',
+    'stock.in.view',
+    'stock.out.view',
+  ]);
 }
 
 function renderUser(user) {
@@ -81,31 +138,50 @@ async function loadSummary() {
   }
   const data = await res.json();
   if (!data.ok) return;
+
+  // KPI alanları izin yoksa backend tarafından `null` gelir; o KPI kartı
+  // zaten data-perm-any ile gizlenmiştir. Yine de bilinçli kontrol: null
+  // ise text'e dokunma.
   const elV = document.getElementById('kpiStockValue');
   const elP = document.getElementById('kpiProductCount');
   const elA = document.getElementById('kpiActiveProjects');
   const elB = document.getElementById('kpiPendingPurchases');
-  const valStr = fmtMoney(data.totalStockValue);
-  if (elV) elV.textContent = valStr;
   const heroStock = document.getElementById('heroStockValue');
-  if (heroStock) heroStock.textContent = valStr;
-  if (elP) elP.textContent = String(data.productCount ?? 0);
-  if (elA) elA.textContent = String(data.activeProjectCount ?? 0);
-  if (elB) elB.textContent = String(data.pendingPurchaseCount ?? 0);
+
+  if (data.totalStockValue != null) {
+    const valStr = fmtMoney(data.totalStockValue);
+    if (elV) elV.textContent = valStr;
+    if (heroStock) heroStock.textContent = valStr;
+  }
+  if (data.productCount != null && elP) elP.textContent = String(data.productCount);
+  if (data.activeProjectCount != null && elA) elA.textContent = String(data.activeProjectCount);
+  if (data.pendingPurchaseCount != null && elB) elB.textContent = String(data.pendingPurchaseCount);
+
   const hint = document.getElementById('heroDataHint');
   if (hint) hint.textContent = t('dashboard.kpiDataFresh');
 }
 
 async function loadActivity() {
-  const res = await fetch('/api/dashboard/activity?limit=10', { credentials: 'same-origin' });
+  // Stok view izni yoksa endpoint çağırma — section zaten gizli.
+  if (!hasAnyStockView()) return;
+
+  let res;
+  try {
+    res = await fetch('/api/dashboard/activity?limit=10', { credentials: 'same-origin' });
+  } catch (_) {
+    return;
+  }
   if (res.status === 401) {
     window.location.href = '/login.html';
     return;
   }
-  const data = await res.json();
+  // 403 (yetki yok) → section zaten gizli, tabloya dokunma.
+  if (res.status === 403) return;
+
+  const data = await res.json().catch(() => ({}));
   const tbody = document.getElementById('recentMovementsBody');
   if (!tbody) return;
-  const rows = data.movements || [];
+  const rows = (data && data.movements) || [];
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(t('dashboard.movEmpty'))}</td></tr>`;
     return;
@@ -174,6 +250,10 @@ async function boot() {
   const user = await loadUser();
   if (!user) return;
   renderUser(user);
+  // Permission gating: kart/section/KPI görünürlüğünü user'ın effective
+  // permissions'ına göre ayarla. Veri çekiminden ÖNCE çalışır — gizli
+  // elementler için boşuna API çağrısı yapılmaz.
+  applyDashboardPermissionGating();
   await loadSummary();
   await loadActivity();
 }

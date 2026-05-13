@@ -87,14 +87,59 @@ async function getScope(req, res) {
     return res.status(401).json(jsonError('UNAUTHORIZED', 'Oturum yok', null, 'api.session.required'));
   }
   const u = req.session.user;
-  const canPurchasing = await userHasPermission(u.id, u.role?.slug, 'module.purchasing');
-  const canRequestRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.request');
-  const canApproveRaw = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.approve');
-  const canRequest = canRequestRaw || canPurchasing;
-  const canApprove = canApproveRaw;
-  const canReceipt = await userHasPermission(u.id, u.role?.slug, 'module.purchasing.receipt');
-  const canStock = await userHasPermission(u.id, u.role?.slug, 'module.stock');
-  return res.json(jsonOk({ canPurchasing, canRequest, canApprove, canReceipt, canStock }));
+  const slug = u.role?.slug;
+
+  // Eski (kaba) izinler — geriye uyumluluk.
+  const canPurchasing = await userHasPermission(u.id, slug, 'module.purchasing');
+  const canRequestRaw = await userHasPermission(u.id, slug, 'module.purchasing.request');
+  const canApproveRaw = await userHasPermission(u.id, slug, 'module.purchasing.approve');
+  const canReceipt = await userHasPermission(u.id, slug, 'module.purchasing.receipt');
+  const canStock = await userHasPermission(u.id, slug, 'module.stock');
+
+  // Faz 3 granular izinler.
+  const gHub = await userHasPermission(u.id, slug, 'purchasing.hub.view');
+  const gReqView = await userHasPermission(u.id, slug, 'purchasing.request.view');
+  const gReqCreate = await userHasPermission(u.id, slug, 'purchasing.request.create');
+  const gReqApprove = await userHasPermission(u.id, slug, 'purchasing.request.approve');
+  const gProcView = await userHasPermission(u.id, slug, 'purchasing.processing.view');
+  const gOrderView = await userHasPermission(u.id, slug, 'purchasing.order.view');
+  const gOrderPrice = await userHasPermission(u.id, slug, 'purchasing.order.price_edit');
+  const gReceiptView = await userHasPermission(u.id, slug, 'purchasing.receipt.view');
+  const gReceiptCreate = await userHasPermission(u.id, slug, 'purchasing.receipt.create');
+  const gSuppliers = await userHasPermission(u.id, slug, 'purchasing.suppliers.view');
+
+  // Birleşik (eski + yeni) flag'ler — UI bunlara bakarsa hem geriye uyumlu hem granular.
+  // NOT: canRequest "talep listesini görmek" anlamındadır (talep aç değil).
+  // Sadece purchasing.request.create yetkili olan Depocu'ya canRequest=true verirsek,
+  // talep listesi menüsü yanlışlıkla görünür. Bu yüzden gReqCreate burada YOKTUR.
+  // Talep oluşturma yetkisi için ayrı granular.requestCreate flag'ine bakılır.
+  const canRequest = canRequestRaw || canPurchasing || gReqView;
+  const canApprove = canApproveRaw || gReqApprove;
+  const canReceiptCombined = canReceipt || canPurchasing || gReceiptView || gReceiptCreate;
+
+  return res.json(
+    jsonOk({
+      // Geriye uyumlu alanlar (purchasing-common.js __purScope bunları okuyor).
+      canPurchasing,
+      canRequest,
+      canApprove,
+      canReceipt: canReceiptCombined,
+      canStock,
+      // Yeni granular flag'ler — UI sayfa/buton seviyesi gating için.
+      granular: {
+        hubView: gHub,
+        requestView: gReqView || gReqCreate || gReqApprove,
+        requestCreate: gReqCreate,
+        requestApprove: gReqApprove,
+        processingView: gProcView,
+        orderView: gOrderView,
+        orderPriceEdit: gOrderPrice,
+        receiptView: gReceiptView || gReceiptCreate,
+        receiptCreate: gReceiptCreate,
+        suppliersView: gSuppliers,
+      },
+    })
+  );
 }
 
 async function getProductOptions(_req, res) {

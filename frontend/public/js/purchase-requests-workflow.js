@@ -239,16 +239,22 @@
 
     const canActApproval = isPendingUrl && scope.canApprove && r.pr_status === 'pending';
     if (canActApproval) {
+      // data-perm-any: scope.canApprove zaten gate ediyor, ama defense-in-depth
+      // amaçlı her butona ayrıca yetki anahtarı koyuyoruz; scope yüklenemese
+      // bile authContext üzerinden gating çalışsın.
       dlgFooter.innerHTML = `
         <label class="app-label" for="prViewActNote">${tKey('purch.wf.actionNote')}</label>
         <textarea id="prViewActNote" class="app-input app-textarea pr-view-note-input" rows="2"></textarea>
         <div class="pr-act-buttons" role="group" aria-label="${esc(tKey('purch.req.lColAction'))}">
-          <button type="button" class="btn btn-success btn-sm" data-action="approve" data-id="${esc(r.id)}">${tKey('purch.req.approve')}</button>
-          <button type="button" class="btn btn-danger btn-sm" data-action="reject" data-id="${esc(r.id)}">${tKey('purch.req.reject')}</button>
-          <button type="button" class="btn btn-warning btn-sm" data-action="revise" data-id="${esc(r.id)}">${tKey('purch.wf.requestRevision')}</button>
+          <button type="button" class="btn btn-success btn-sm" data-action="approve" data-perm-any="module.purchasing.approve purchasing.request.approve" data-id="${esc(r.id)}">${tKey('purch.req.approve')}</button>
+          <button type="button" class="btn btn-danger btn-sm" data-action="reject" data-perm-any="module.purchasing.approve purchasing.request.approve" data-id="${esc(r.id)}">${tKey('purch.req.reject')}</button>
+          <button type="button" class="btn btn-warning btn-sm" data-action="revise" data-perm-any="module.purchasing.approve purchasing.request.approve" data-id="${esc(r.id)}">${tKey('purch.wf.requestRevision')}</button>
         </div>
       `;
       dlgFooter.hidden = false;
+      if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+        window.authContext.applyActionPermissionGating(dlgFooter);
+      }
     } else {
       dlgFooter.innerHTML = '';
       dlgFooter.hidden = true;
@@ -723,6 +729,10 @@
       const s = window.getPurchasingScope && window.getPurchasingScope();
       if (s) {
         scope = s;
+      }
+      // Statik buton gating (Talep aç / Satınalma işleme linkleri)
+      if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+        window.authContext.applyActionPermissionGating(document);
       }
       if (flt) {
         flt.value = '';

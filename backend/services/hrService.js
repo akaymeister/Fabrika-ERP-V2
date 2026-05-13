@@ -2149,6 +2149,35 @@ async function saveDailyAttendanceBulk({ workDate, entries } = {}, actorId) {
   }
 }
 
+function snapshotRowToSalaryRowForRead(snap) {
+  if (!snap) return null;
+  return {
+    employee_id: snap.employee_id,
+    salary_currency: snap.salary_currency,
+    salary_amount: snap.salary_amount,
+    official_salary_amount: snap.official_salary_amount,
+    unofficial_salary_amount: snap.unofficial_salary_amount,
+    official_salary_currency: snap.official_salary_currency,
+    official_salary_fx_rate: snap.official_salary_fx_rate,
+  };
+}
+
+/**
+ * Snapshot satırından özet maaş breakdown (breakdown_json güvenli; yoksa sütun + kur).
+ * @param {object} snap employee_month_payroll_snapshot satırı
+ * @param {number|null} monthPayrollRateFallback
+ */
+function breakdownFromSnapshotRowRead(snap, monthPayrollRateFallback) {
+  if (!snap) return null;
+  const bd = _parseSnapshotBreakdownJson(snap.breakdown_json);
+  if (bd && !bd.parse_error && bd.isValid !== false) return bd;
+  const sal = snapshotRowToSalaryRowForRead(snap);
+  if (!sal) return null;
+  const fx = parseFxRate(snap.payroll_usd_uzs_rate_used);
+  const rate = fx != null ? fx : monthPayrollRateFallback;
+  return breakdownFromEmployeeRowForPayroll(sal, rate) || {};
+}
+
 async function listMonthlyAttendance({
   month,
   employeeId,
@@ -2159,9 +2188,19 @@ async function listMonthlyAttendance({
   department_id,
   position_id,
   search,
-} = {}, viewer = null) {
+} = {}, viewer = null, options = {}) {
   const mk = normalizeMonthKey(month);
   if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+  const skipSnapRead = !!options.skipPayrollSnapshotRead;
+  const payrollSnapshotReadEnabled = String(process.env.PAYROLL_SNAPSHOT_READ_ENABLED || '').trim() === '1';
+  const snapshotReadApply = payrollSnapshotReadEnabled && !skipSnapRead;
+  let payrollSnapshotReadOut = {
+    enabled: payrollSnapshotReadEnabled,
+    applied: snapshotReadApply,
+    mode: 'off',
+    consistency_critical_count: null,
+  };
+  let snapByEmp = new Map();
   const where = ["DATE_FORMAT(a.work_date, '%Y-%m') = :month_key"];
   const p = { month_key: mk };
   const eid = parseId(employeeId);
@@ -2366,6 +2405,51 @@ async function listMonthlyAttendance({
       (monthlyWorkDays > 0 ? Math.round((monthlyWorkHours / monthlyWorkDays) * 100) / 100 : null);
     const canPropNormalPay = Number.isFinite(monthlyWorkHours) && monthlyWorkHours > 0;
 
+    if (snapshotReadApply && isLocked) {
+      const hasSnap = await hasEmployeeMonthPayrollSnapshotTable(pool);
+      if (hasSnap) {
+        const consistency = await validatePayrollSnapshotConsistency(mk, viewer);
+        if (consistency.error) {
+          payrollSnapshotReadOut.mode = 'degraded_live';
+          payrollSnapshotReadOut.consistency_critical_count = -1;
+          console.warn(`[PAYROLL_SNAPSHOT_READ] validate error month=${mk}`, consistency.error);
+        } else {
+          const crit = consistency.critical_mismatches || [];
+          payrollSnapshotReadOut.consistency_critical_count = crit.length;
+          if (crit.length > 0) {
+            payrollSnapshotReadOut.mode = 'degraded_live';
+            console.warn(`[PAYROLL_SNAPSHOT_DEGRADED] month=${mk} critical_count=${crit.length}`);
+          } else {
+            const ph = empIds.map(() => '?').join(',');
+            const [snapRows] = await pool.query(
+              `SELECT s.employee_id, s.id, s.salary_currency, s.salary_amount,
+                      s.official_salary_amount, s.unofficial_salary_amount,
+                      s.official_salary_currency, s.official_salary_fx_rate,
+                      s.payroll_usd_uzs_rate_used, s.breakdown_json
+               FROM employee_month_payroll_snapshot s
+               INNER JOIN (
+                 SELECT employee_id, MAX(generation) AS mx
+                 FROM employee_month_payroll_snapshot
+                 WHERE month_key = ? AND employee_id IN (${ph})
+                 GROUP BY employee_id
+               ) t ON t.employee_id = s.employee_id AND t.mx = s.generation
+               WHERE s.month_key = ?`,
+              [mk, ...empIds, mk]
+            );
+            for (const r of snapRows || []) {
+              snapByEmp.set(Number(r.employee_id), r);
+            }
+            payrollSnapshotReadOut.mode = 'snapshot';
+            console.info(
+              `[PAYROLL_SNAPSHOT_READ] month=${mk} snapshot_rows=${snapByEmp.size} employees=${empIds.length}`
+            );
+          }
+        }
+      }
+    } else if (snapshotReadApply && !isLocked) {
+      payrollSnapshotReadOut.mode = 'live';
+    }
+
     summaryTotals.total_gr_usd_nm = 0;
     summaryTotals.total_fm_usd = 0;
     summaryTotals.total_ru_uzs_nm = 0;
@@ -2377,11 +2461,36 @@ async function listMonthlyAttendance({
     summary.forEach((s) => {
       const eidSum = Number(s.employee_id);
       const sal = salaryByEmp.get(eidSum) || {};
-      s.compensation_source = historyMatchedEmployeeIds.has(eidSum) ? 'history' : 'employees_fallback';
+
+      let breakdown;
+      if (snapshotReadApply && isLocked && payrollSnapshotReadOut.mode === 'snapshot') {
+        const sr = snapByEmp.get(eidSum);
+        if (sr) {
+          breakdown = breakdownFromSnapshotRowRead(sr, monthPayrollRate) || {};
+        } else {
+          breakdown = breakdownFromEmployeeRowForPayroll(sal, monthPayrollRate) || {};
+          console.warn(`[PAYROLL_SNAPSHOT_READ_ROW_FALLBACK] month=${mk} employee_id=${eidSum}`);
+        }
+      } else {
+        breakdown = breakdownFromEmployeeRowForPayroll(sal, monthPayrollRate) || {};
+      }
+
+      if (!payrollSnapshotReadEnabled) {
+        s.compensation_source = historyMatchedEmployeeIds.has(eidSum) ? 'history' : 'employees_fallback';
+      } else if (!snapshotReadApply) {
+        s.compensation_source = historyMatchedEmployeeIds.has(eidSum) ? 'history' : 'employees_fallback';
+      } else if (!isLocked) {
+        s.compensation_source = 'live';
+      } else if (payrollSnapshotReadOut.mode === 'degraded_live') {
+        s.compensation_source = 'degraded_live';
+      } else if (payrollSnapshotReadOut.mode === 'snapshot') {
+        s.compensation_source = snapByEmp.get(eidSum) ? 'snapshot' : 'snapshot_fallback_live';
+      } else {
+        s.compensation_source = historyMatchedEmployeeIds.has(eidSum) ? 'history' : 'employees_fallback';
+      }
       // TODO Faz 3B+: Ay içinde birden fazla maaş versiyonu olursa gün bazlı prorate veya kilit anı snapshot gerekebilir.
       // Faz 3A: ay sonu (month_key son günü) itibarıyla geçerli tek history satırı; yoksa employees cache.
       // Tek hesap motoru: normalize edilmiş 6 alan üzerinden raporlama yapılır.
-      const breakdown = breakdownFromEmployeeRowForPayroll(sal, monthPayrollRate) || {};
       const officialSalaryUzs = breakdown.official_salary_uzs;
       const unofficialSalaryUzs = breakdown.unofficial_salary_uzs;
       const unofficialSalaryUsd = breakdown.unofficial_salary_usd;
@@ -2488,6 +2597,7 @@ async function listMonthlyAttendance({
     isLocked,
     payrollUsdUzs: payrollUsdUzsMeta,
     compensation_debug,
+    payroll_snapshot_read: payrollSnapshotReadOut,
   };
 }
 
@@ -2513,6 +2623,229 @@ async function listAttendanceProjects() {
   return { projects: rows };
 }
 
+/** @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection} executor */
+async function hasEmployeeMonthPayrollSnapshotTable(executor) {
+  const [r] = await executor.query(
+    `SELECT COUNT(*) AS c FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'employee_month_payroll_snapshot'`
+  );
+  return Number(r[0] && r[0].c) > 0;
+}
+
+/** Ay içinde puantaj kaydı olan personel (listMonthlyAttendance özeti ile aynı küme). */
+/** @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection} executor */
+async function listEmployeeIdsWithAttendanceForMonth(executor, mk) {
+  const [rows] = await executor.query(
+    `SELECT DISTINCT a.employee_id AS id
+     FROM employee_attendance a
+     WHERE DATE_FORMAT(a.work_date, '%Y-%m') = :mk
+     ORDER BY a.employee_id ASC`,
+    { mk }
+  );
+  return (rows || []).map((x) => Number(x.id)).filter((id) => Number.isFinite(id) && id > 0);
+}
+
+function wageInputFromSalaryRow(r) {
+  if (!r) return null;
+  return {
+    total_salary_amount: r.salary_amount,
+    total_salary_currency: r.salary_currency || 'UZS',
+    official_salary_amount: r.official_salary_amount,
+    official_salary_currency: r.official_salary_currency,
+    official_salary_fx_rate: r.official_salary_fx_rate,
+  };
+}
+
+/**
+ * Faz 3B.2: Ay kilidi ile aynı transaction içinde generation=1 snapshot yazar.
+ * @returns {Promise<{ ok: true, inserted: number, skipped: number, skipped_invalid: number }|{ error: string, messageKey?: string }>}
+ */
+/** @param {import('mysql2/promise').Connection} conn */
+async function insertPayrollSnapshotsForLockedMonth(conn, { monthKey, attendanceLockId, payrollUsdUzsRate, actorId }) {
+  const mk = monthKey;
+  const hasSnap = await hasEmployeeMonthPayrollSnapshotTable(conn);
+  if (!hasSnap) {
+    return err('Bordro snapshot tablosu yok; migrasyon calistirin', 'api.hr.payroll_snapshot_table_missing');
+  }
+
+  const empIds = await listEmployeeIdsWithAttendanceForMonth(conn, mk);
+  let inserted = 0;
+  let skipped = 0;
+  let skippedInvalid = 0;
+
+  for (const eid of empIds) {
+    const [[exists]] = await conn.query(
+      `SELECT 1 AS x FROM employee_month_payroll_snapshot
+       WHERE month_key = :mk AND employee_id = :eid AND generation = 1 LIMIT 1`,
+      { mk, eid }
+    );
+    if (exists && exists.x) {
+      skipped += 1;
+      continue;
+    }
+
+    const band = await getCompensationBandForMonth(eid, mk, conn);
+    if (band.error) return band;
+
+    let salaryRow = band.row || null;
+    let compensationHistoryId = salaryRow ? salaryRow.id : null;
+    let effectiveFrom = salaryRow ? salaryRow.effective_from : null;
+    let effectiveTo = salaryRow ? salaryRow.effective_to : null;
+
+    if (!salaryRow) {
+      const [[empRow]] = await conn.query(
+        `SELECT id, salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+                official_salary_currency, official_salary_fx_rate
+         FROM employees WHERE id = :eid LIMIT 1`,
+        { eid }
+      );
+      if (!empRow) {
+        console.warn(`[PAYROLL_SNAPSHOT_SKIP_NO_EMPLOYEE] employee_id=${eid} month=${mk}`);
+        skipped += 1;
+        continue;
+      }
+      salaryRow = empRow;
+      console.warn(`[PAYROLL_SNAPSHOT_EMPLOYEES_FALLBACK] employee_id=${eid} month=${mk}`);
+    }
+
+    const wageInput = wageInputFromSalaryRow(salaryRow);
+    if (!wageInput) {
+      skipped += 1;
+      continue;
+    }
+
+    const breakdown = computeWageBreakdown(wageInput);
+    if (!breakdown.isValid) {
+      console.warn(
+        `[PAYROLL_SNAPSHOT_SKIP_INVALID] employee_id=${eid} month=${mk} errors=${JSON.stringify(breakdown.errors || [])}`
+      );
+      skippedInvalid += 1;
+      continue;
+    }
+
+    const breakdownJson = JSON.stringify(breakdown);
+    try {
+      await conn.query(
+        `INSERT INTO employee_month_payroll_snapshot (
+           month_key, employee_id, generation, attendance_lock_id,
+           compensation_history_id, effective_from, effective_to,
+           salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+           official_salary_currency, official_salary_fx_rate,
+           payroll_usd_uzs_rate_used, breakdown_json, input_fingerprint,
+           frozen_by_user_id, freeze_reason
+         ) VALUES (
+           :month_key, :employee_id, 1, :attendance_lock_id,
+           :compensation_history_id, :effective_from, :effective_to,
+           :salary_currency, :salary_amount, :official_salary_amount, :unofficial_salary_amount,
+           :official_salary_currency, :official_salary_fx_rate,
+           :payroll_usd_uzs_rate_used, CAST(:breakdown_json AS JSON), NULL,
+           :frozen_by_user_id, :freeze_reason
+         )`,
+        {
+          month_key: mk,
+          employee_id: eid,
+          attendance_lock_id: attendanceLockId,
+          compensation_history_id: compensationHistoryId,
+          effective_from: effectiveFrom,
+          effective_to: effectiveTo,
+          salary_currency: breakdown.total_salary_currency,
+          salary_amount: breakdown.total_salary_amount,
+          official_salary_amount: breakdown.official_salary_amount,
+          unofficial_salary_amount: breakdown.unofficial_salary_amount,
+          official_salary_currency: breakdown.official_salary_currency,
+          official_salary_fx_rate: breakdown.official_salary_fx_rate,
+          payroll_usd_uzs_rate_used: payrollUsdUzsRate,
+          breakdown_json: breakdownJson,
+          frozen_by_user_id: actorId || null,
+          freeze_reason: 'attendance_lock',
+        }
+      );
+      inserted += 1;
+    } catch (e) {
+      if (e && e.code === 'ER_DUP_ENTRY') {
+        skipped += 1;
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  return { ok: true, inserted, skipped, skipped_invalid: skippedInvalid };
+}
+
+/**
+ * Dry-run: kilidi değiştirmeden aynı snapshot mantığının özetini üretir (script / teşhis).
+ * @returns {Promise<{ ok: true, month: string, payroll_usd_uzs_rate: number|null, employee_total: number, would_insert: number, would_skip_existing: number, would_skip_invalid: number, would_skip_no_employee: number, employees_fallback: number }|{ error: string, messageKey?: string }>}
+ */
+async function planPayrollSnapshotsForMonth({ month, payroll_usd_uzs_rate } = {}) {
+  const mk = normalizeMonthKey(month);
+  if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+  const fx = parseFxRate(payroll_usd_uzs_rate);
+  const hasSnap = await hasEmployeeMonthPayrollSnapshotTable(pool);
+  if (!hasSnap) {
+    return err('Bordro snapshot tablosu yok; migrasyon calistirin', 'api.hr.payroll_snapshot_table_missing');
+  }
+
+  const empIds = await listEmployeeIdsWithAttendanceForMonth(pool, mk);
+  let wouldInsert = 0;
+  let wouldSkipExisting = 0;
+  let wouldSkipInvalid = 0;
+  let wouldSkipNoEmployee = 0;
+  let employeesFallback = 0;
+
+  for (const eid of empIds) {
+    const [[exists]] = await pool.query(
+      `SELECT 1 AS x FROM employee_month_payroll_snapshot
+       WHERE month_key = :mk AND employee_id = :eid AND generation = 1 LIMIT 1`,
+      { mk, eid }
+    );
+    if (exists && exists.x) {
+      wouldSkipExisting += 1;
+      continue;
+    }
+
+    const band = await getCompensationBandForMonth(eid, mk, null);
+    if (band.error) return band;
+
+    let salaryRow = band.row || null;
+    if (!salaryRow) {
+      const [[empRow]] = await pool.query(
+        `SELECT id, salary_currency, salary_amount, official_salary_amount, unofficial_salary_amount,
+                official_salary_currency, official_salary_fx_rate
+         FROM employees WHERE id = :eid LIMIT 1`,
+        { eid }
+      );
+      if (!empRow) {
+        wouldSkipNoEmployee += 1;
+        continue;
+      }
+      salaryRow = empRow;
+      employeesFallback += 1;
+    }
+
+    const wageInput = wageInputFromSalaryRow(salaryRow);
+    if (!wageInput) continue;
+    const breakdown = computeWageBreakdown(wageInput);
+    if (!breakdown.isValid) {
+      wouldSkipInvalid += 1;
+      continue;
+    }
+    wouldInsert += 1;
+  }
+
+  return {
+    ok: true,
+    month: mk,
+    payroll_usd_uzs_rate: fx,
+    employee_total: empIds.length,
+    would_insert: wouldInsert,
+    would_skip_existing: wouldSkipExisting,
+    would_skip_invalid: wouldSkipInvalid,
+    would_skip_no_employee: wouldSkipNoEmployee,
+    employees_fallback: employeesFallback,
+  };
+}
+
 async function lockAttendanceMonth({ month, note, payroll_usd_uzs_rate } = {}, actorId) {
   const mk = normalizeMonthKey(month);
   if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
@@ -2520,13 +2853,51 @@ async function lockAttendanceMonth({ month, note, payroll_usd_uzs_rate } = {}, a
   if (fx == null) {
     return err('Puantaj kilidi için dönem USD/UZS kuru zorunlu (1 USD = … UZS)', 'api.hr.payroll_usd_uzs_rate_required');
   }
-  await pool.query(
-    `INSERT INTO attendance_month_locks (month_key, is_locked, locked_at, locked_by, unlocked_at, unlocked_by, note, payroll_usd_uzs_rate)
-     VALUES (:month_key, 1, NOW(), :actor_id, NULL, NULL, :note, :fx)
-     ON DUPLICATE KEY UPDATE is_locked = 1, locked_at = NOW(), locked_by = :actor_id, unlocked_at = NULL, unlocked_by = NULL, note = :note, payroll_usd_uzs_rate = :fx`,
-    { month_key: mk, actor_id: actorId || null, note: optionalNoteUpperTr(note) || null, fx }
-  );
-  return { ok: true, month: mk, isLocked: true, payroll_usd_uzs_rate: fx };
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query(
+      `INSERT INTO attendance_month_locks (month_key, is_locked, locked_at, locked_by, unlocked_at, unlocked_by, note, payroll_usd_uzs_rate)
+       VALUES (:month_key, 1, NOW(), :actor_id, NULL, NULL, :note, :fx)
+       ON DUPLICATE KEY UPDATE is_locked = 1, locked_at = NOW(), locked_by = :actor_id, unlocked_at = NULL, unlocked_by = NULL, note = :note, payroll_usd_uzs_rate = :fx`,
+      { month_key: mk, actor_id: actorId || null, note: optionalNoteUpperTr(note) || null, fx }
+    );
+
+    const [[lockRow]] = await conn.query(
+      `SELECT id, payroll_usd_uzs_rate FROM attendance_month_locks WHERE month_key = :mk LIMIT 1`,
+      { mk }
+    );
+    if (!lockRow || lockRow.id == null) {
+      await conn.rollback();
+      return err('Kilit kaydi okunamadi', 'api.hr.attendance_lock_read_failed');
+    }
+
+    const rateUsed = lockRow.payroll_usd_uzs_rate != null ? Number(lockRow.payroll_usd_uzs_rate) : Number(fx);
+    const snapOut = await insertPayrollSnapshotsForLockedMonth(conn, {
+      monthKey: mk,
+      attendanceLockId: lockRow.id,
+      payrollUsdUzsRate: rateUsed,
+      actorId,
+    });
+    if (snapOut && snapOut.error) {
+      await conn.rollback();
+      return snapOut;
+    }
+
+    await conn.commit();
+    if (snapOut && snapOut.ok) {
+      console.info(
+        `[PAYROLL_SNAPSHOT_LOCK] month=${mk} inserted=${snapOut.inserted} skipped=${snapOut.skipped} skipped_invalid=${snapOut.skipped_invalid}`
+      );
+    }
+    return { ok: true, month: mk, isLocked: true, payroll_usd_uzs_rate: fx };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
 }
 
 async function unlockAttendanceMonth({ month, note } = {}, actorId) {
@@ -2539,6 +2910,358 @@ async function unlockAttendanceMonth({ month, note } = {}, actorId) {
     { month_key: mk, actor_id: actorId || null, note: optionalNoteUpperTr(note) || null }
   );
   return { ok: true, month: mk, isLocked: false };
+}
+
+/**
+ * Faz 3B.3: Kilitli ay snapshot ile canlı listMonthlyAttendance (maaş motoru) tutarlılık denetimi.
+ * Okuma modu yok; yalnızca rapor. viewer yoksa süper yönetici varsayımı (script/audit).
+ *
+ * @param {string} monthKey YYYY-MM
+ * @param {{ id: number, role?: { slug?: string } }|null} [viewer]
+ * @returns {Promise<object>}
+ */
+async function validatePayrollSnapshotConsistency(monthKey, viewer = null) {
+  const mk = normalizeMonthKey(monthKey);
+  if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
+
+  const auditViewer =
+    viewer && viewer.id
+      ? viewer
+      : {
+          id: 1,
+          role: { slug: 'super_admin' },
+        };
+
+  const warnings = [];
+  const critical_mismatches = [];
+
+  const hasSnap = await hasEmployeeMonthPayrollSnapshotTable(pool);
+  if (!hasSnap) {
+    warnings.push({ code: 'SNAPSHOT_TABLE_MISSING', detail: 'employee_month_payroll_snapshot yok' });
+    return {
+      ok: true,
+      dry_run: true,
+      month_key: mk,
+      audit: {
+        snapshot_table_present: false,
+        snapshot_row_count: 0,
+        compensation_source_distribution: null,
+        employees_fallback_in_snapshot_count: null,
+        invalid_snapshot_count: null,
+        missing_snapshot_count: null,
+        orphan_snapshot_count: null,
+        lock_without_any_snapshot: null,
+        snapshot_without_lock_row: null,
+        lock_unlocked_but_snapshots_exist: null,
+        totals: null,
+        total_match: null,
+      },
+      warnings,
+      critical_mismatches,
+    };
+  }
+
+  const live = await listMonthlyAttendance({ month: mk }, auditViewer, { skipPayrollSnapshotRead: true });
+  if (live.error) return live;
+
+  const [[lockRow]] = await pool.query(
+    `SELECT id, month_key, is_locked, payroll_usd_uzs_rate
+     FROM attendance_month_locks
+     WHERE month_key = :mk
+     LIMIT 1`,
+    { mk }
+  );
+
+  const lockIsLocked =
+    lockRow &&
+    (lockRow.is_locked === true || lockRow.is_locked === 1 || lockRow.is_locked === '1' || Number(lockRow.is_locked) === 1);
+
+  const [snapRows] = await pool.query(
+    `SELECT id, month_key, employee_id, generation, attendance_lock_id, compensation_history_id,
+            breakdown_json, payroll_usd_uzs_rate_used
+     FROM employee_month_payroll_snapshot
+     WHERE month_key = :mk AND generation = 1`,
+    { mk }
+  );
+  const snaps = snapRows || [];
+  const snapByEmp = new Map(snaps.map((r) => [Number(r.employee_id), r]));
+
+  const summary = live.summary || [];
+  const liveByEmp = new Map(summary.map((s) => [Number(s.employee_id), s]));
+
+  const compensation_source_distribution = { history: 0, employees_fallback: 0, other: 0 };
+  for (const s of summary) {
+    const src = String(s.compensation_source || '').trim();
+    if (src === 'history') compensation_source_distribution.history += 1;
+    else if (src === 'employees_fallback') compensation_source_distribution.employees_fallback += 1;
+    else compensation_source_distribution.other += 1;
+  }
+
+  const employees_fallback_in_snapshot_count = snaps.filter((r) => r.compensation_history_id == null).length;
+
+  let invalid_snapshot_count = 0;
+  const invalid_snapshot_employee_ids = [];
+  for (const r of snaps) {
+    const bd = _parseSnapshotBreakdownJson(r.breakdown_json);
+    if (bd == null || bd.parse_error || bd.isValid === false) {
+      invalid_snapshot_count += 1;
+      invalid_snapshot_employee_ids.push(Number(r.employee_id));
+    }
+  }
+
+  const missing_snapshot_employee_ids = [];
+  for (const s of summary) {
+    const eid = Number(s.employee_id);
+    if (!snapByEmp.has(eid)) missing_snapshot_employee_ids.push(eid);
+  }
+  const missing_snapshot_count = missing_snapshot_employee_ids.length;
+
+  const [orphanRows] = await pool.query(
+    `SELECT s.id AS snapshot_id, s.employee_id, s.attendance_lock_id,
+            l.id AS lock_join_id, l.month_key AS lock_month_key, l.is_locked AS lock_is_locked
+     FROM employee_month_payroll_snapshot s
+     LEFT JOIN attendance_month_locks l ON l.id = s.attendance_lock_id
+     WHERE s.month_key = :mk AND s.generation = 1
+       AND (
+         l.id IS NULL
+         OR l.month_key <> s.month_key
+         OR NOT (l.is_locked = 1 OR l.is_locked = TRUE OR l.is_locked = '1')
+       )`,
+    { mk }
+  );
+  const orphan_snapshots = (orphanRows || []).map((o) => ({
+    snapshot_id: Number(o.snapshot_id),
+    employee_id: Number(o.employee_id),
+    attendance_lock_id: o.attendance_lock_id != null ? Number(o.attendance_lock_id) : null,
+    reason:
+      o.lock_join_id == null
+        ? 'lock_row_missing'
+        : String(o.lock_month_key || '') !== mk
+          ? 'lock_month_mismatch'
+          : 'lock_not_locked',
+  }));
+  const orphan_snapshot_count = orphan_snapshots.length;
+
+  const attendanceEmpCount = summary.length;
+  const lock_without_any_snapshot =
+    !!(lockRow && lockIsLocked && snaps.length === 0 && attendanceEmpCount > 0);
+  if (lock_without_any_snapshot) {
+    critical_mismatches.push({
+      code: 'LOCKED_BUT_NO_SNAPSHOTS',
+      month_key: mk,
+      attendance_employee_count: attendanceEmpCount,
+    });
+  }
+
+  const snapshot_without_lock_row = snaps.length > 0 && !lockRow;
+  if (snapshot_without_lock_row) {
+    critical_mismatches.push({
+      code: 'SNAPSHOTS_BUT_NO_LOCK_ROW',
+      month_key: mk,
+      snapshot_row_count: snaps.length,
+    });
+  }
+
+  const lock_unlocked_but_snapshots_exist = !!(lockRow && !lockIsLocked && snaps.length > 0);
+  if (lock_unlocked_but_snapshots_exist) {
+    warnings.push({
+      code: 'LOCK_UNLOCKED_SNAPSHOTS_REMAIN',
+      month_key: mk,
+      snapshot_row_count: snaps.length,
+    });
+  }
+
+  if (missing_snapshot_count > 0 && lockIsLocked) {
+    critical_mismatches.push({
+      code: 'MISSING_SNAPSHOTS_FOR_EMPLOYEES',
+      month_key: mk,
+      count: missing_snapshot_count,
+      employee_ids: missing_snapshot_employee_ids.slice(0, 200),
+    });
+  } else if (missing_snapshot_count > 0 && !lockIsLocked) {
+    warnings.push({
+      code: 'MISSING_SNAPSHOTS_MONTH_NOT_LOCKED',
+      count: missing_snapshot_count,
+      employee_ids: missing_snapshot_employee_ids.slice(0, 200),
+    });
+  }
+
+  if (invalid_snapshot_count > 0) {
+    critical_mismatches.push({
+      code: 'INVALID_SNAPSHOT_BREAKDOWN',
+      count: invalid_snapshot_count,
+      employee_ids: invalid_snapshot_employee_ids.slice(0, 200),
+    });
+  }
+
+  if (orphan_snapshot_count > 0) {
+    critical_mismatches.push({
+      code: 'ORPHAN_SNAPSHOTS',
+      count: orphan_snapshot_count,
+      rows: orphan_snapshots.slice(0, 100),
+    });
+  }
+
+  let sumLiveUzs = 0;
+  let sumLiveUsd = 0;
+  let liveUzsContributors = 0;
+  let liveUsdContributors = 0;
+  for (const s of summary) {
+    if (s.total_salary_uzs != null && Number.isFinite(Number(s.total_salary_uzs))) {
+      sumLiveUzs += Number(s.total_salary_uzs);
+      liveUzsContributors += 1;
+    }
+    if (s.total_salary_usd != null && Number.isFinite(Number(s.total_salary_usd))) {
+      sumLiveUsd += Number(s.total_salary_usd);
+      liveUsdContributors += 1;
+    }
+  }
+
+  let sumSnapUzs = 0;
+  let sumSnapUsd = 0;
+  let snapUzsContributors = 0;
+  let snapUsdContributors = 0;
+  for (const r of snaps) {
+    const bd = _parseSnapshotBreakdownJson(r.breakdown_json);
+    if (bd && !bd.parse_error && bd.isValid !== false) {
+      if (bd.total_salary_uzs != null && Number.isFinite(Number(bd.total_salary_uzs))) {
+        sumSnapUzs += Number(bd.total_salary_uzs);
+        snapUzsContributors += 1;
+      }
+      if (bd.total_salary_usd != null && Number.isFinite(Number(bd.total_salary_usd))) {
+        sumSnapUsd += Number(bd.total_salary_usd);
+        snapUsdContributors += 1;
+      }
+    }
+  }
+
+  const UZS_TOL = 2;
+  const USD_TOL = 0.05;
+  const delta_uzs = Math.round((sumLiveUzs - sumSnapUzs) * 100) / 100;
+  const delta_usd = Math.round((sumLiveUsd - sumSnapUsd) * 1000000) / 1000000;
+  const total_match_uzs = Math.abs(delta_uzs) <= UZS_TOL * Math.max(liveUzsContributors, snapUzsContributors, 1);
+  const total_match_usd =
+    liveUsdContributors === 0 && snapUsdContributors === 0 ? true : Math.abs(delta_usd) <= USD_TOL;
+
+  if (lockIsLocked && snaps.length > 0 && (!total_match_uzs || !total_match_usd)) {
+    critical_mismatches.push({
+      code: 'TOTAL_SALARY_SUM_MISMATCH',
+      live_total_salary_uzs_sum: sumLiveUzs,
+      snapshot_total_salary_uzs_sum: sumSnapUzs,
+      delta_uzs,
+      live_total_salary_usd_sum: sumLiveUsd,
+      snapshot_total_salary_usd_sum: sumSnapUsd,
+      delta_usd,
+    });
+  }
+
+  const employee_mismatch_details = [];
+  for (const r of snaps) {
+    const eid = Number(r.employee_id);
+    const liveS = liveByEmp.get(eid);
+    if (!liveS) {
+      warnings.push({
+        code: 'SNAPSHOT_EMPLOYEE_NOT_IN_LIVE_SUMMARY',
+        employee_id: eid,
+        snapshot_id: r.id,
+      });
+      continue;
+    }
+    const bd = _parseSnapshotBreakdownJson(r.breakdown_json);
+    if (!bd || bd.parse_error || bd.isValid === false) continue;
+
+    const liveUzs = liveS.total_salary_uzs != null ? Number(liveS.total_salary_uzs) : null;
+    const snapUzs = bd.total_salary_uzs != null ? Number(bd.total_salary_uzs) : null;
+    const liveUsd = liveS.total_salary_usd != null ? Number(liveS.total_salary_usd) : null;
+    const snapUsd = bd.total_salary_usd != null ? Number(bd.total_salary_usd) : null;
+
+    let uzsMismatch = false;
+    if (liveUzs == null && snapUzs == null) uzsMismatch = false;
+    else if (liveUzs == null || snapUzs == null) uzsMismatch = true;
+    else if (Math.abs(liveUzs - snapUzs) > UZS_TOL) uzsMismatch = true;
+
+    let usdMismatch = false;
+    if (liveUsd == null && snapUsd == null) usdMismatch = false;
+    else if (liveUsd == null || snapUsd == null) usdMismatch = true;
+    else if (Math.abs(liveUsd - snapUsd) > USD_TOL) usdMismatch = true;
+
+    if (uzsMismatch || usdMismatch) {
+      employee_mismatch_details.push({
+        employee_id: eid,
+        compensation_source: liveS.compensation_source || null,
+        live_total_salary_uzs: liveUzs,
+        snapshot_total_salary_uzs: snapUzs,
+        live_total_salary_usd: liveUsd,
+        snapshot_total_salary_usd: snapUsd,
+      });
+    }
+  }
+
+  if (employee_mismatch_details.length) {
+    const payload = {
+      code: 'EMPLOYEE_TOTAL_MISMATCH',
+      count: employee_mismatch_details.length,
+      rows: employee_mismatch_details.slice(0, 200),
+    };
+    if (lockIsLocked) {
+      critical_mismatches.push(payload);
+    } else {
+      warnings.push(payload);
+    }
+  }
+
+  return {
+    ok: true,
+    dry_run: true,
+    month_key: mk,
+    audit: {
+      snapshot_table_present: true,
+      snapshot_row_count: snaps.length,
+      compensation_source_distribution,
+      employees_fallback_in_snapshot_count,
+      invalid_snapshot_count,
+      invalid_snapshot_employee_ids: invalid_snapshot_employee_ids.slice(0, 200),
+      missing_snapshot_count,
+      missing_snapshot_employee_ids: missing_snapshot_employee_ids.slice(0, 200),
+      orphan_snapshot_count,
+      orphan_snapshots: orphan_snapshots.slice(0, 50),
+      lock_row_present: !!lockRow,
+      lock_is_locked: !!lockIsLocked,
+      lock_id: lockRow && lockRow.id != null ? Number(lockRow.id) : null,
+      lock_without_any_snapshot,
+      snapshot_without_lock_row,
+      lock_unlocked_but_snapshots_exist,
+      totals: {
+        live_total_salary_uzs_sum: sumLiveUzs,
+        snapshot_total_salary_uzs_sum: sumSnapUzs,
+        delta_uzs,
+        live_total_salary_usd_sum: sumLiveUsd,
+        snapshot_total_salary_usd_sum: sumSnapUsd,
+        delta_usd,
+      },
+      total_match_uzs: lockIsLocked && snaps.length > 0 ? total_match_uzs : null,
+      total_match_usd: lockIsLocked && snaps.length > 0 ? total_match_usd : null,
+      tolerance: { uzs: UZS_TOL, usd: USD_TOL },
+    },
+    warnings,
+    critical_mismatches,
+  };
+}
+
+/** @param {unknown} raw */
+function _parseSnapshotBreakdownJson(raw) {
+  if (raw == null) return null;
+  if (typeof raw === 'object' && !Buffer.isBuffer(raw)) return raw;
+  let s = raw;
+  if (Buffer.isBuffer(s)) s = s.toString('utf8');
+  if (typeof s === 'string') {
+    try {
+      return JSON.parse(s);
+    } catch (e) {
+      return { parse_error: true, message: String(e && e.message) };
+    }
+  }
+  return { parse_error: true };
 }
 
 async function getHrSettingsBundle({ includeInactive = false } = {}) {
@@ -3039,22 +3762,24 @@ async function listCompensationHistory(employeeId) {
  * Belirli bir tarihte geçerli tek compensation satırı (yoksa null).
  * @param {number|string} employeeId
  * @param {string|Date|null} [asOfDate] YYYY-MM-DD; boşsa CURDATE()
+ * @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection|null} [executor] Aynı transaction okuması için bağlantı
  * @returns {Promise<{ row: object|null }|{ error: string, messageKey?: string }>}
  */
-async function getCurrentCompensation(employeeId, asOfDate) {
+async function getCurrentCompensation(employeeId, asOfDate, executor = null) {
   const eid = parseId(employeeId);
   if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
+  const exec = executor || pool;
   let asof = null;
   if (asOfDate != null && String(asOfDate).trim() !== '') {
     const s = String(asOfDate).trim().slice(0, 10);
     asof = /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
   }
   if (!asof) {
-    const [drows] = await pool.query('SELECT CURDATE() AS d');
+    const [drows] = await exec.query('SELECT CURDATE() AS d');
     asof = String(drows[0].d).slice(0, 10);
   }
   try {
-    const [rows] = await pool.query(
+    const [rows] = await exec.query(
       `SELECT id, employee_id, effective_from, effective_to, salary_currency, salary_amount,
               official_salary_amount, unofficial_salary_amount, official_salary_currency, official_salary_fx_rate,
               reason, created_by, created_at, updated_at
@@ -3080,16 +3805,17 @@ async function getCurrentCompensation(employeeId, asOfDate) {
  *
  * @param {number|string} employeeId
  * @param {string} monthKey YYYY-MM
+ * @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection|null} [executor]
  * @returns {Promise<{ employee_id: number, month_key: string, as_of: string, row: object|null }|{ error: string, messageKey?: string }>}
  */
-async function getCompensationBandForMonth(employeeId, monthKey) {
+async function getCompensationBandForMonth(employeeId, monthKey, executor = null) {
   const mk = normalizeMonthKey(monthKey);
   const eid = parseId(employeeId);
   if (!eid) return err('Gecersiz personel', 'api.hr.employee_invalid');
   if (!mk) return err('Ay gecersiz', 'api.hr.month_required');
   const asOf = monthKeyToLastDayIso(mk);
   if (!asOf) return err('Ay gecersiz', 'api.hr.month_required');
-  const out = await getCurrentCompensation(eid, asOf);
+  const out = await getCurrentCompensation(eid, asOf, executor);
   if (out.error) return out;
   return { employee_id: eid, month_key: mk, as_of: asOf, row: out.row || null };
 }
@@ -3336,6 +4062,8 @@ module.exports = {
   listAttendanceLocks,
   listAttendanceProjects,
   lockAttendanceMonth,
+  planPayrollSnapshotsForMonth,
+  validatePayrollSnapshotConsistency,
   unlockAttendanceMonth,
   getHrSettingsBundle,
   saveHrSettingsBundle,

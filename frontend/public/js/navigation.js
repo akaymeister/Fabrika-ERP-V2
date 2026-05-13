@@ -24,6 +24,11 @@
   }
   markNavLoading();
 
+  // Faz 3 granular: her modül kartı için, eski kaba modül izni VEYA herhangi
+  // bir granular izinden biri varsa kart görünür. Bu sayede:
+  //   - eski 'module.stock' yetkili kullanıcı (geriye uyum) kartı görür,
+  //   - sadece 'stock.in.view' verilmiş kullanıcı da kartı görür (hub içinde
+  //     filtrelenmiş alt menüyü açacak).
   const GLOBAL_MODULES = [
     {
       moduleKey: 'dashboard',
@@ -32,7 +37,7 @@
       href: '/',
       iconClass: 'mod-home',
       requiredRole: null,
-      requiredPermission: null,
+      requiredAnyPermission: null,
     },
     {
       moduleKey: 'stock',
@@ -41,7 +46,17 @@
       href: '/stock.html',
       iconClass: 'mod-stock',
       requiredRole: null,
-      requiredPermission: 'module.stock',
+      requiredAnyPermission: [
+        'module.stock',
+        'stock.hub.view',
+        'stock.products.view',
+        'stock.brands.view',
+        'stock.warehouses.view',
+        'stock.in.view',
+        'stock.out.view',
+        'stock.movements.view',
+        'stock.reports.view',
+      ],
     },
     {
       moduleKey: 'purchasing',
@@ -50,7 +65,20 @@
       href: '/purchasing.html',
       iconClass: 'mod-purchasing',
       requiredRole: null,
-      requiredPermission: 'module.purchasing',
+      requiredAnyPermission: [
+        'module.purchasing',
+        'module.purchasing.request',
+        'module.purchasing.approve',
+        'module.purchasing.receipt',
+        'purchasing.hub.view',
+        'purchasing.request.view',
+        'purchasing.request.create',
+        'purchasing.request.approve',
+        'purchasing.processing.view',
+        'purchasing.order.view',
+        'purchasing.receipt.view',
+        'purchasing.suppliers.view',
+      ],
     },
     {
       moduleKey: 'project',
@@ -59,7 +87,7 @@
       href: '/projects.html',
       iconClass: 'mod-project',
       requiredRole: null,
-      requiredPermission: 'module.projects',
+      requiredAnyPermission: ['module.projects', 'projects.hub.view', 'projects.control.view'],
     },
     {
       moduleKey: 'hr',
@@ -68,7 +96,14 @@
       href: '/hr.html',
       iconClass: 'mod-hr',
       requiredRole: null,
-      requiredPermission: 'module.hr',
+      requiredAnyPermission: [
+        'module.hr',
+        'hr.hub.view',
+        'hr.employees.view',
+        'hr.attendance.view',
+        'hr.payroll.view',
+        'hr.compensation.view',
+      ],
     },
     {
       moduleKey: 'admin',
@@ -77,7 +112,7 @@
       href: '/admin.html',
       iconClass: 'mod-admin',
       requiredRole: 'super_admin',
-      requiredPermission: null,
+      requiredAnyPermission: null,
     },
   ];
 
@@ -90,11 +125,12 @@
   }
 
   async function currentUserInfo() {
+    if (window.authContext && typeof window.authContext.load === 'function') {
+      return window.authContext.load();
+    }
     try {
       const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
-      if (!res.ok) {
-        return null;
-      }
+      if (!res.ok) return null;
       const data = await res.json().catch(() => ({}));
       return data && data.user ? data.user : null;
     } catch {
@@ -104,23 +140,41 @@
 
   function hasRoleAccess(item, user) {
     if (!item.requiredRole) return true;
-    if (!user) {
-      return false;
-    }
-    if (user.isSuperAdmin === true) {
-      return true;
-    }
+    if (!user) return false;
+    if (user.isSuperAdmin === true) return true;
     const slug = user.role && user.role.slug ? String(user.role.slug) : '';
     return slug === item.requiredRole;
   }
 
   function hasPermissionAccess(item, user) {
-    if (!item.requiredPermission) return true;
+    // Hiç permission gereksinimi yoksa serbest.
+    if (!item.requiredAnyPermission && !item.requiredPermission) return true;
     if (!user) return false;
-    if (user.isSuperAdmin === true) return true;
-    const list = Array.isArray(user.permissions) ? user.permissions : [];
-    if (!list.length) return true;
-    return list.includes(item.requiredPermission);
+
+    // Faz 3: requiredAnyPermission (liste) — en az biri yeterli.
+    if (Array.isArray(item.requiredAnyPermission) && item.requiredAnyPermission.length > 0) {
+      if (window.authContext && typeof window.authContext.hasAny === 'function') {
+        return window.authContext.hasAny(item.requiredAnyPermission);
+      }
+      if (user.isSuperAdmin === true) return true;
+      const list = Array.isArray(user.permissions) ? user.permissions : [];
+      for (const k of item.requiredAnyPermission) {
+        if (k && list.indexOf(String(k)) !== -1) return true;
+      }
+      return false;
+    }
+
+    // Geriye uyumluluk: tek requiredPermission (liste tanımlanmamışsa).
+    if (item.requiredPermission) {
+      if (window.authContext && typeof window.authContext.has === 'function') {
+        return window.authContext.has(item.requiredPermission);
+      }
+      if (user.isSuperAdmin === true) return true;
+      const list = Array.isArray(user.permissions) ? user.permissions : [];
+      return list.indexOf(item.requiredPermission) !== -1;
+    }
+
+    return true;
   }
 
   function tGlobal(key, fallback) {
@@ -276,6 +330,9 @@
     });
     document.getElementById('btnGlobalLogout')?.addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      if (window.authContext && typeof window.authContext.reset === 'function') {
+        window.authContext.reset();
+      }
       window.location.href = '/login.html';
     });
     document.addEventListener('click', () => {

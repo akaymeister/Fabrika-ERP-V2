@@ -47,12 +47,44 @@
               </div>
               <div class="app-card-body">
                 <div class="form-field admin-permissions-field-narrow">
-                  <label class="app-label" for="roleSelect">Yetki konusu</label>
+                  <label class="app-label" for="roleSelect" data-i18n="admin.perm.subjectLabel">Yetki konusu</label>
                   <select id="roleSelect" class="app-select"></select>
+                </div>
+                <details class="perm-template-tool" id="permTemplateTool">
+                  <summary class="perm-template-tool-summary">
+                    <span class="perm-template-tool-title" data-i18n="admin.perm.template.title">Hazır şablondan başla (opsiyonel)</span>
+                    <span class="perm-template-tool-caret" aria-hidden="true"></span>
+                  </summary>
+                  <div class="perm-template-tool-body">
+                    <p class="app-muted-text perm-template-tool-hint" data-i18n="admin.perm.template.hint">Şablon yalnızca aşağıdaki checkbox'ları işaretler. "Kaydet" butonuna basılana kadar veritabanına yazılmaz.</p>
+                    <div class="perm-template-tool-row">
+                      <select id="permTemplateSelect" class="app-select"></select>
+                      <button type="button" class="btn btn-secondary" id="btnPermTemplateAdd" disabled data-i18n="admin.perm.template.add">Mevcut seçimlere ekle</button>
+                      <button type="button" class="btn btn-secondary" id="btnPermTemplateReplace" disabled data-i18n="admin.perm.template.replace">Temizle + uygula</button>
+                    </div>
+                    <p id="permTemplateInfo" class="perm-template-tool-info" aria-live="polite"></p>
+                  </div>
+                </details>
+                <div class="perm-filter-bar" data-perm-target="rolePermList">
+                  <div class="perm-filter-search">
+                    <input type="search" class="perm-search-input app-input" autocomplete="off" data-i18n-placeholder="admin.perm.searchPlaceholder" placeholder="İzin ara…" aria-label="İzin ara" />
+                    <button type="button" class="perm-search-clear" aria-label="Aramayı temizle" data-i18n-title="admin.perm.clearSearch" title="Aramayı temizle" hidden>×</button>
+                  </div>
+                  <label class="perm-only-selected">
+                    <input type="checkbox" class="perm-only-selected-input" />
+                    <span data-i18n="admin.perm.onlySelected">Sadece seçili izinleri göster</span>
+                  </label>
+                </div>
+                <div class="perm-empty-state" data-perm-target="rolePermList" hidden>
+                  <span data-i18n="admin.perm.noResults">Eşleşen izin bulunamadı</span>
                 </div>
                 <div class="perm-list" id="rolePermList"></div>
                 <div class="app-form-actions admin-permissions-save-actions">
-                  <button type="button" class="btn btn-primary" id="btnSaveRolePerms">
+                  <span class="perm-dirty-badge" data-perm-target="rolePermList" data-state="clean" role="status" aria-live="polite">
+                    <span class="perm-dirty-dot" aria-hidden="true"></span>
+                    <span class="perm-dirty-text" data-i18n="admin.perm.saved">Tüm değişiklikler kaydedildi</span>
+                  </span>
+                  <button type="button" class="btn btn-primary" id="btnSaveRolePerms" data-i18n-title="admin.perm.saveTooltip" title="Değişiklikleri kaydet" disabled>
                     Yetki konusu izinlerini kaydet
                   </button>
                 </div>
@@ -69,9 +101,26 @@
                   <label class="app-label" for="userSelectExtra">Kullanıcı</label>
                   <select id="userSelectExtra" class="app-select"></select>
                 </div>
+                <div class="perm-filter-bar" data-perm-target="userPermList">
+                  <div class="perm-filter-search">
+                    <input type="search" class="perm-search-input app-input" autocomplete="off" data-i18n-placeholder="admin.perm.searchPlaceholder" placeholder="İzin ara…" aria-label="İzin ara" />
+                    <button type="button" class="perm-search-clear" aria-label="Aramayı temizle" data-i18n-title="admin.perm.clearSearch" title="Aramayı temizle" hidden>×</button>
+                  </div>
+                  <label class="perm-only-selected">
+                    <input type="checkbox" class="perm-only-selected-input" />
+                    <span data-i18n="admin.perm.onlySelected">Sadece seçili izinleri göster</span>
+                  </label>
+                </div>
+                <div class="perm-empty-state" data-perm-target="userPermList" hidden>
+                  <span data-i18n="admin.perm.noResults">Eşleşen izin bulunamadı</span>
+                </div>
                 <div class="perm-list" id="userPermList"></div>
                 <div class="app-form-actions admin-permissions-save-actions">
-                  <button type="button" class="btn btn-primary" id="btnSaveUserPerms">
+                  <span class="perm-dirty-badge" data-perm-target="userPermList" data-state="clean" role="status" aria-live="polite">
+                    <span class="perm-dirty-dot" aria-hidden="true"></span>
+                    <span class="perm-dirty-text" data-i18n="admin.perm.saved">Tüm değişiklikler kaydedildi</span>
+                  </span>
+                  <button type="button" class="btn btn-primary" id="btnSaveUserPerms" data-i18n-title="admin.perm.saveTooltip" title="Değişiklikleri kaydet" disabled>
                     Ek yetkileri kaydet
                   </button>
                 </div>
@@ -84,7 +133,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/admin-common.js" defer></script>
   <script src="/js/admin.js" defer></script>
 </body>

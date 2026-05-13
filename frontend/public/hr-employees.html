@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -71,7 +71,7 @@
         <div class="app-toolbar-right emp-filter-actions">
           <button id="btnSearch" type="button" class="btn btn-primary" data-i18n="hr.emp.filter">Filtrele</button>
           <button id="btnResetFilters" type="button" class="btn btn-secondary" data-i18n="common.clear">Temizle</button>
-          <a href="/hr-employee-form.html" class="btn btn-primary emp-new-link" data-i18n="hr.emp.new">Yeni personel</a>
+          <a href="/hr-employee-form.html" class="btn btn-primary emp-new-link" data-i18n="hr.emp.new" data-perm-any="module.hr hr.employees.edit">Yeni personel</a>
         </div>
       </div>
       <p id="msg" class="muted emp-list-msg"></p>
@@ -99,7 +99,7 @@
     </div>
   </div>
 <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/location-data.js" defer></script>
   <script src="/js/hr-employees.js" defer></script>

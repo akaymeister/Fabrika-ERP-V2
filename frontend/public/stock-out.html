@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -99,6 +99,7 @@
             id="btnSubmit"
             class="btn btn-primary v3-stock-out-submit"
             data-i18n="stock.out.submit"
+            data-perm-any="module.stock stock.out.create"
           >
             Çıkış kaydet
           </button>
@@ -114,7 +115,7 @@
       <textarea id="outVoidReason" class="input-upper app-input app-textarea app-fill-block" rows="3"></textarea>
       <div class="app-dialog-actions">
         <button type="button" class="btn btn-secondary" id="outVoidCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="btn btn-danger v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm">Sil</button>
+        <button type="button" class="btn btn-danger v3-void-danger" id="outVoidOk" data-i18n="stock.out.voidDlgConfirm" data-perm-any="module.stock stock.out.create">Sil</button>
       </div>
     </dialog>
 
@@ -149,7 +150,7 @@
       </div>
       <div class="app-dialog-actions">
         <button type="button" class="btn btn-secondary" id="outEditCancel" data-i18n="common.cancel">İptal</button>
-        <button type="button" class="btn btn-primary" id="outEditSave" data-i18n="stock.out.editSave">Kaydet</button>
+        <button type="button" class="btn btn-primary" id="outEditSave" data-i18n="stock.out.editSave" data-perm-any="module.stock stock.out.create">Kaydet</button>
       </div>
     </dialog>
 
@@ -200,7 +201,7 @@
     </div>
   </div>
 <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
     const FREQ_KEY = 'erp_stock_out_freq';
@@ -685,11 +686,11 @@
             escMov(m.note || '—') +
             '</td><td>' +
             escMov(m.user_username || '—') +
-            '</td><td class="mov-actions"><button type="button" class="mov-btn mov-btn-edit app-button app-button-secondary" data-mid="' +
+            '</td><td class="mov-actions"><button type="button" class="mov-btn mov-btn-edit app-button app-button-secondary" data-perm-any="module.stock stock.out.create" data-mid="' +
             mid +
             '" data-mov-act="edit">' +
             escMov(lblEdit) +
-            '</button><button type="button" class="mov-btn mov-btn-del app-button app-button-danger" data-mid="' +
+            '</button><button type="button" class="mov-btn mov-btn-del app-button app-button-danger" data-perm-any="module.stock stock.out.create" data-mid="' +
             mid +
             '" data-mov-act="delete">' +
             escMov(lblDel) +
@@ -697,6 +698,9 @@
           );
         })
         .join('');
+      if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+        window.authContext.applyActionPermissionGating(tb);
+      }
     }
     function copyProjectOptionsToOutEdit() {
       const from = document.getElementById('projectId');
@@ -1008,6 +1012,9 @@
     function startStockOutPage() {
       (async function () {
         await initStockPageNav('out');
+        if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+          window.authContext.applyActionPermissionGating(document);
+        }
         updateQtyBadge();
         const hint = document.getElementById('productUnitHint');
         if (hint) hint.textContent = tLoc('stock.in.productUnitHint', 'Ürün seçildiğinde birim gösterilir');

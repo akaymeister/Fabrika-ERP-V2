@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -128,8 +128,8 @@
       </div>
       <div class="gr-receipt-footer">
         <div class="gr-action-row" role="group" aria-label="Mal kabul eylemleri">
-          <button type="button" class="btn btn-secondary" id="grBtnEdit" data-i18n="hr.emp.edit" style="display:none">Düzenle</button>
-          <button type="button" class="btn btn-primary" id="grBtnSave" data-i18n="common.save">Kaydet</button>
+          <button type="button" class="btn btn-secondary" id="grBtnEdit" data-i18n="hr.emp.edit" data-perm-any="module.purchasing module.purchasing.receipt purchasing.receipt.create" style="display:none">Düzenle</button>
+          <button type="button" class="btn btn-primary" id="grBtnSave" data-i18n="common.save" data-perm-any="module.purchasing module.purchasing.receipt purchasing.receipt.create">Kaydet</button>
         </div>
       </div>
     </dialog>
@@ -161,7 +161,7 @@
   </div>
   <script src="/js/stock-common.js?v=gr10"></script>
   <script src="/js/i18n.js?v=gr10"></script>
-  <script src="/js/navigation.js?v=gr10"></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js?v=gr10"></script>
   <script src="/js/brand.js?v=gr11"></script>
   <script>
     (function () {
@@ -708,6 +708,10 @@
           } catch {
             /* nav problemi mal kabul listesini bloklamasın */
           }
+        }
+        // Statik aksiyon butonları gating'i (grBtnSave / grBtnEdit).
+        if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+          window.authContext.applyActionPermissionGating(document);
         }
         try {
           await loadPoList();

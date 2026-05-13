@@ -227,15 +227,15 @@
           <a class="emp-icon-btn" href="/hr-employee-detail.html?id=${e.id}" title="${t('hr.emp.view')}" aria-label="${t('hr.emp.view')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
-          <a class="emp-icon-btn" href="/hr-employee-form.html?id=${e.id}" title="${t('hr.emp.edit')}" aria-label="${t('hr.emp.edit')}">
+          <a class="emp-icon-btn" href="/hr-employee-form.html?id=${e.id}" data-perm-any="module.hr hr.employees.edit" title="${t('hr.emp.edit')}" aria-label="${t('hr.emp.edit')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"></path></svg>
           </a>
-          <button type="button" class="emp-icon-btn emp-danger" data-act="status" data-id="${e.id}" data-next="terminated" title="${t(
+          <button type="button" class="emp-icon-btn emp-danger" data-act="status" data-perm-any="module.hr hr.employees.edit" data-id="${e.id}" data-next="terminated" title="${t(
             'hr.emp.status.terminated'
           )}" aria-label="${t('hr.emp.status.terminated')}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 8.5l7 7"></path><path d="M15.5 8.5l-7 7"></path></svg>
           </button>
-          <span class="emp-status-row">
+          <span class="emp-status-row" data-perm-any="module.hr hr.employees.edit">
             <label class="emp-mini-toggle" title="${statusLabel(e.employment_status)}">
               <input type="checkbox" data-act="quick-toggle" data-id="${e.id}" ${e.employment_status === 'active' ? 'checked' : ''} />
               <span class="emp-mini-slider"></span>
@@ -246,6 +246,9 @@
       </tr>`
       )
       .join('');
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(empBody);
+    }
   }
 
   async function onTableClick(e) {
@@ -298,6 +301,10 @@
     });
     empBody?.addEventListener('click', onTableClick);
     syncRegionFilterOptions(null);
+    // Statik buton gating (Yeni personel linki).
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(document);
+    }
     await loadEmployees();
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
     ensureResetButtonLabel();

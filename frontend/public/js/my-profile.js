@@ -151,6 +151,9 @@
       showMsg('passMsg', window.i18n?.apiErrorText ? window.i18n.apiErrorText(r.data) : 'Şifre değiştirilemedi', true);
       return;
     }
+    // İlk girişte mustChangePassword=1 ile gelmiş miydi? URL temizlenmeden önce kontrol et.
+    const camefromForce = new URLSearchParams(window.location.search).get('mustChangePassword') === '1';
+
     showMsg('passMsg', t('me.passwordChanged'), false);
     if (document.getElementById('curPass')) document.getElementById('curPass').value = '';
     if (document.getElementById('newPass')) document.getElementById('newPass').value = '';
@@ -162,6 +165,19 @@
     }
     if (window.history?.replaceState) {
       window.history.replaceState({}, '', '/my-profile.html');
+    }
+
+    if (window.authContext && typeof window.authContext.reset === 'function') {
+      window.authContext.reset();
+    }
+
+    if (camefromForce) {
+      // Şifre değişimi zorunluluğu vardı -> kullanıcı sonrasında modülleri görebilsin
+      // diye dashboard'a yönlendir (sidebar permission'a göre dolacak).
+      window.setTimeout(() => {
+        window.location.href = '/';
+      }, 1200);
+      return;
     }
     await loadProfile();
   }

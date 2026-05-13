@@ -62,15 +62,15 @@
       <h2 data-i18n="hr.hub.moduleTitle">İK Modülü</h2>
       <p data-i18n="hr.hub.moduleDesc">Bu sayfa Faz 1A iskeletidir. Tam ekran içeriği sonraki adımlarda doldurulacaktır.</p>
       <div class="dashboard-grid hr-hub-grid">
-        <a class="dashboard-card erp-link-card" href="/hr-employees.html"><h3 data-i18n="nav.hr.employees">Personeller</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-employee-form.html"><h3 data-i18n="nav.hr.employeeForm">Personel Kartı</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-structure.html"><h3 data-i18n="nav.hr.structure">Departman / Pozisyon</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-attendance.html"><h3 data-i18n="nav.hr.attendanceDaily">Günlük puantaj</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-attendance-monthly.html"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-attendance-locks.html"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-settings.html"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-compensation.html"><h3 data-i18n="nav.hr.compensation">Ücret değerlendirme</h3></a>
-        <a class="dashboard-card erp-link-card" href="/hr-payroll.html"><h3 data-i18n="nav.hr.payroll">Bordro yönetimi</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-employees.html" data-perm-any="module.hr hr.employees.view hr.employees.edit"><h3 data-i18n="nav.hr.employees">Personeller</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-employee-form.html" data-perm-any="module.hr hr.employees.view hr.employees.edit"><h3 data-i18n="nav.hr.employeeForm">Personel Kartı</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-structure.html" data-perm-any="module.hr admin.full"><h3 data-i18n="nav.hr.structure">Departman / Pozisyon</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance.html" data-perm-any="module.hr hr.attendance.view hr.attendance.edit"><h3 data-i18n="nav.hr.attendanceDaily">Günlük puantaj</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance-monthly.html" data-perm-any="module.hr hr.attendance.view hr.attendance.edit"><h3 data-i18n="nav.hr.attendanceMonthly">Aylık puantaj</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-attendance-locks.html" data-perm-any="module.hr hr.attendance.unlock"><h3 data-i18n="nav.hr.attendanceLocks">Puantaj kilitleri</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-settings.html" data-perm-any="module.hr admin.full"><h3 data-i18n="nav.hr.settings">Ayarlar</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-compensation.html" data-perm-any="hr.compensation.view admin.full"><h3 data-i18n="nav.hr.compensation">Ücret değerlendirme</h3></a>
+        <a class="dashboard-card erp-link-card" href="/hr-payroll.html" data-perm-any="module.hr hr.payroll.view hr.payroll.edit"><h3 data-i18n="nav.hr.payroll">Bordro yönetimi</h3></a>
       </div>
     </div>
         </main>
@@ -78,7 +78,7 @@
     </div>
   </div>
   <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script>
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
@@ -117,6 +117,10 @@
       (async function () {
         await window.initGlobalNavigation?.('hr');
         await window.initHrPageNav?.('hub');
+        // Hub kartları gating (data-perm-any) — initHrPageNav authContext'i yükler.
+        if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+          window.authContext.applyActionPermissionGating(document);
+        }
         await loadHrHubKpi();
       })();
     }

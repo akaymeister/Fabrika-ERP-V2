@@ -7,13 +7,14 @@ const bcrypt = require('bcrypt');
 const mysql = require('mysql2/promise');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
+// Yeni kurulumda yalnızca 3 teknik rol oluşturulur.
+// Eski "Yönetici / Satın almacı / Depocu" rolleri legacy operasyonel roller olarak
+// patch-035 tarafından is_assignable=0 işaretlenir; bunlar operasyonel olarak
+// `positions` tablosu üzerinden yönetilir.
 const ROLES = [
   { name: 'Süper Yönetici', slug: 'super_admin' },
   { name: 'Admin', slug: 'admin' },
   { name: 'PERSONEL', slug: 'staff' },
-  { name: 'Yönetici', slug: 'yonetici' },
-  { name: 'Satın almacı', slug: 'satin_almaci' },
-  { name: 'Depocu', slug: 'depocu' },
 ];
 
 async function main() {

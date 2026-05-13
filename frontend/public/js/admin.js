@@ -99,7 +99,18 @@ let catalog = [];
 let roles = [];
 let permissionSubjects = [];
 let users = [];
-const SYSTEM_ROLE_SLUGS = new Set(['super_admin', 'admin']);
+
+// "Sistem yöneticisi hesabı aç" akışında dropdown'da gösterilecek slug seti.
+// Personel hesabı için staff otomatik atanır (formNewUser employee akışı).
+// Legacy operasyonel roller (depocu, yonetici, satin_almaci) burada gösterilmez.
+const SYSTEM_ADMIN_NEW_USER_SLUGS = new Set(['super_admin', 'admin']);
+
+function isLegacySubject(subject) {
+  if (!subject || subject.type !== 'system_role') return false;
+  if (typeof subject.is_legacy === 'boolean') return subject.is_legacy;
+  if (typeof subject.is_assignable === 'boolean') return !subject.is_assignable;
+  return false;
+}
 
 function fillRoleSelects() {
   const nr = document.getElementById('newRole');
@@ -114,8 +125,10 @@ function fillRoleSelects() {
     nr.appendChild(placeholder);
     for (const s of permissionSubjects) {
       if (s.type !== 'system_role') continue;
-      const slug = String(s.code || '').toLowerCase();
-      if (!SYSTEM_ROLE_SLUGS.has(slug)) continue;
+      // Backend'in geri dönüşüne ek olarak frontend de güvenlik için filtreler:
+      // sadece "Sistem yöneticisi hesabı" akışında super_admin / admin.
+      if (isLegacySubject(s)) continue;
+      if (!SYSTEM_ADMIN_NEW_USER_SLUGS.has(String(s.code || ''))) continue;
       const o = document.createElement('option');
       o.value = `${s.type}:${s.id}`;
       o.textContent = `${s.name} (${s.code})`;
@@ -129,7 +142,8 @@ function fillRoleSelects() {
       o.value = `${s.type}:${s.id}`;
       const prefix = s.type === 'system_role' ? 'Sistem Rolu' : 'IK Pozisyonu';
       const code = s.code ? ` (${s.code})` : '';
-      o.textContent = `${prefix}: ${s.name}${code}`;
+      const legacyTag = isLegacySubject(s) ? '[LEGACY ROLE] ' : '';
+      o.textContent = `${legacyTag}${prefix}: ${s.name}${code}`;
       rs.appendChild(o);
     }
   }
@@ -209,13 +223,11 @@ function roleOptionsHtml(selectedId) {
 }
 
 function userSelectedSubjectValue(user) {
-  const roleSlug = String(user?.role_slug || '').toLowerCase();
-  if (SYSTEM_ROLE_SLUGS.has(roleSlug)) {
-    const rid = Number(user?.role_id);
-    if (Number.isFinite(rid) && rid > 0) return `system_role:${rid}`;
-  }
+  // Operasyonel yetki bir personele bağlıysa pozisyon önceliklidir; aksi halde sistem rolü gösterilir.
   const posId = Number(user?.employee_position_id);
   if (Number.isFinite(posId) && posId > 0) return `hr_position:${posId}`;
+  const rid = Number(user?.role_id);
+  if (Number.isFinite(rid) && rid > 0) return `system_role:${rid}`;
   return '';
 }
 
@@ -227,9 +239,12 @@ function userSubjectMetaText(user) {
 }
 
 function legacyRoleWarnHtml(user) {
-  const roleSlug = String(user?.role_slug || '').toLowerCase();
-  if (SYSTEM_ROLE_SLUGS.has(roleSlug)) return '';
-  return '<div class="admin-users-legacy-warn">Legacy rol algılandı (eski model).</div>';
+  // Kullanıcının mevcut role_slug'ı legacy operasyonel ise UI'da küçük bir uyarı bas:
+  // yeni atama yapılamaz, izinleri pozisyondan akmaya geçilmesi tavsiye edilir.
+  const slug = String(user?.role_slug || '').toLowerCase();
+  const LEGACY = new Set(['depocu', 'yonetici', 'satin_almaci']);
+  if (!LEGACY.has(slug)) return '';
+  return `<div class="admin-role-legacy-warn" role="note">⚠ [LEGACY ROLE] ${esc(slug)} — Yeni atama yapılamaz. Operasyonel yetkiyi İK pozisyonu üzerinden verin.</div>`;
 }
 
 function userSubjectOptionsHtml(user) {
@@ -239,8 +254,14 @@ function userSubjectOptionsHtml(user) {
     const value = `${s.type}:${s.id}`;
     const prefix = s.type === 'system_role' ? 'Sistem Rolu' : 'IK Pozisyonu';
     const code = s.code ? ` (${s.code})` : '';
+    const legacy = isLegacySubject(s);
+    // Legacy rol seçeneği yalnızca mevcut seçili değerse listede tutulur (kullanıcı
+    // legacy rolünden çıkana kadar görünür kalsın); yeni atama için disabled.
+    if (legacy && value !== selected) continue;
+    const legacyTag = legacy ? '[LEGACY ROLE] ' : '';
+    const disabledAttr = legacy ? ' disabled' : '';
     options.push(
-      `<option value="${value}" ${value === selected ? 'selected' : ''}>${esc(prefix)}: ${esc(s.name)}${esc(code)}</option>`
+      `<option value="${value}" ${value === selected ? 'selected' : ''}${disabledAttr}>${legacyTag}${esc(prefix)}: ${esc(s.name)}${esc(code)}</option>`
     );
   }
   if (!selected) {
@@ -369,24 +390,625 @@ async function onResetPassword(id) {
   window.alert(t('admin.alert.passOk'));
 }
 
+/**
+ * Permission catalog'unu modül prefix'ine göre gruplar.
+ * Sıra: purchasing → stock → hr → projects → system → other.
+ * Her grup içinde 'module.*' anahtarları en üstte, kalanlar alfabetik.
+ */
+const PERM_GROUP_DEFS = [
+  {
+    id: 'purchasing',
+    i18nKey: 'admin.perm.group.purchasing',
+    fallback: 'SATINALMA',
+    match: (k) => k.startsWith('purchasing.') || k.startsWith('module.purchasing'),
+  },
+  {
+    id: 'stock',
+    i18nKey: 'admin.perm.group.stock',
+    fallback: 'STOK',
+    match: (k) => k.startsWith('stock.') || k === 'module.stock',
+  },
+  {
+    id: 'hr',
+    i18nKey: 'admin.perm.group.hr',
+    fallback: 'İK',
+    match: (k) => k.startsWith('hr.') || k === 'module.hr',
+  },
+  {
+    id: 'projects',
+    i18nKey: 'admin.perm.group.projects',
+    fallback: 'PROJE',
+    match: (k) => k.startsWith('projects.') || k === 'module.projects',
+  },
+  {
+    id: 'system',
+    i18nKey: 'admin.perm.group.system',
+    fallback: 'SİSTEM / YÖNETİM',
+    match: (k) => k.startsWith('users.') || k.startsWith('roles.') || k.startsWith('admin.'),
+  },
+];
+const PERM_GROUP_OTHER = { id: 'other', i18nKey: 'admin.perm.group.other', fallback: 'DİĞER' };
+
+function groupPermissions(list) {
+  const groups = PERM_GROUP_DEFS.map((g) => ({ ...g, items: [] }));
+  const other = { ...PERM_GROUP_OTHER, items: [] };
+  for (const p of list) {
+    const key = String(p.perm_key || '');
+    let placed = false;
+    for (const g of groups) {
+      if (g.match(key)) {
+        g.items.push(p);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) other.items.push(p);
+  }
+  const sortFn = (a, b) => {
+    const ak = String(a.perm_key || '');
+    const bk = String(b.perm_key || '');
+    const am = ak.startsWith('module.') ? 0 : 1;
+    const bm = bk.startsWith('module.') ? 0 : 1;
+    if (am !== bm) return am - bm;
+    return ak.localeCompare(bk);
+  };
+  groups.forEach((g) => g.items.sort(sortFn));
+  other.items.sort(sortFn);
+  return groups.filter((g) => g.items.length > 0).concat(other.items.length > 0 ? [other] : []);
+}
+
+function tOrFallback(key, fallback) {
+  if (window.i18n && typeof window.i18n.t === 'function') {
+    const v = window.i18n.t(key);
+    if (v && v !== key) return v;
+  }
+  return fallback;
+}
+
+function syncGroupState(groupEl) {
+  const children = [...groupEl.querySelectorAll('input.perm-row-input')];
+  const checkedChildren = children.filter((c) => c.checked).length;
+  const total = children.length;
+  const toggle = groupEl.querySelector('input.perm-group-toggle');
+  if (toggle) {
+    if (total === 0 || checkedChildren === 0) {
+      toggle.checked = false;
+      toggle.indeterminate = false;
+    } else if (checkedChildren === total) {
+      toggle.checked = true;
+      toggle.indeterminate = false;
+    } else {
+      toggle.checked = false;
+      toggle.indeterminate = true;
+    }
+  }
+  const countEl = groupEl.querySelector('.perm-group-count');
+  if (countEl) countEl.textContent = `${checkedChildren} / ${total}`;
+}
+
+function bindPermGroupEvents(container) {
+  if (container.__permGroupBound) return;
+  container.__permGroupBound = true;
+
+  // change: hem grup toggle hem satır checkbox.
+  container.addEventListener('change', (ev) => {
+    const t = ev.target;
+    if (!(t instanceof HTMLInputElement)) return;
+    if (t.classList.contains('perm-group-toggle')) {
+      const groupEl = t.closest('.perm-group');
+      if (!groupEl) return;
+      const next = !!t.checked;
+      groupEl.querySelectorAll('input.perm-row-input').forEach((cb) => {
+        cb.checked = next;
+      });
+      syncGroupState(groupEl);
+      // Faz 4.1.a: filtre aktifse count badge ve "sadece seçili" görünümü tazelenir.
+      applyPermFilters(container.id);
+      // Faz 4.1.b: izin değişikliği → dirty.
+      markPermDirty(container.id);
+      return;
+    }
+    if (t.classList.contains('perm-row-input')) {
+      const groupEl = t.closest('.perm-group');
+      if (groupEl) syncGroupState(groupEl);
+      applyPermFilters(container.id);
+      markPermDirty(container.id);
+    }
+  });
+
+  // <summary> tıklaması details'i toggle eder; içindeki checkbox click'in
+  // accordion'u kapatmasını engelle.
+  container.addEventListener('click', (ev) => {
+    const t = ev.target;
+    if (t instanceof HTMLInputElement && t.classList.contains('perm-group-toggle')) {
+      ev.stopPropagation();
+    }
+  });
+}
+
 function renderCheckboxes(containerId, checkedIds) {
   const c = document.getElementById(containerId);
   if (!c) return;
   const set = new Set(checkedIds);
-  c.innerHTML = catalog
-    .map(
-      (p) => `<label class="perm-item">
-    <input type="checkbox" value="${p.id}" ${set.has(p.id) ? 'checked' : ''} />
-    <span><strong>${esc(p.name)}</strong><code>${esc(p.perm_key)}</code></span>
-  </label>`
-    )
+  const groups = groupPermissions(catalog);
+  c.classList.add('perm-list-grouped');
+
+  if (!groups.length) {
+    c.innerHTML = '';
+    return;
+  }
+
+  c.innerHTML = groups
+    .map((g) => {
+      const groupLabel = tOrFallback(g.i18nKey, g.fallback);
+      const itemsHtml = g.items
+        .map(
+          (p) => `<label class="perm-row">
+              <input type="checkbox" class="perm-row-input" value="${p.id}" data-perm-id="${p.id}" data-group="${esc(
+            g.id
+          )}" ${set.has(p.id) ? 'checked' : ''} />
+              <span class="perm-row-text">
+                <span class="perm-row-name">${esc(p.name)}</span>
+                <code class="perm-row-key">${esc(p.perm_key)}</code>
+              </span>
+            </label>`
+        )
+        .join('');
+      return `<details class="perm-group" data-group="${esc(g.id)}">
+          <summary class="perm-group-header">
+            <input type="checkbox" class="perm-group-toggle" aria-label="${esc(groupLabel)}" />
+            <span class="perm-group-title" data-i18n="${esc(g.i18nKey)}">${esc(groupLabel)}</span>
+            <span class="perm-group-count" aria-hidden="true">0 / ${g.items.length}</span>
+            <span class="perm-group-caret" aria-hidden="true"></span>
+          </summary>
+          <div class="perm-group-items">${itemsHtml}</div>
+        </details>`;
+    })
     .join('');
+
+  // Grupların initial state'lerini hesapla + event'leri tek seferlik bağla.
+  c.querySelectorAll('.perm-group').forEach((groupEl) => syncGroupState(groupEl));
+  bindPermGroupEvents(c);
+  // Faz 4.1.a: yeniden render sonrası mevcut filtreler yeniden uygulanır.
+  applyPermFilters(containerId);
+  // Faz 4.1.b: server'dan yeni veri → temiz başlangıç.
+  markPermClean(containerId);
 }
 
 function getCheckedIds(containerId) {
   const c = document.getElementById(containerId);
   if (!c) return [];
-  return [...c.querySelectorAll('input[type=checkbox]:checked')].map((i) => +i.value);
+  // YALNIZCA satır checkbox'ları — grup toggle ve indeterminate'ler hariç.
+  return [...c.querySelectorAll('input.perm-row-input:checked')].map((i) => +i.value);
+}
+
+/**
+ * Faz 4.1.a: Permission listesi için canlı arama + "sadece seçili" filtre.
+ *
+ * Tasarım kuralları:
+ *   - Backend'e dokunmaz; tamamen DOM tarafında show/hide.
+ *   - Filtreler renderCheckboxes sonrası ve her checkbox change sonrası
+ *     yeniden uygulanır (kullanıcı bir kutuyu tikleyince "sadece seçili"
+ *     görünümü canlı güncellenir).
+ *   - Filtre aktifken grup count badge "görünür / toplam" formatına döner;
+ *     filtre kapanınca "seçili / toplam"a geri döner (syncGroupState).
+ *   - Boş sonuçta perm-empty-state görünür.
+ *
+ * Filtre çubuğu: <div class="perm-filter-bar" data-perm-target="<containerId>">
+ *   .perm-search-input             - canlı arama (debounce)
+ *   .perm-search-clear             - X butonu
+ *   .perm-only-selected-input      - sadece seçili toggle
+ *
+ * Empty state: <div class="perm-empty-state" data-perm-target="<containerId>">
+ */
+const __permFilterDebounce = new Map();
+
+function getPermFilterBar(containerId) {
+  return document.querySelector(`.perm-filter-bar[data-perm-target="${containerId}"]`);
+}
+
+function getPermEmptyState(containerId) {
+  return document.querySelector(`.perm-empty-state[data-perm-target="${containerId}"]`);
+}
+
+function getPermFilterState(containerId) {
+  const bar = getPermFilterBar(containerId);
+  const q = String(bar?.querySelector('.perm-search-input')?.value || '')
+    .toLocaleLowerCase('tr-TR')
+    .trim();
+  const onlySelected = !!bar?.querySelector('.perm-only-selected-input')?.checked;
+  return { q, onlySelected, active: !!q || onlySelected };
+}
+
+/**
+ * @param {string} containerId  'rolePermList' | 'userPermList'
+ */
+function applyPermFilters(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  const { q, onlySelected, active } = getPermFilterState(containerId);
+
+  // Clear butonu görünürlüğü.
+  const bar = getPermFilterBar(containerId);
+  const clearBtn = bar?.querySelector('.perm-search-clear');
+  if (clearBtn) clearBtn.hidden = !q;
+
+  let visibleTotal = 0;
+  c.querySelectorAll('.perm-group').forEach((groupEl) => {
+    let visibleInGroup = 0;
+    let totalInGroup = 0;
+    let checkedInGroup = 0;
+    groupEl.querySelectorAll('.perm-row').forEach((rowEl) => {
+      totalInGroup += 1;
+      const cb = rowEl.querySelector('input.perm-row-input');
+      if (cb && cb.checked) checkedInGroup += 1;
+      const nameTxt = (rowEl.querySelector('.perm-row-name')?.textContent || '')
+        .toLocaleLowerCase('tr-TR');
+      const keyTxt = (rowEl.querySelector('.perm-row-key')?.textContent || '')
+        .toLocaleLowerCase('tr-TR');
+      const matchesQ = !q || nameTxt.indexOf(q) !== -1 || keyTxt.indexOf(q) !== -1;
+      const matchesSel = !onlySelected || (cb && cb.checked);
+      const show = matchesQ && matchesSel;
+      rowEl.style.display = show ? '' : 'none';
+      if (show) visibleInGroup += 1;
+    });
+
+    // Grubun görünürlüğü.
+    groupEl.style.display = visibleInGroup > 0 ? '' : 'none';
+
+    // Count badge — filtre aktif: "görünür / toplam", değilse: "seçili / toplam".
+    const countEl = groupEl.querySelector('.perm-group-count');
+    if (countEl) {
+      countEl.textContent = active
+        ? `${visibleInGroup} / ${totalInGroup}`
+        : `${checkedInGroup} / ${totalInGroup}`;
+    }
+
+    // Filtre aktifken gruplar otomatik açılsın (kullanıcı eşleşmeleri görsün).
+    if (active && visibleInGroup > 0 && groupEl.tagName === 'DETAILS') {
+      groupEl.open = true;
+    }
+
+    visibleTotal += visibleInGroup;
+  });
+
+  const empty = getPermEmptyState(containerId);
+  if (empty) empty.hidden = visibleTotal !== 0;
+}
+
+/**
+ * Filtre çubuğunu containerId hedefine bağlar. Tek seferlik bind; bir kez
+ * çağrılınca __bound flag'i ile tekrarı engellenir.
+ *
+ * @param {string} containerId
+ */
+function bindPermFilterBar(containerId) {
+  const bar = getPermFilterBar(containerId);
+  if (!bar || bar.__bound) return;
+  bar.__bound = true;
+
+  const input = bar.querySelector('.perm-search-input');
+  const clearBtn = bar.querySelector('.perm-search-clear');
+  const onlySel = bar.querySelector('.perm-only-selected-input');
+
+  const debounced = () => {
+    const prev = __permFilterDebounce.get(containerId);
+    if (prev) clearTimeout(prev);
+    __permFilterDebounce.set(
+      containerId,
+      setTimeout(() => applyPermFilters(containerId), 80)
+    );
+  };
+
+  input?.addEventListener('input', debounced);
+  input?.addEventListener('search', () => applyPermFilters(containerId));
+  clearBtn?.addEventListener('click', () => {
+    if (input) input.value = '';
+    applyPermFilters(containerId);
+    input?.focus();
+  });
+  onlySel?.addEventListener('change', () => applyPermFilters(containerId));
+}
+
+/**
+ * Faz 4.1.b: Kaydedilmemiş değişiklik (dirty) takibi.
+ *
+ * Kapsam:
+ *   - permission checkbox ve grup toggle değişiklikleri → dirty
+ *   - applyTemplate (add/replace) → dirty
+ *   - filter/search/onlySelected DİRTY SAYILMAZ
+ *   - renderCheckboxes (server'dan yeniden yükleme) → clean
+ *   - başarılı save sonrası → clean
+ *
+ * Her liste için ayrı state; iki listenin dirty durumu birbirinden bağımsız.
+ * beforeunload uyarısı yalnızca en az bir liste dirty ise gösterilir.
+ *
+ * Subject değişimi (#roleSelect, #userSelectExtra) sırasında ilgili listenin
+ * dirty olması durumunda confirm gösterilir; iptal edilirse select önceki
+ * değerine geri alınır.
+ */
+const __permDirty = { rolePermList: false, userPermList: false };
+const __subjectLastValue = { roleSelect: '', userSelectExtra: '' };
+
+const SAVE_BUTTON_BY_LIST = {
+  rolePermList: 'btnSaveRolePerms',
+  userPermList: 'btnSaveUserPerms',
+};
+
+function getPermDirtyBadge(containerId) {
+  return document.querySelector(`.perm-dirty-badge[data-perm-target="${containerId}"]`);
+}
+
+function refreshPermDirtyUi(containerId) {
+  const dirty = !!__permDirty[containerId];
+  const badge = getPermDirtyBadge(containerId);
+  if (badge) {
+    badge.setAttribute('data-state', dirty ? 'dirty' : 'clean');
+    const textEl = badge.querySelector('.perm-dirty-text');
+    if (textEl) {
+      const key = dirty ? 'admin.perm.unsaved' : 'admin.perm.saved';
+      const fallback = dirty ? 'Kaydedilmemiş değişiklikler var' : 'Tüm değişiklikler kaydedildi';
+      textEl.setAttribute('data-i18n', key);
+      textEl.textContent = tOrFallback(key, fallback);
+    }
+  }
+  const btnId = SAVE_BUTTON_BY_LIST[containerId];
+  if (btnId) {
+    const btn = document.getElementById(btnId);
+    if (btn) btn.disabled = !dirty;
+  }
+}
+
+function markPermDirty(containerId) {
+  if (!(containerId in __permDirty)) return;
+  if (__permDirty[containerId]) return; // zaten dirty
+  __permDirty[containerId] = true;
+  refreshPermDirtyUi(containerId);
+}
+
+function markPermClean(containerId) {
+  if (!(containerId in __permDirty)) return;
+  __permDirty[containerId] = false;
+  refreshPermDirtyUi(containerId);
+}
+
+function isAnyPermDirty() {
+  return Object.values(__permDirty).some(Boolean);
+}
+
+/** Tek seferlik global beforeunload handler. */
+function bindPermBeforeUnload() {
+  if (window.__permBeforeUnloadBound) return;
+  window.__permBeforeUnloadBound = true;
+  window.addEventListener('beforeunload', (ev) => {
+    if (!isAnyPermDirty()) return undefined;
+    // Modern tarayıcılar mesajı kendileri seçer; sadece returnValue set etmek
+    // uyarıyı tetikler.
+    const msg = tOrFallback('admin.perm.leaveConfirm', 'Kaydedilmemiş izin değişiklikleri var.');
+    ev.preventDefault();
+    ev.returnValue = msg;
+    return msg;
+  });
+}
+
+/**
+ * Faz 4: Yetki şablonları — opsiyonel hızlı başlangıç.
+ *
+ * Bu liste yalnızca UI tarafında çalışır:
+ *   - Admin bir şablon seçer → checkbox'lar işaretlenir.
+ *   - DB'ye yazılmaz. Mevcut "Kaydet" akışı korunur.
+ *   - "Mevcut seçimlere ekle" → checkbox state'ini sıfırlamadan ekler.
+ *   - "Temizle + uygula" → önce hepsini söker, sonra şablonu işaretler.
+ *
+ * Yeni şablon eklemek için sadece bu listeye ekleme yeterli; i18n key'ini de
+ * 4 dilde tanımlamayı unutmayın (admin.perm.template.opt.<id>).
+ */
+const PERM_TEMPLATES = [
+  {
+    id: 'depocu',
+    nameKey: 'admin.perm.template.opt.depocu',
+    fallback: 'Depocu',
+    keys: [
+      'stock.hub.view',
+      'stock.products.view',
+      'stock.in.view',
+      'stock.in.create',
+      'stock.movements.view',
+      'purchasing.request.create',
+    ],
+  },
+  {
+    id: 'muhasebeUzmani',
+    nameKey: 'admin.perm.template.opt.muhasebeUzmani',
+    fallback: 'Muhasebe Uzmanı',
+    keys: [
+      'hr.hub.view',
+      'hr.attendance.view',
+      'hr.payroll.view',
+      'hr.payroll.edit',
+      'hr.salary.view_group',
+      'hr.salary.view_total',
+      'hr.salary.history_view',
+    ],
+  },
+  {
+    id: 'projeSorumlusu',
+    nameKey: 'admin.perm.template.opt.projeSorumlusu',
+    fallback: 'Proje Sorumlusu',
+    keys: ['projects.hub.view', 'projects.control.view', 'purchasing.request.create', 'purchasing.request.view'],
+  },
+  {
+    id: 'satinalmaSorumlusu',
+    nameKey: 'admin.perm.template.opt.satinalmaSorumlusu',
+    fallback: 'Satınalma Sorumlusu',
+    keys: [
+      'purchasing.hub.view',
+      'purchasing.request.view',
+      'purchasing.processing.view',
+      'purchasing.order.view',
+      'purchasing.order.price_edit',
+      'purchasing.suppliers.view',
+    ],
+  },
+  {
+    id: 'fabrikaMuduru',
+    nameKey: 'admin.perm.template.opt.fabrikaMuduru',
+    fallback: 'Fabrika Müdürü',
+    // NOT: admin.full şablonda KASTEN yer almaz — kullanıcı kuralı.
+    keys: [
+      // stock.*.view
+      'stock.hub.view',
+      'stock.products.view',
+      'stock.brands.view',
+      'stock.warehouses.view',
+      'stock.in.view',
+      'stock.out.view',
+      'stock.movements.view',
+      'stock.reports.view',
+      // purchasing.*.view
+      'purchasing.hub.view',
+      'purchasing.request.view',
+      'purchasing.processing.view',
+      'purchasing.order.view',
+      'purchasing.receipt.view',
+      'purchasing.suppliers.view',
+      // projects.*.view
+      'projects.hub.view',
+      'projects.control.view',
+      // HR (sınırlı, görüntüleme)
+      'hr.hub.view',
+      'hr.employees.view',
+      'hr.attendance.view',
+      'hr.payroll.view',
+    ],
+  },
+];
+
+function fillPermTemplateSelect() {
+  const sel = document.getElementById('permTemplateSelect');
+  if (!sel) return;
+  const placeholderLabel = tOrFallback('admin.perm.template.placeholder', '— Şablon seçin —');
+  const opts = [`<option value="">${esc(placeholderLabel)}</option>`];
+  for (const tpl of PERM_TEMPLATES) {
+    const label = tOrFallback(tpl.nameKey, tpl.fallback);
+    opts.push(`<option value="${esc(tpl.id)}">${esc(label)} (${tpl.keys.length})</option>`);
+  }
+  sel.innerHTML = opts.join('');
+}
+
+function getSelectedTemplate() {
+  const sel = document.getElementById('permTemplateSelect');
+  const id = String(sel?.value || '');
+  if (!id) return null;
+  return PERM_TEMPLATES.find((x) => x.id === id) || null;
+}
+
+/**
+ * Catalog'daki perm_key → id eşlemesini bulur.
+ * Catalog'da olmayan key sessizce atlanır (örn. ileri sürümler için
+ * tanımlı ama DB'ye henüz eklenmemiş anahtarlar — fail-soft).
+ */
+function templateKeysToCatalogIds(template) {
+  if (!template || !Array.isArray(template.keys)) return { ids: [], matched: 0, missing: [] };
+  const idByKey = new Map(catalog.map((p) => [String(p.perm_key), p.id]));
+  const ids = [];
+  const missing = [];
+  for (const k of template.keys) {
+    const id = idByKey.get(String(k));
+    if (id != null) ids.push(id);
+    else missing.push(k);
+  }
+  return { ids, matched: ids.length, missing };
+}
+
+function updatePermTemplateInfo() {
+  const info = document.getElementById('permTemplateInfo');
+  const btnAdd = document.getElementById('btnPermTemplateAdd');
+  const btnRep = document.getElementById('btnPermTemplateReplace');
+  const tpl = getSelectedTemplate();
+  const enabled = !!tpl;
+  if (btnAdd) btnAdd.disabled = !enabled;
+  if (btnRep) btnRep.disabled = !enabled;
+  if (!info) return;
+  if (!tpl) {
+    info.textContent = '';
+    info.classList.remove('is-warning');
+    return;
+  }
+  const { matched, missing } = templateKeysToCatalogIds(tpl);
+  const tplName = tOrFallback(tpl.nameKey, tpl.fallback);
+  const summary = tOrFallback('admin.perm.template.countInfo', '{name}: {count} izin içerir')
+    .replace('{name}', tplName)
+    .replace('{count}', String(matched));
+  if (missing.length) {
+    info.classList.add('is-warning');
+    const warn = tOrFallback('admin.perm.template.missingInfo', '{count} anahtar katalogda yok ve atlanacak').replace(
+      '{count}',
+      String(missing.length)
+    );
+    info.textContent = `${summary} • ${warn}`;
+  } else {
+    info.classList.remove('is-warning');
+    info.textContent = summary;
+  }
+}
+
+/**
+ * Şablonu rol/pozisyon izinleri listesine uygular.
+ * NOT: DB'ye DOKUNMAZ — yalnızca DOM checkbox state'i değişir.
+ * Admin "Kaydet" butonuna basana kadar hiçbir şey kalıcı değildir.
+ *
+ * @param {'add'|'replace'} mode
+ */
+function applyTemplate(mode) {
+  const container = document.getElementById('rolePermList');
+  const tpl = getSelectedTemplate();
+  if (!container || !tpl) return;
+  const { ids } = templateKeysToCatalogIds(tpl);
+  const tplIdSet = new Set(ids);
+
+  const inputs = container.querySelectorAll('input.perm-row-input');
+  if (!inputs.length) return;
+
+  inputs.forEach((cb) => {
+    const id = Number(cb.value);
+    const inTemplate = tplIdSet.has(id);
+    if (mode === 'replace') {
+      cb.checked = inTemplate;
+    } else if (mode === 'add') {
+      if (inTemplate) cb.checked = true;
+    }
+  });
+
+  // Tüm grupların state'lerini güncelle (toggle + count badge).
+  container.querySelectorAll('.perm-group').forEach((g) => syncGroupState(g));
+  // Faz 4.1.a: filtre aktifse görünüm tazelenir.
+  applyPermFilters(container.id);
+  // Faz 4.1.b: şablon uygulaması kullanıcı eylemidir → dirty.
+  markPermDirty(container.id);
+}
+
+/** Şablon dropdown'unu init() içinde tek seferlik bağla. */
+function bindPermTemplateTool() {
+  const sel = document.getElementById('permTemplateSelect');
+  const btnAdd = document.getElementById('btnPermTemplateAdd');
+  const btnRep = document.getElementById('btnPermTemplateReplace');
+  if (!sel || sel.__bound) {
+    return;
+  }
+  sel.__bound = true;
+  sel.addEventListener('change', () => {
+    clearError();
+    updatePermTemplateInfo();
+  });
+  btnAdd?.addEventListener('click', () => {
+    clearError();
+    applyTemplate('add');
+  });
+  btnRep?.addEventListener('click', () => {
+    clearError();
+    applyTemplate('replace');
+  });
 }
 
 async function loadUsers() {
@@ -503,6 +1125,17 @@ async function init() {
   clearError();
   bindUserTableDelegation();
   await loadCatalog();
+  // Faz 4: opsiyonel yetki şablonu aracı — catalog yüklendikten sonra dropdown doldurulur.
+  fillPermTemplateSelect();
+  bindPermTemplateTool();
+  updatePermTemplateInfo();
+  // Faz 4.1.a: permission listesi filtre çubukları (her iki liste için ayrı state).
+  bindPermFilterBar('rolePermList');
+  bindPermFilterBar('userPermList');
+  // Faz 4.1.b: dirty UI initial state + global beforeunload kancası.
+  refreshPermDirtyUi('rolePermList');
+  refreshPermDirtyUi('userPermList');
+  bindPermBeforeUnload();
   await loadPermissionSubjects();
   document.querySelectorAll('input[name="newAccountKind"]').forEach((inp) => {
     inp.addEventListener('change', () => {
@@ -529,14 +1162,39 @@ async function init() {
     renderCheckboxes('userPermList', []);
   }
 
-  document.getElementById('roleSelect')?.addEventListener('change', () => {
+  // Faz 4.1.b: subject değişimi → dirty ise confirm; iptal edilirse select geri alınır.
+  const roleSelEl = document.getElementById('roleSelect');
+  __subjectLastValue.roleSelect = String(roleSelEl?.value || '');
+  roleSelEl?.addEventListener('change', async (ev) => {
     clearError();
-    loadRolePerms();
+    const nextVal = String(ev.target.value || '');
+    if (__permDirty.rolePermList) {
+      const ok = window.confirm(tOrFallback('admin.perm.leaveConfirm', 'Kaydedilmemiş izin değişiklikleri var.'));
+      if (!ok) {
+        ev.target.value = __subjectLastValue.roleSelect;
+        return;
+      }
+    }
+    await loadRolePerms();
+    __subjectLastValue.roleSelect = nextVal;
   });
-  document.getElementById('userSelectExtra')?.addEventListener('change', () => {
+
+  const userSelEl = document.getElementById('userSelectExtra');
+  __subjectLastValue.userSelectExtra = String(userSelEl?.value || '');
+  userSelEl?.addEventListener('change', async (ev) => {
     clearError();
-    loadUserExtra();
+    const nextVal = String(ev.target.value || '');
+    if (__permDirty.userPermList) {
+      const ok = window.confirm(tOrFallback('admin.perm.leaveConfirm', 'Kaydedilmemiş izin değişiklikleri var.'));
+      if (!ok) {
+        ev.target.value = __subjectLastValue.userSelectExtra;
+        return;
+      }
+    }
+    await loadUserExtra();
+    __subjectLastValue.userSelectExtra = nextVal;
   });
+
   document.getElementById('btnSaveRolePerms')?.addEventListener('click', async () => {
     clearError();
     const subject = getSelectedPermissionSubject();
@@ -551,6 +1209,8 @@ async function init() {
       showError(apiErr(data, 'api.error.save_failed'));
       return;
     }
+    // Faz 4.1.b: başarılı save → temiz duruma dön.
+    markPermClean('rolePermList');
     window.alert(t('admin.alert.rolePermsOk'));
   });
   document.getElementById('btnSaveUserPerms')?.addEventListener('click', async () => {
@@ -566,6 +1226,7 @@ async function init() {
       showError(apiErr(data, 'api.error.save_failed'));
       return;
     }
+    markPermClean('userPermList');
     window.alert(t('admin.alert.userPermsOk'));
   });
   document.getElementById('newFullname')?.addEventListener('blur', function () {

@@ -4,6 +4,11 @@ const { err } = require('../utils/serviceError');
 const { toUpperTr } = require('../utils/textNormalize');
 
 const SUPER_SLUG = 'super_admin';
+// Yeni kullanıcı yaratırken / mevcut kullanıcıya atama yaparken yalnızca bu
+// teknik rollere izin verilir. Diğer is_assignable=1 olan teknik roller (örn. yeni
+// gelecek roller) DB'ye eklendiği gibi otomatik kullanılabilir; bu set sadece
+// "sistem yöneticisi hesabı" akışını sıkı tutmak içindir.
+const ASSIGNABLE_SYSTEM_SLUGS_FOR_NEW_SYSTEM_USER = new Set(['super_admin', 'admin']);
 
 async function countActiveSuperAdmins() {
   const [[r]] = await pool.query(
@@ -17,7 +22,12 @@ async function countActiveSuperAdmins() {
 }
 
 async function getRoleIdById(roleId) {
-  const [rows] = await pool.query('SELECT id, slug, name FROM roles WHERE id = :id', { id: roleId });
+  const [rows] = await pool.query(
+    `SELECT id, slug, name, COALESCE(is_assignable, 1) AS is_assignable
+     FROM roles
+     WHERE id = :id`,
+    { id: roleId }
+  );
   return rows[0] || null;
 }
 
@@ -73,7 +83,6 @@ function pickUpdatePayload(body) {
   return o;
 }
 
-const SYSTEM_CREATE_SLUGS = new Set(['super_admin', 'admin']);
 const STAFF_SLUG = 'staff';
 
 /**
@@ -103,9 +112,18 @@ async function createUser(input) {
     if (!role) {
       return err('Rol bulunamadı', 'api.admin.role_not_found');
     }
-    const slug = String(role.slug || '').toLowerCase();
-    if (!SYSTEM_CREATE_SLUGS.has(slug)) {
-      return err('Yeni kullanıcı için yalnızca super_admin veya admin seçilebilir', 'api.admin.create_system_role_only');
+    // Legacy operasyonel roller (depocu, yonetici, satin_almaci) yeni kullanıcıya
+    // atanamaz; patch-035 bunları is_assignable=0 işaretler.
+    if (Number(role.is_assignable) !== 1) {
+      return err('Bu rol artık atanamaz (legacy operasyonel rol).', 'api.admin.role_not_assignable');
+    }
+    // "Sistem yöneticisi hesabı aç" akışında yalnızca super_admin / admin seçilebilir.
+    // staff personel hesabı için ayrı bir akıştan (assignType='employee') atanır.
+    if (!ASSIGNABLE_SYSTEM_SLUGS_FOR_NEW_SYSTEM_USER.has(String(role.slug || ''))) {
+      return err(
+        'Sistem yöneticisi hesabı için yalnızca super_admin veya admin seçilebilir.',
+        'api.admin.role_not_system_admin'
+      );
     }
     const [r] = await pool.query(
       'INSERT INTO users (username, email, password_hash, full_name, role_id, must_change_password) VALUES (?,?,?,?,?,?)',
@@ -277,16 +295,21 @@ async function setUserPermissionSubject(userId, subjectType, subjectId, { acting
 
   if (subjectType === 'system_role') {
     const [roles] = await pool.query(
-      `SELECT id, slug
+      `SELECT id, slug, COALESCE(is_assignable, 1) AS is_assignable
        FROM roles
        WHERE id = :id
-         AND slug IN ('super_admin', 'admin')
        LIMIT 1`,
       { id: sid }
     );
-    if (!roles.length) return err('Sadece Super Admin veya Admin atanabilir', 'api.admin.system_role_only');
+    if (!roles.length) return err('Rol bulunamadı', 'api.admin.role_not_found');
 
     const toRole = roles[0];
+    // Legacy operasyonel roller (depocu, yonetici, satin_almaci) artık yeni atama
+    // hedefi olamaz; izinleri admin-permissions ekranından düzenlenebilir ama
+    // kullanıcıya rol olarak set edilemez. Mevcut atamaları korunur (DB'den silinmez).
+    if (Number(toRole.is_assignable) !== 1) {
+      return err('Bu rol artık atanamaz (legacy operasyonel rol).', 'api.admin.role_not_assignable');
+    }
     if (uid === actingUserId && user.role_slug === SUPER_SLUG && toRole.slug !== SUPER_SLUG) {
       return err('Kendi süper yönetici rolünüzü kaldıramazsınız', 'api.admin.cannot_downgrade_self_super');
     }
@@ -316,11 +339,9 @@ async function setUserPermissionSubject(userId, subjectType, subjectId, { acting
       position_id: sid,
       employee_id: user.employee_id,
     });
-    const adminRole = await getSystemRoleBySlug('admin');
-    if (adminRole && user.role_id !== adminRole.id) {
-      // Operasyonel yetki artık pozisyondan okunacağı için sistem rolünü admin seviyesine sabitle.
-      await pool.query('UPDATE users SET role_id = :role_id WHERE id = :id', { role_id: adminRole.id, id: uid });
-    }
+    // NOT: Yeni rol mimarisinde pozisyon ataması users.role_id'ye DOKUNMAZ.
+    // Teknik rol (staff) personel hesabı oluşturma akışında bir kez atanır.
+    // Operasyonel yetki position_permissions üzerinden akar.
     return { ok: true };
   }
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -113,10 +113,10 @@
       </div>
       <div class="proc-dlg-footer">
         <div class="pur-req-btns-row">
-          <button type="button" class="btn btn-primary" id="btnStart" data-i18n="purch.proc.btnStart">Siparişi işleme al</button>
-          <button type="button" class="btn btn-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing">Fiyatları kaydet</button>
-          <button type="button" class="btn btn-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder">Siparişi tamamla</button>
-          <button type="button" class="btn btn-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder">Siparişi revizeye gönder</button>
+          <button type="button" class="btn btn-primary" id="btnStart" data-i18n="purch.proc.btnStart" data-perm-any="module.purchasing module.purchasing.approve purchasing.order.price_edit">Siparişi işleme al</button>
+          <button type="button" class="btn btn-primary" id="btnSavePricing" disabled data-i18n="purch.proc.btnSavePricing" data-perm-any="module.purchasing module.purchasing.approve purchasing.order.price_edit">Fiyatları kaydet</button>
+          <button type="button" class="btn btn-success" id="btnCompleteOrder" disabled data-i18n="purch.proc.btnCompleteOrder" data-perm-any="module.purchasing module.purchasing.approve purchasing.order.price_edit">Siparişi tamamla</button>
+          <button type="button" class="btn btn-warning" id="btnReviseOrder" disabled data-i18n="purch.proc.btnReviseOrder" data-perm-any="module.purchasing module.purchasing.approve purchasing.order.price_edit">Siparişi revizeye gönder</button>
         </div>
       </div>
     </dialog>
@@ -178,7 +178,7 @@
   <script src="/js/i18n.js?v=15" defer></script>
   <script src="/js/ui-notify.js?v=1" defer></script>
   <script src="/js/ui-format.js?v=2" defer></script>
-  <script src="/js/navigation.js?v=1" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js?v=1" defer></script>
   <script src="/js/purchasing-common.js?v=14" defer></script>
   <script src="/js/purchase-processing.js?v=20" defer></script>
 </body>

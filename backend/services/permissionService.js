@@ -104,11 +104,23 @@ async function setUserExtraPermissionIds(userId, permissionIds) {
 }
 
 async function listPermissionSubjects() {
+  // Tüm sistem rolleri + tüm aktif HR pozisyonları.
+  // - is_assignable: roles.is_assignable (kolon yoksa 1 varsay) — admin UI yeni atama
+  //   yaparken legacy rolleri gizler; izin tablosunda yalnızca [LEGACY ROLE] etiketiyle gösterilir.
+  // - is_legacy: !is_assignable kısayolu.
+  // Sıralama: önce assignable=1 (super_admin→admin→staff→diğer), sonra legacy roller alfabetik.
   const [systemRoles] = await pool.query(
-    `SELECT id, name, slug
+    `SELECT id, name, slug, COALESCE(is_assignable, 1) AS is_assignable
      FROM roles
-     WHERE slug IN ('super_admin', 'admin')
-     ORDER BY FIELD(slug, 'super_admin', 'admin'), name`
+     ORDER BY
+       COALESCE(is_assignable, 1) DESC,
+       CASE slug
+         WHEN 'super_admin' THEN 1
+         WHEN 'admin' THEN 2
+         WHEN 'staff' THEN 3
+         ELSE 4
+       END,
+       name ASC`
   );
   const [hrPositions] = await pool.query(
     `SELECT id, name, code, is_active
@@ -117,8 +129,25 @@ async function listPermissionSubjects() {
      ORDER BY name ASC`
   );
   return [
-    ...systemRoles.map((r) => ({ type: 'system_role', id: r.id, name: r.name, code: r.slug })),
-    ...hrPositions.map((p) => ({ type: 'hr_position', id: p.id, name: p.name, code: p.code || null })),
+    ...systemRoles.map((r) => {
+      const assignable = Number(r.is_assignable) === 1;
+      return {
+        type: 'system_role',
+        id: r.id,
+        name: r.name,
+        code: r.slug,
+        is_assignable: assignable,
+        is_legacy: !assignable,
+      };
+    }),
+    ...hrPositions.map((p) => ({
+      type: 'hr_position',
+      id: p.id,
+      name: p.name,
+      code: p.code || null,
+      is_assignable: true,
+      is_legacy: false,
+    })),
   ];
 }
 

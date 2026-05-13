@@ -964,6 +964,37 @@ body.nav-ready .topbar-right {
 }
 
 /* =========================================
+   PERMISSION GATING (Faz 6)
+   data-perm-any taşıyan eleman, authContext gating çalışana kadar
+   gizli tutulur (flicker önleme). Resolve sonrası ya gösterilir ya da
+   hidden=true ile gizlenir.
+========================================= */
+[data-perm-any]:not([data-perm-resolved]) {
+  display: none !important;
+}
+
+/* =========================================
+   DASHBOARD EMPTY STATE
+   Kullanıcının hiç dashboard izni yoksa kart-grid yerine gösterilir.
+========================================= */
+.dashboard-empty-state {
+  display: block;
+  margin: 24px 0 8px;
+  padding: 28px 32px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.dashboard-empty-state[hidden] {
+  display: none;
+}
+
+/* =========================================
    DASHBOARD GRID / CARDS
 ========================================= */
 .dashboard-grid {
@@ -1391,14 +1422,18 @@ body.nav-ready .topbar-right {
   font-size: 20px;
 }
 
+/**
+ * Permission listesi — Faz 3 sonrası modül bazlı gruplu görünüm.
+ * Kart grid kaldırıldı; her modül kendi accordion (<details>) bloğunda dikey
+ * listelenir. Mobil/desktop tek kolon kalır (kullanıcı kuralı).
+ */
 .perm-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
-  gap: 12px;
+  display: block;
   margin-top: 12px;
-  align-items: stretch;
 }
 
+/* Geriye uyumluluk: eski .perm-item başka ekranlarda kullanılıyorsa görünür
+   kalsın ama izin listesinde artık üretilmez. */
 .perm-item {
   display: flex;
   align-items: flex-start;
@@ -1424,6 +1459,149 @@ body.nav-ready .topbar-right {
   display: block;
   margin-top: 2px;
   word-break: break-all;
+}
+
+/* ── modül bazlı gruplama (admin-permissions) ── */
+.perm-list-grouped .perm-group {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.perm-list-grouped .perm-group[open] {
+  background: #ffffff;
+}
+
+.perm-list-grouped .perm-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f1f5f9;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  border-bottom: 1px solid transparent;
+}
+
+.perm-list-grouped .perm-group[open] .perm-group-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.perm-list-grouped .perm-group-header::-webkit-details-marker {
+  display: none;
+}
+
+.perm-list-grouped .perm-group-header::marker {
+  content: '';
+}
+
+.perm-list-grouped .perm-group-toggle {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.perm-list-grouped .perm-group-title {
+  flex: 1 1 auto;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #0f172a;
+  text-transform: uppercase;
+}
+
+.perm-list-grouped .perm-group-count {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.perm-list-grouped .perm-group-caret {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #475569;
+  border-bottom: 2px solid #475569;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+  margin-left: 4px;
+}
+
+.perm-list-grouped .perm-group[open] .perm-group-caret {
+  transform: rotate(-135deg);
+}
+
+.perm-list-grouped .perm-group-items {
+  display: block;
+  padding: 6px 14px 10px 38px;
+}
+
+.perm-list-grouped .perm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.perm-list-grouped .perm-row:last-child {
+  border-bottom: none;
+}
+
+.perm-list-grouped .perm-row-input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  cursor: pointer;
+}
+
+.perm-list-grouped .perm-row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.perm-list-grouped .perm-row-name {
+  display: block;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.35;
+}
+
+.perm-list-grouped .perm-row-key {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  word-break: break-all;
+  margin-top: 2px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  .perm-list-grouped .perm-group-items {
+    padding-left: 18px;
+  }
+  .perm-list-grouped .perm-group-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .perm-list-grouped .perm-group-title {
+    font-size: 13px;
+  }
 }
 
 .user-actions {
@@ -2798,6 +2976,136 @@ body.admin-users-page {
   border-radius: 10px;
   border-color: #d7e0ee;
   background: #f8fbff;
+}
+
+.admin-role-legacy-warn {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #8a5a00;
+  border: 1px solid #ffd699;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* admin-user-new.html için form düzeni */
+.admin-new-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 720px;
+}
+
+.admin-new-user-kind {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #d7e0ee;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #f8fbff;
+}
+
+.admin-new-user-kind legend {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a5b73;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
+}
+
+.admin-new-user-kind-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.12s;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2a3a;
+}
+
+.admin-new-user-kind-opt:hover {
+  background: #eaf2ff;
+}
+
+.admin-new-user-kind-opt input[type="radio"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #2f7df0;
+}
+
+.admin-new-user-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-new-user-row > label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a5b73;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-new-user-select {
+  width: 100%;
+}
+
+.admin-new-user-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #6a7a90;
+  line-height: 1.5;
+  padding: 8px 10px;
+  background: #f4f7fc;
+  border-radius: 8px;
+  border-left: 3px solid #2f7df0;
+}
+
+.admin-new-user-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-new-user-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-new-user-field > label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4a5b73;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-new-user-field .app-input {
+  width: 100%;
+}
+
+.admin-new-user-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .admin-new-user-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .admin-status-badge {
@@ -4749,8 +5057,318 @@ body.app-ui-v3.admin-permissions-page .admin-permissions-field-narrow {
   max-width: 360px;
 }
 
+/* admin-permissions-save-actions yan yana flex layout + margin Faz 4.1.b
+   bölümünde tanımlanıyor — burada tekrar edilmedi. */
+
+/* Faz 4: opsiyonel yetki şablonu aracı.
+   - Küçük, ikincil görünüm; ana checkbox listesinin önüne geçmez.
+   - Varsayılan KAPALI gelir; admin başlığa tıklayarak açar. */
+.perm-template-tool {
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 720px;
+}
+
+.perm-template-tool-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  color: #475569;
+}
+
+.perm-template-tool-summary::-webkit-details-marker {
+  display: none;
+}
+
+.perm-template-tool-summary::marker {
+  content: '';
+}
+
+.perm-template-tool-title {
+  flex: 1 1 auto;
+  font-weight: 500;
+}
+
+.perm-template-tool-caret {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #64748b;
+  border-bottom: 2px solid #64748b;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.perm-template-tool[open] .perm-template-tool-caret {
+  transform: rotate(-135deg);
+}
+
+.perm-template-tool[open] .perm-template-tool-summary {
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.perm-template-tool-body {
+  padding: 10px 12px 12px;
+}
+
+.perm-template-tool-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.perm-template-tool-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.perm-template-tool-row #permTemplateSelect {
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.perm-template-tool-row .btn {
+  flex: 0 0 auto;
+}
+
+.perm-template-tool-info {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #475569;
+  min-height: 14px;
+}
+
+.perm-template-tool-info.is-warning {
+  color: #b45309;
+}
+
+@media (max-width: 640px) {
+  .perm-template-tool-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .perm-template-tool-row #permTemplateSelect {
+    max-width: none;
+  }
+}
+
+/* Faz 4.1.a: permission arama + "sadece seçili" filtre çubuğu.
+   Minimal görünüm; grouped accordion'un üstünde tek satır. */
+.perm-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin: 8px 0 10px;
+}
+
+.perm-filter-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 180px;
+  max-width: 380px;
+}
+
+.perm-filter-search .perm-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 10px 50%;
+  font-size: 13px;
+  color: #1e293b;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.perm-filter-search .perm-search-input::-webkit-search-decoration,
+.perm-filter-search .perm-search-input::-webkit-search-cancel-button,
+.perm-filter-search .perm-search-input::-webkit-search-results-button,
+.perm-filter-search .perm-search-input::-webkit-search-results-decoration {
+  /* Native search clear iconunu gizle — kendi X butonumuzu kullanıyoruz. */
+  appearance: none;
+  display: none;
+}
+
+.perm-filter-search .perm-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.perm-filter-search .perm-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.perm-filter-search .perm-search-clear:hover {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+.perm-only-selected {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.perm-only-selected-input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.perm-empty-state {
+  margin: 14px 0;
+  padding: 18px 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .perm-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .perm-filter-search {
+    max-width: none;
+  }
+}
+
+/* Faz 4.1.b: kaydedilmemiş değişiklik durumu rozeti.
+   - data-state="clean"  → yeşil tik + soluk arka plan
+   - data-state="dirty"  → amber dolu nokta + canlı arka plan */
+.perm-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  margin-right: auto; /* sol blok, Save butonu sağa itilir */
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.perm-dirty-badge[data-state='clean'] {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.perm-dirty-badge[data-state='dirty'] {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+.perm-dirty-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+/* Clean durumda noktanın yerine bir tik simgesi (CSS-only) */
+.perm-dirty-badge[data-state='clean'] .perm-dirty-dot {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+.perm-dirty-badge[data-state='clean'] .perm-dirty-dot::before {
+  content: '';
+  position: absolute;
+  left: 1px;
+  bottom: 0;
+  width: 4px;
+  height: 9px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 1px;
+}
+
+/* Dirty durumda hafif "pulse" — dikkat çekici ama agresif değil. */
+.perm-dirty-badge[data-state='dirty'] .perm-dirty-dot {
+  animation: permDirtyPulse 2s ease-in-out infinite;
+}
+
+@keyframes permDirtyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(217, 119, 6, 0); }
+}
+
+/* admin-permissions save-actions: badge + buton düzenli yan yana */
 body.app-ui-v3.admin-permissions-page .admin-permissions-save-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 16px;
+}
+
+/* Disabled save button daha donuk görünür. */
+body.app-ui-v3.admin-permissions-page .admin-permissions-save-actions .btn-primary[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  body.app-ui-v3.admin-permissions-page .admin-permissions-save-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .perm-dirty-badge {
+    margin-right: 0;
+    justify-content: center;
+  }
 }
 
 body.app-ui-v3.project-costs-page .project-placeholder-card,

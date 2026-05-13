@@ -21,7 +21,50 @@ function tNav(k) {
   return PUR_NAV_FALLBACK_TR[k] || k;
 }
 
-let __purScope = { canPurchasing: false, canRequest: false, canApprove: false, canReceipt: false, canStock: false };
+// Faz 3 granular: __purScope hem eski hem yeni flag'leri tutar.
+// purchasing-common.js bu objeyi /api/purchasing/scope'tan doldurur.
+let __purScope = {
+  canPurchasing: false,
+  canRequest: false,
+  canApprove: false,
+  canReceipt: false,
+  canStock: false,
+  // Faz 3 granular alt flag'ler — backend getScope.granular karşılığı.
+  granular: {
+    hubView: false,
+    requestView: false,
+    requestCreate: false,
+    requestApprove: false,
+    processingView: false,
+    orderView: false,
+    orderPriceEdit: false,
+    receiptView: false,
+    receiptCreate: false,
+    suppliersView: false,
+  },
+};
+
+/**
+ * Granular helper'lar — sayfa içi buton/satır gating'i için bu fonksiyonları çağırın.
+ */
+function purCanRequestCreate() {
+  return !!(__purScope.granular.requestCreate || __purScope.canRequest || __purScope.canPurchasing);
+}
+function purCanRequestApprove() {
+  return !!(__purScope.granular.requestApprove || __purScope.canApprove);
+}
+function purCanOrderPriceEdit() {
+  return !!(__purScope.granular.orderPriceEdit || __purScope.canPurchasing);
+}
+function purCanReceiptCreate() {
+  return !!(__purScope.granular.receiptCreate || __purScope.canPurchasing || __purScope.canReceipt);
+}
+function purCanProcessingView() {
+  return !!(__purScope.granular.processingView || __purScope.canPurchasing);
+}
+function purCanSuppliersView() {
+  return !!(__purScope.granular.suppliersView || __purScope.canPurchasing);
+}
 
 /**
  * Görünebilir herhangi bir satınalma ekranı var mı
@@ -32,40 +75,36 @@ function hasAnyPurchasingNav() {
     __purScope.canRequest ||
     __purScope.canApprove ||
     __purScope.canReceipt ||
-    __purScope.canStock
+    __purScope.canStock ||
+    __purScope.granular.hubView ||
+    __purScope.granular.requestView ||
+    __purScope.granular.requestCreate ||
+    __purScope.granular.requestApprove ||
+    __purScope.granular.processingView ||
+    __purScope.granular.orderView ||
+    __purScope.granular.receiptView ||
+    __purScope.granular.suppliersView
   );
 }
 
 function purchasingNavHTML(active) {
   const items = [
-    { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', need: 'request' },
-    { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'see' },
+    { href: '/purchase-requisition-open.html', key: 'openreq', k: 'nav.purch.requisitionOpen', need: 'reqOpen' },
+    { href: '/purchase-requests.html', key: 'listreq', k: 'nav.purch.requests', need: 'reqList' },
     { href: '/purchase-requests.html?pending', key: 'appr', k: 'nav.purch.approvals', need: 'approve' },
-    { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'purch' },
-    { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'purch' },
+    { href: '/purchase-processing.html', key: 'proc', k: 'nav.purch.processing', need: 'processing' },
+    { href: '/suppliers.html', key: 'suppliers', k: 'nav.purch.suppliers', need: 'suppliers' },
     { href: '/purchasing.html', key: 'hub', k: 'nav.purch.hub', need: 'any' },
   ];
   return `<nav class="stock-nav app-sub-nav" aria-label="Purchasing">
     ${items
       .map((i) => {
-        if (i.need === 'any' && !hasAnyPurchasingNav()) {
-          return '';
-        }
-        if (i.need === 'request' && !__purScope.canRequest && !__purScope.canPurchasing) {
-          return '';
-        }
-        if (i.need === 'see' && !__purScope.canRequest && !__purScope.canApprove && !__purScope.canPurchasing) {
-          return '';
-        }
-        if (i.need === 'approve' && !__purScope.canApprove) {
-          return '';
-        }
-        if (i.need === 'purch' && !__purScope.canPurchasing) {
-          return '';
-        }
-        if (i.need === 'receipt' && !(__purScope.canReceipt || __purScope.canPurchasing || __purScope.canStock)) {
-          return '';
-        }
+        if (i.need === 'any' && !hasAnyPurchasingNav()) return '';
+        if (i.need === 'reqOpen' && !purCanRequestCreate()) return '';
+        if (i.need === 'reqList' && !(__purScope.granular.requestView || __purScope.canRequest || __purScope.canApprove || __purScope.canPurchasing)) return '';
+        if (i.need === 'approve' && !purCanRequestApprove()) return '';
+        if (i.need === 'processing' && !purCanProcessingView()) return '';
+        if (i.need === 'suppliers' && !purCanSuppliersView()) return '';
         return `<a href="${i.href}" class="${i.key === active ? 'active' : ''}" data-i18n="${i.k}">${tNav(i.k)}</a>`;
       })
       .join('')}
@@ -127,18 +166,54 @@ async function purApiUploadFile(url, file, kind) {
   }
 }
 
+function emptyGranular() {
+  return {
+    hubView: false,
+    requestView: false,
+    requestCreate: false,
+    requestApprove: false,
+    processingView: false,
+    orderView: false,
+    orderPriceEdit: false,
+    receiptView: false,
+    receiptCreate: false,
+    suppliersView: false,
+  };
+}
+
 async function loadPurchasingScope() {
   const { ok, data } = await purApi('/api/purchasing/scope');
   if (ok && data && data.ok) {
+    const g = data.granular && typeof data.granular === 'object' ? data.granular : {};
     __purScope = {
       canPurchasing: !!data.canPurchasing,
       canRequest: !!data.canRequest,
       canApprove: !!data.canApprove,
       canReceipt: !!data.canReceipt,
       canStock: !!data.canStock,
+      granular: {
+        hubView: !!g.hubView,
+        requestView: !!g.requestView,
+        requestCreate: !!g.requestCreate,
+        requestApprove: !!g.requestApprove,
+        processingView: !!g.processingView,
+        orderView: !!g.orderView,
+        orderPriceEdit: !!g.orderPriceEdit,
+        receiptView: !!g.receiptView,
+        receiptCreate: !!g.receiptCreate,
+        suppliersView: !!g.suppliersView,
+      },
     };
   } else {
-    __purScope = { canPurchasing: true, canRequest: true, canApprove: true, canReceipt: true, canStock: true };
+    // Güvenli varsayılan: fail-closed — hiçbir yetki yok.
+    __purScope = {
+      canPurchasing: false,
+      canRequest: false,
+      canApprove: false,
+      canReceipt: false,
+      canStock: false,
+      granular: emptyGranular(),
+    };
   }
   return __purScope;
 }
@@ -187,15 +262,11 @@ async function initStockAndPurchasingPageNav(stockActive, purActive) {
   }
   await loadPurchasingScope();
   let showStockIn = false;
-  try {
-    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
-    if (r.ok) {
-      const d = await r.json();
-      const u = d && d.user;
-      showStockIn = !!(u && (u.isSuperAdmin === true || (u.role && u.role.slug === 'super_admin')));
-    }
-  } catch {
-    /* ignore */
+  if (window.authContext && typeof window.authContext.load === 'function') {
+    await window.authContext.load();
+    showStockIn =
+      window.authContext.isSuperAdmin() ||
+      window.authContext.hasAny(['module.stock', 'stock.in.view']);
   }
   const slot = document.getElementById('navSlot');
   if (slot) {
@@ -248,3 +319,10 @@ window.loadPurchasingScope = loadPurchasingScope;
 window.getPurchasingScope = () => __purScope;
 window.purchasingNavHTML = purchasingNavHTML;
 window.fmtPrice = fmtPrice;
+// Faz 3 granular helper'ları — sayfa içi UI kodları bunları çağırarak buton/satır gizler.
+window.purCanRequestCreate = purCanRequestCreate;
+window.purCanRequestApprove = purCanRequestApprove;
+window.purCanOrderPriceEdit = purCanOrderPriceEdit;
+window.purCanReceiptCreate = purCanReceiptCreate;
+window.purCanProcessingView = purCanProcessingView;
+window.purCanSuppliersView = purCanSuppliersView;

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -85,14 +85,14 @@
           </div>
           <div class="form-field form-field-unit-btn">
             <span class="dims-label-spacer" aria-hidden="true">&nbsp;</span>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnNewUnit" data-i18n="stock.product.addUnit">+ Birim</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnNewUnit" data-i18n="stock.product.addUnit" data-perm-any="module.stock stock.products.edit">+ Birim</button>
           </div>
         </div>
         <p class="form-hint stock-products-form-hint-full" data-i18n="stock.product.priceOnStockIn">
           Birim fiyat ve USD/UZS dönüşümü stok giriş ekranındadır.
         </p>
         <div class="form-field form-field-wide form-actions app-form-actions stock-products-form-actions-full">
-          <button type="submit" id="btnSaveProduct" class="btn btn-primary" data-i18n="stock.product.save">Kaydet</button>
+          <button type="submit" id="btnSaveProduct" class="btn btn-primary" data-i18n="stock.product.save" data-perm-any="module.stock stock.products.edit">Kaydet</button>
           <button type="button" id="btnCancelEdit" class="btn btn-secondary stock-products-cancel-edit" data-i18n="stock.product.cancelEdit">Vazgeç</button>
         </div>
       </form>
@@ -101,7 +101,7 @@
       <p id="pmsg" class="login-error stock-products-msg"></p>
     </div>
 
-    <div class="card app-card erp-card stock-products-excel-card">
+    <div class="card app-card erp-card stock-products-excel-card" data-perm-any="module.stock stock.products.edit">
       <h3 class="app-card-title" data-i18n="stock.product.excelTitle">Excel ile ürün ekleme</h3>
       <p class="stock-products-excel-hint" data-i18n="stock.product.excelHint">
         Şablonu indirin; depo, alt kategori, birim ve marka adları sistemdekilerle aynı olsun. En fazla 500 satır.
@@ -159,7 +159,7 @@
   </div>
 <script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
     document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
@@ -432,12 +432,15 @@
             <td>${fmtQty(p.stock_pieces)}</td>
             <td>${fmtQty(p.stock_m2)}</td>
             <td>${fmtQty(p.stock_m3)}</td>
-            <td><div class="erp-table-actions app-action-bar"><button type="button" class="btn btn-secondary btn-sm btn-edit product-edit-btn app-action-button app-action-edit" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="btn btn-danger btn-sm product-delete-btn app-action-button app-action-delete" data-pid="${p.id}">${esc(
+            <td><div class="erp-table-actions app-action-bar"><button type="button" class="btn btn-secondary btn-sm btn-edit product-edit-btn app-action-button app-action-edit" data-perm-any="module.stock stock.products.edit" data-pid="${p.id}">${esc(editL)}</button><button type="button" class="btn btn-danger btn-sm product-delete-btn app-action-button app-action-delete" data-perm-any="module.stock stock.products.edit" data-pid="${p.id}">${esc(
               delL
             )}</button></div></td>
           </tr>`
         )
         .join('') || '<tr><td colspan="9">—</td></tr>';
+      if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+        window.authContext.applyActionPermissionGating(document.getElementById('tb'));
+      }
       document.getElementById('tb')?.querySelectorAll('.product-edit-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           const pid = +btn.getAttribute('data-pid');
@@ -618,6 +621,9 @@
         try {
           clearApiDataErr();
           await initStockPageNav('products');
+          if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+            window.authContext.applyActionPermissionGating(document);
+          }
           await loadWarehousesForForm();
           await loadUnits();
           await loadBrands();

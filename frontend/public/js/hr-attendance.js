@@ -801,6 +801,10 @@
     await loadProjects();
     await loadSettingOptions();
     await loadDaily();
+    // Statik buton gating (btnSaveDaily + sundayOverrideBox).
+    if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+      window.authContext.applyActionPermissionGating(document);
+    }
     if (window.i18n && window.i18n.apply) window.i18n.apply(document);
   }
 

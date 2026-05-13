@@ -285,9 +285,9 @@
               </div>
             </div>
             <div class="app-toolbar-right">
-              <button type="button" id="btnPayRecalc" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.btnRecalc">Hesapları yenile</button>
-              <button type="button" id="btnPayLock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnLock">Dönemi kilitle</button>
-              <button type="button" id="btnPayUnlock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnUnlock">Kilidi aç</button>
+              <button type="button" id="btnPayRecalc" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.btnRecalc" data-perm-any="module.hr hr.payroll.edit">Hesapları yenile</button>
+              <button type="button" id="btnPayLock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnLock" data-perm-any="module.hr hr.attendance.unlock">Dönemi kilitle</button>
+              <button type="button" id="btnPayUnlock" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnUnlock" data-perm-any="module.hr hr.attendance.unlock">Kilidi aç</button>
             </div>
           </div>
           <p class="muted" data-i18n="hr.payroll.filters">Filtreler</p>
@@ -310,7 +310,7 @@
                 <label for="payUsdUzsRate" data-i18n="hr.payroll.payUsdUzsLabel"></label>
                 <div class="payroll-filters-fx-actions">
                   <input id="payUsdUzsRate" class="app-input" type="number" min="0" step="0.000001" inputmode="decimal" />
-                  <button type="button" id="btnPaySaveDefaultFx" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.btnSaveDefaultFx"></button>
+                  <button type="button" id="btnPaySaveDefaultFx" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.btnSaveDefaultFx" data-perm-any="module.hr hr.payroll.edit"></button>
                 </div>
                 <p id="payUsdUzsRateHint" class="muted" style="margin:6px 0 0;font-size:11px;line-height:1.35"></p>
               </div>
@@ -361,7 +361,7 @@
               <h3 class="app-card-title section-header" style="margin:0;font-size:0.95rem" data-i18n="hr.payroll.sectionDisputes">Hakediş itirazları</h3>
               <p class="app-muted-text" style="margin:4px 0 0;font-size:11px" data-i18n="hr.payroll.cardDisputesHint">İK yönetim yetkisi olan kullanıcılar da itiraz oluşturabilir ve durum güncelleyebilir.</p>
             </div>
-            <button type="button" id="btnPayNewDispute" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnNewDispute">İtiraz aç</button>
+            <button type="button" id="btnPayNewDispute" class="version-btn app-button app-button-secondary is-hidden" data-i18n="hr.payroll.btnNewDispute" data-perm-any="module.hr hr.payroll.edit">İtiraz aç</button>
           </div>
           <div class="payroll-table-wrap" style="margin-top:10px">
             <table class="payroll-table">
@@ -412,7 +412,7 @@
       </div>
       <div class="payroll-modal-actions">
         <button type="button" id="payDispCancel" class="version-btn app-button app-button-secondary" data-i18n="hr.payroll.modalCancel">İptal</button>
-        <button type="button" id="payDispSave" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.formSubmit">Kaydet</button>
+        <button type="button" id="payDispSave" class="version-btn app-button app-button-primary" data-i18n="hr.payroll.formSubmit" data-perm-any="module.hr hr.payroll.edit">Kaydet</button>
       </div>
     </div>
   </div>
@@ -450,7 +450,7 @@
   </div>
 
 <script src="/js/i18n.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/hr-common.js" defer></script>
   <script src="/js/hr-payroll.js" defer></script>
   <script>

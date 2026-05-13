@@ -23,19 +23,75 @@ function tHrNav(k) {
   return HR_NAV_FALLBACK_TR[k] || k;
 }
 
+/**
+ * HR subnav itemları — her item için `need` permission listesi.
+ *
+ * KURAL (Faz 6 + compensation bug fix):
+ *   - Süper admin / admin.full shortcut authContext.hasAny içinde geçerlidir.
+ *   - module.hr (kaba modül) izinsel olarak compensation göstermez —
+ *     Ücret değerlendirme için yalnız hr.compensation.view veya admin.full.
+ *   - Diğer item'lar module.hr ile geriye uyumludur (legacy admin).
+ */
+const HR_NAV_ITEMS = [
+  {
+    href: '/hr.html', key: 'hub', k: 'nav.hr.hub',
+    need: [
+      'module.hr', 'hr.hub.view',
+      'hr.employees.view', 'hr.employees.edit',
+      'hr.attendance.view', 'hr.attendance.edit', 'hr.attendance.unlock',
+      'hr.payroll.view', 'hr.payroll.edit',
+      'hr.compensation.view', 'admin.full',
+    ],
+  },
+  {
+    href: '/hr-employees.html', key: 'employees', k: 'nav.hr.employees',
+    need: ['module.hr', 'hr.employees.view', 'hr.employees.edit'],
+  },
+  {
+    href: '/hr-employee-form.html', key: 'employee-form', k: 'nav.hr.employeeForm',
+    need: ['module.hr', 'hr.employees.view', 'hr.employees.edit'],
+  },
+  {
+    href: '/hr-structure.html', key: 'structure', k: 'nav.hr.structure',
+    need: ['module.hr', 'admin.full'],
+  },
+  {
+    href: '/hr-attendance.html', key: 'attendance-daily', k: 'nav.hr.attendanceDaily',
+    need: ['module.hr', 'hr.attendance.view', 'hr.attendance.edit'],
+  },
+  {
+    href: '/hr-attendance-monthly.html', key: 'attendance-monthly', k: 'nav.hr.attendanceMonthly',
+    need: ['module.hr', 'hr.attendance.view', 'hr.attendance.edit'],
+  },
+  {
+    href: '/hr-attendance-locks.html', key: 'attendance-locks', k: 'nav.hr.attendanceLocks',
+    need: ['module.hr', 'hr.attendance.unlock'],
+  },
+  {
+    // module.hr İSTENMİYOR — kullanıcı kuralı: yalnız hr.compensation.view / admin.full.
+    href: '/hr-compensation.html', key: 'compensation', k: 'nav.hr.compensation',
+    need: ['hr.compensation.view', 'admin.full'],
+  },
+  {
+    href: '/hr-payroll.html', key: 'payroll', k: 'nav.hr.payroll',
+    need: ['module.hr', 'hr.payroll.view', 'hr.payroll.edit'],
+  },
+  {
+    href: '/hr-settings.html', key: 'settings', k: 'nav.hr.settings',
+    need: ['module.hr', 'admin.full'],
+  },
+];
+
 function hrNavHTML(active) {
-  const items = [
-    { href: '/hr.html', key: 'hub', k: 'nav.hr.hub' },
-    { href: '/hr-employees.html', key: 'employees', k: 'nav.hr.employees' },
-    { href: '/hr-employee-form.html', key: 'employee-form', k: 'nav.hr.employeeForm' },
-    { href: '/hr-structure.html', key: 'structure', k: 'nav.hr.structure' },
-    { href: '/hr-attendance.html', key: 'attendance-daily', k: 'nav.hr.attendanceDaily' },
-    { href: '/hr-attendance-monthly.html', key: 'attendance-monthly', k: 'nav.hr.attendanceMonthly' },
-    { href: '/hr-attendance-locks.html', key: 'attendance-locks', k: 'nav.hr.attendanceLocks' },
-    { href: '/hr-compensation.html', key: 'compensation', k: 'nav.hr.compensation' },
-    { href: '/hr-payroll.html', key: 'payroll', k: 'nav.hr.payroll' },
-    { href: '/hr-settings.html', key: 'settings', k: 'nav.hr.settings' },
-  ];
+  const ctx = window.authContext;
+  // fail-closed: authContext yüklenmemişse hiçbir şey gösterme (login redirect / hata
+  // durumunda granular izinlerin sızması engellenir). initHrPageNav her zaman
+  // initGlobalNavigation üzerinden authContext'i load eder.
+  const canSee = (need) => {
+    if (!ctx || typeof ctx.hasAny !== 'function') return false;
+    return ctx.hasAny(need);
+  };
+  const items = HR_NAV_ITEMS.filter((i) => canSee(i.need));
   return `<nav class="stock-nav app-sub-nav" aria-label="HR">
     ${items
       .map((i) => `<a href="${i.href}" class="${i.key === active ? 'active' : ''}" data-i18n="${i.k}">${tHrNav(i.k)}</a>`)

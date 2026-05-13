@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -41,7 +41,7 @@
       Satınalma siparişlerinden stok, yalnızca <strong>Mal kabul / depo girişi</strong> ekranından girilir. Bu sayfa açılış, sayım, iade ve manuel giriş içindir.
     </p>
     <div class="stock-in-toolbar card app-card erp-card">
-      <button type="button" id="btnOpenStockInModal" class="btn btn-primary" data-i18n="stock.in.btnManualModal">Manuel giriş yap</button>
+      <button type="button" id="btnOpenStockInModal" class="btn btn-primary" data-i18n="stock.in.btnManualModal" data-perm-any="module.stock stock.in.create">Manuel giriş yap</button>
     </div>
     <dialog id="stockInModal" class="stock-dialog stock-in-modal wide">
       <h4 class="stock-dialog-title" data-i18n="stock.in.manualDlgTitle">Manuel stok girişi</h4>
@@ -130,7 +130,7 @@
           <textarea id="note" class="input-upper app-input app-textarea app-fill-block" rows="2"></textarea>
         </div>
         <div class="form-actions-row app-stock-form-actions">
-          <button type="submit" id="btnSubmit" class="module-button app-button app-button-primary" data-i18n="stock.in.btnSave">Kaydet</button>
+          <button type="submit" id="btnSubmit" class="module-button app-button app-button-primary" data-i18n="stock.in.btnSave" data-perm-any="module.stock stock.in.create">Kaydet</button>
           <button
             type="button"
             id="btnCancelEdit"
@@ -205,7 +205,7 @@
   </div>
 <script src="/js/i18n.js" defer></script>
   <script src="/js/ui-notify.js" defer></script>
-  <script src="/js/navigation.js" defer></script>
+  <script src="/js/auth-context.js" defer></script><script src="/js/navigation.js" defer></script>
   <script src="/js/stock-common.js" defer></script>
   <script>
     const FREQ_KEY = 'erp_stock_in_freq';
@@ -872,12 +872,12 @@
             escMov(m.user_username || '—') +
             '</td>' +
             '<td class="mov-actions-cell">' +
-            '<button type="button" class="btn-mov btn-mov-edit app-button app-button-secondary" data-mov-act="edit" data-mid="' +
+            '<button type="button" class="btn-mov btn-mov-edit app-button app-button-secondary" data-mov-act="edit" data-perm-any="module.stock stock.in.create" data-mid="' +
             mid +
             '">' +
             escMov(btnEditL) +
             '</button> ' +
-            '<button type="button" class="btn-mov btn-mov-del app-button app-button-danger" data-mov-act="void" data-mid="' +
+            '<button type="button" class="btn-mov btn-mov-del app-button app-button-danger" data-mov-act="void" data-perm-any="module.stock stock.in.create" data-mid="' +
             mid +
             '">' +
             escMov(btnDelL) +
@@ -887,6 +887,10 @@
           );
         })
         .join('');
+      // Dinamik render sonrası buton görünürlüğünü yetkiye göre güncelle.
+      if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+        window.authContext.applyActionPermissionGating(tb);
+      }
     }
     function cancelEditMov() {
       document.getElementById('editingMovId').value = '';
@@ -1259,6 +1263,10 @@
     function startStockInPage() {
       (async function () {
         await initStockPageNav('in');
+        // authContext nav init sırasında load edilir; statik buton gating'i.
+        if (window.authContext && typeof window.authContext.applyActionPermissionGating === 'function') {
+          window.authContext.applyActionPermissionGating(document);
+        }
         updateQtyBadge();
         updateUnitPriceCaption();
         const hint = document.getElementById('productUnitHint');
