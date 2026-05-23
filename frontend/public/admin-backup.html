@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="admin.backup.title">Sistem yedekleme — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page app-ui-v3" data-admin-nav="backup">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title" data-i18n="admin.backup.title">Sistem yedekleme</h1>
+          <p class="subtitle app-muted-text" data-i18n="admin.backup.subtitle">Manuel veritabanı yedeği alma ve geçmiş</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/admin.html" class="btn btn-secondary" data-i18n="nav.admin.home">Süper yönetim</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+          <p id="adminErr" class="login-error app-error-state is-hidden"></p>
+          <section class="card app-card erp-card admin-section">
+            <div class="app-card-body">
+              <label class="app-label admin-backup-check">
+                <input type="checkbox" id="backupIncludeUploads" />
+                <span data-i18n="admin.backup.includeUploads">uploads klasörünü de yedekle (zip içinde)</span>
+              </label>
+              <div class="app-form-actions">
+                <button type="button" class="btn btn-primary" id="btnBackupRun" data-i18n="admin.backup.run">Şimdi yedek al</button>
+                <span id="backupRunningHint" class="app-muted-text is-hidden" data-i18n="admin.backup.running">Yedekleme sürüyor…</span>
+              </div>
+            </div>
+            <div class="admin-users-table-wrap">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="admin.backup.col.date">Tarih</th>
+                    <th data-i18n="admin.backup.col.file">Dosya</th>
+                    <th data-i18n="admin.backup.col.size">Boyut</th>
+                    <th data-i18n="admin.backup.col.status">Durum</th>
+                    <th data-i18n="admin.backup.col.user">Kullanıcı</th>
+                    <th class="app-table-col-action" data-i18n="admin.backup.col.actions">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="backupTableBody"></tbody>
+              </table>
+              <p id="backupEmpty" class="app-muted-text is-hidden" data-i18n="admin.backup.empty">Henüz yedek yok.</p>
+            </div>
+            <div class="admin-users-pagination">
+              <span id="backupPaginationInfo" class="app-muted-text"></span>
+              <div id="backupPaginationBtns" class="admin-users-page-list"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/auth-context.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/admin-common.js" defer></script>
+  <script src="/js/admin-backup.js" defer></script>
+</body>
+</html>

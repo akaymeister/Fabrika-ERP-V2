@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Language" content="tr" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FactoryOS V3 — Tasarım Önizleme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* FactoryOS V3 Design Tokens (Gate 1 hedef) */
+    :root {
+      --fos-primary: #0d6e7a;
+      --fos-primary-hover: #0a5862;
+      --fos-primary-muted: #e6f4f6;
+      --fos-accent: #e85d2c;
+      --fos-bg: #f4f6f9;
+      --fos-surface: #ffffff;
+      --fos-border: #e2e8f0;
+      --fos-border-strong: #cbd5e1;
+      --fos-text: #0f172a;
+      --fos-text-secondary: #64748b;
+      --fos-text-muted: #94a3b8;
+      --fos-sidebar: #0f172a;
+      --fos-sidebar-text: #94a3b8;
+      --fos-sidebar-active: #1e293b;
+      --fos-sidebar-accent: #2dd4bf;
+      --fos-success: #059669;
+      --fos-warning: #d97706;
+      --fos-radius-sm: 6px;
+      --fos-radius: 10px;
+      --fos-radius-lg: 14px;
+      --fos-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --fos-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      --fos-shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.12);
+      --fos-font: "DM Sans", system-ui, sans-serif;
+      --fos-mono: "JetBrains Mono", monospace;
+      --fos-sidebar-w: 248px;
+      --fos-sidebar-w-collapsed: 72px;
+      --fos-topbar-h: 56px;
+    }
+    body.fos-nav-collapsed { --fos-sidebar-w: var(--fos-sidebar-w-collapsed); }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fos-font);
+      background: var(--fos-bg);
+      color: var(--fos-text);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .fos-app { display: flex; min-height: 100vh; }
+
+    .fos-sidebar {
+      width: var(--fos-sidebar-w);
+      background: var(--fos-sidebar);
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: width 0.22s ease;
+      overflow: hidden;
+    }
+    .fos-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .fos-brand-mark { display: flex; align-items: center; gap: 12px; }
+    .fos-brand-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--fos-primary) 0%, var(--fos-sidebar-accent) 100%);
+      border-radius: var(--fos-radius);
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 14px; color: #fff;
+    }
+    .fos-brand-text strong { display: block; font-size: 15px; letter-spacing: -0.02em; }
+    .fos-brand-text span { font-size: 11px; color: var(--fos-sidebar-text); font-weight: 500; }
+
+    .fos-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .fos-nav-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--fos-sidebar-text); padding: 8px 12px 6px; font-weight: 600;
+    }
+    .fos-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: var(--fos-radius-sm);
+      color: var(--fos-sidebar-text); text-decoration: none;
+      font-weight: 500; font-size: 13px; margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .fos-nav-item:hover { background: var(--fos-sidebar-active); color: #f1f5f9; }
+    .fos-nav-item.active {
+      background: var(--fos-sidebar-active); color: #fff;
+      box-shadow: inset 3px 0 0 var(--fos-sidebar-accent);
+    }
+    .fos-nav-item svg { width: 18px; height: 18px; opacity: 0.85; flex-shrink: 0; }
+    .fos-sidebar-foot {
+      padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 11px; color: var(--fos-sidebar-text);
+      white-space: nowrap;
+    }
+    body.fos-nav-collapsed .fos-brand-text,
+    body.fos-nav-collapsed .fos-nav-label,
+    body.fos-nav-collapsed .fos-sidebar-foot { display: none; }
+    body.fos-nav-collapsed .fos-brand { padding: 16px 12px; }
+    body.fos-nav-collapsed .fos-brand-mark { justify-content: center; gap: 0; }
+    body.fos-nav-collapsed .fos-nav { padding: 12px 8px; }
+    body.fos-nav-collapsed .fos-nav-item {
+      justify-content: center;
+      padding: 10px;
+      gap: 0;
+      font-size: 0;
+      overflow: hidden;
+    }
+    body.fos-nav-collapsed .fos-nav-item svg { width: 20px; height: 20px; opacity: 1; }
+
+    .fos-main {
+      flex: 1; margin-left: var(--fos-sidebar-w);
+      display: flex; flex-direction: column; min-width: 0;
+      transition: margin-left 0.22s ease;
+    }
+    .fos-topbar {
+      height: var(--fos-topbar-h); background: var(--fos-surface);
+      border-bottom: 1px solid var(--fos-border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; position: sticky; top: 0; z-index: 50;
+    }
+    .fos-topbar-start { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .fos-sidebar-toggle {
+      width: 36px; height: 36px; flex-shrink: 0;
+      display: grid; place-items: center;
+      border: 1px solid var(--fos-border-strong);
+      border-radius: var(--fos-radius-sm);
+      background: var(--fos-surface);
+      color: var(--fos-text-secondary);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .fos-sidebar-toggle:hover {
+      background: var(--fos-primary-muted);
+      color: var(--fos-primary);
+      border-color: var(--fos-primary);
+    }
+    .fos-sidebar-toggle svg { transition: transform 0.22s ease; }
+    body.fos-nav-collapsed .fos-sidebar-toggle svg { transform: rotate(180deg); }
+    .fos-breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--fos-text-secondary);
+    }
+    .fos-breadcrumb strong { color: var(--fos-text); font-weight: 600; }
+    .fos-topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .fos-lang {
+      display: flex; background: var(--fos-bg);
+      border-radius: var(--fos-radius-sm); padding: 2px;
+      border: 1px solid var(--fos-border);
+    }
+    .fos-lang button {
+      border: none; background: transparent; padding: 6px 10px;
+      font-size: 12px; font-weight: 600; border-radius: 4px;
+      cursor: pointer; color: var(--fos-text-secondary); font-family: inherit;
+    }
+    .fos-lang button.active {
+      background: var(--fos-surface); color: var(--fos-primary);
+      box-shadow: var(--fos-shadow-sm);
+    }
+    .fos-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--fos-primary-muted); color: var(--fos-primary);
+      font-weight: 700; font-size: 13px;
+      display: grid; place-items: center; border: 2px solid var(--fos-border);
+    }
+
+    .fos-content { padding: 24px; flex: 1; }
+    .fos-page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .fos-page-header h1 {
+      font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px;
+    }
+    .fos-page-header p { color: var(--fos-text-secondary); font-size: 13px; }
+
+    .fos-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; border-radius: var(--fos-radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      border: 1px solid transparent; cursor: pointer; transition: all 0.15s;
+    }
+    .fos-btn-primary { background: var(--fos-primary); color: #fff; }
+    .fos-btn-primary:hover { background: var(--fos-primary-hover); }
+    .fos-btn-secondary {
+      background: var(--fos-surface); border-color: var(--fos-border-strong); color: var(--fos-text);
+    }
+    .fos-btn-secondary:hover { background: var(--fos-bg); }
+    .fos-btn-ghost { background: transparent; color: var(--fos-text-secondary); }
+    .fos-btn-ghost:hover { background: var(--fos-bg); color: var(--fos-text); }
+
+    .fos-kpi-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 24px;
+    }
+    @media (max-width: 1200px) { .fos-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .fos-kpi-grid { grid-template-columns: 1fr; } }
+
+    .fos-card {
+      background: var(--fos-surface); border: 1px solid var(--fos-border);
+      border-radius: var(--fos-radius); box-shadow: var(--fos-shadow-sm);
+    }
+    .fos-kpi { padding: 18px 20px; }
+    .fos-kpi-label {
+      font-size: 12px; font-weight: 600; color: var(--fos-text-secondary);
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+    }
+    .fos-kpi-value {
+      font-size: 26px; font-weight: 700; letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .fos-kpi-meta { font-size: 12px; color: var(--fos-text-muted); margin-top: 6px; }
+    .fos-kpi-meta.up { color: var(--fos-success); }
+
+    .fos-filter-bar {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      padding: 16px 20px; border-bottom: 1px solid var(--fos-border); align-items: flex-end;
+    }
+    .fos-field label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: var(--fos-text-secondary); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .fos-field input, .fos-field select {
+      height: 38px; padding: 0 12px;
+      border: 1px solid var(--fos-border-strong); border-radius: var(--fos-radius-sm);
+      font-family: inherit; font-size: 13px; min-width: 140px; background: var(--fos-surface);
+    }
+    .fos-field input:focus, .fos-field select:focus {
+      outline: none; border-color: var(--fos-primary);
+      box-shadow: 0 0 0 3px var(--fos-primary-muted);
+    }
+
+    .fos-table-panel { overflow: hidden; }
+    .fos-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .fos-table {
+      width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px;
+    }
+    .fos-table th {
+      text-align: left; padding: 12px 16px; background: var(--fos-bg);
+      font-weight: 600; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--fos-text-secondary);
+      border-bottom: 1px solid var(--fos-border); white-space: nowrap;
+    }
+    .fos-table td {
+      padding: 14px 16px; border-bottom: 1px solid var(--fos-border); vertical-align: middle;
+    }
+    .fos-table tbody tr:hover { background: #fafbfc; }
+    .fos-table .mono { font-family: var(--fos-mono); font-size: 12px; }
+
+    .fos-badge {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+    }
+    .fos-badge-success { background: #d1fae5; color: #065f46; }
+    .fos-badge-warning { background: #fef3c7; color: #92400e; }
+    .fos-badge-info { background: #e0f2fe; color: #075985; }
+
+    .fos-table-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; font-size: 13px; color: var(--fos-text-secondary);
+    }
+    .fos-pagination { display: flex; gap: 4px; }
+    .fos-pagination button {
+      width: 32px; height: 32px; border: 1px solid var(--fos-border);
+      background: var(--fos-surface); border-radius: var(--fos-radius-sm);
+      cursor: pointer; font-family: inherit; font-size: 13px;
+    }
+    .fos-pagination button.active {
+      background: var(--fos-primary); color: #fff; border-color: var(--fos-primary);
+    }
+
+    .fos-toast-demo {
+      position: fixed; bottom: 24px; right: 24px; z-index: 200;
+      display: none;
+      flex-direction: column; gap: 10px;
+    }
+    .fos-toast-demo.is-visible { display: flex; }
+    .fos-toast {
+      background: var(--fos-surface); border: 1px solid var(--fos-border);
+      border-radius: var(--fos-radius); padding: 14px 18px;
+      box-shadow: var(--fos-shadow-lg); display: flex; gap: 12px;
+      align-items: flex-start; min-width: 280px;
+    }
+    .fos-toast-icon {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #d1fae5; color: var(--fos-success);
+      display: grid; place-items: center; font-size: 12px; flex-shrink: 0;
+    }
+    .fos-toast strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .fos-toast span { font-size: 12px; color: var(--fos-text-secondary); }
+
+    .fos-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 300; padding: 24px;
+    }
+    .fos-modal-backdrop.is-open { display: flex !important; }
+    .fos-modal-backdrop[hidden] { display: none !important; }
+    .fos-modal {
+      background: var(--fos-surface); border-radius: var(--fos-radius-lg);
+      box-shadow: var(--fos-shadow-lg); width: 100%; max-width: 480px; overflow: hidden;
+    }
+    .fos-modal-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--fos-border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .fos-modal-header h2 { font-size: 17px; font-weight: 700; }
+    .fos-modal-body { padding: 24px; }
+    .fos-modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--fos-border);
+      display: flex; justify-content: flex-end; gap: 10px; background: var(--fos-bg);
+    }
+
+    .fos-design-note {
+      background: linear-gradient(90deg, var(--fos-primary-muted), #fff);
+      border: 1px dashed var(--fos-primary); border-radius: var(--fos-radius);
+      padding: 14px 18px; margin-bottom: 24px;
+      font-size: 13px; color: var(--fos-text-secondary);
+    }
+    .fos-design-note strong { color: var(--fos-primary); }
+
+    .fos-preview-ribbon {
+      position: fixed; top: 12px; right: 12px;
+      background: var(--fos-accent); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 6px 12px;
+      border-radius: 999px; z-index: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .fos-preview-link {
+      position: fixed; bottom: 12px; left: calc(var(--fos-sidebar-w) + 12px);
+      font-size: 12px; z-index: 500;
+      transition: left 0.22s ease;
+    }
+    .fos-preview-link a { color: var(--fos-primary); font-weight: 600; }
+
+    .fos-dash { color: var(--fos-text-muted); }
+
+    .fos-demo-bar {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px; padding: 12px 16px;
+      background: #fffbeb; border: 1px solid #fcd34d;
+      border-radius: var(--fos-radius-sm);
+      font-size: 13px; color: #92400e;
+    }
+    .fos-demo-bar span { flex: 1; min-width: 200px; align-self: center; }
+  </style>
+</head>
+<body>
+  <div class="fos-preview-ribbon">Tasarım önizleme — Gate 1</div>
+  <p class="fos-preview-link">
+    <a href="factoryos-v3-home-preview.html">Ana sayfa</a> ·
+    <a href="factoryos-v3-admin-preview.html">Yönetim paneli</a>
+  </p>
+
+  <div class="fos-app">
+    <aside class="fos-sidebar">
+      <div class="fos-brand">
+        <div class="fos-brand-mark">
+          <div class="fos-brand-icon">OS</div>
+          <div class="fos-brand-text">
+            <strong>FactoryOS</strong>
+            <span>V3 · Merkezi UI · Ana dil: Türkçe</span>
+          </div>
+        </div>
+      </div>
+      <nav class="fos-nav">
+        <div class="fos-nav-label">Genel</div>
+        <a class="fos-nav-item" href="factoryos-v3-home-preview.html" title="Ana sayfa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          Ana sayfa
+        </a>
+        <div class="fos-nav-label">Modüller</div>
+        <a class="fos-nav-item" href="#" title="İnsan Kaynakları">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          İnsan Kaynakları
+        </a>
+        <a class="fos-nav-item active" href="#" title="Stok">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Stok
+        </a>
+        <a class="fos-nav-item" href="#" title="Satınalma">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          Satınalma
+        </a>
+        <a class="fos-nav-item" href="#" title="Finans Takip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+          Finans Takip
+        </a>
+        <div class="fos-nav-label">Sistem</div>
+        <a class="fos-nav-item" href="factoryos-v3-admin-preview.html" title="Yönetim">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Yönetim
+        </a>
+      </nav>
+      <div class="fos-sidebar-foot">FactoryOS V3 · Tasarım tokenları</div>
+    </aside>
+
+    <main class="fos-main">
+      <header class="fos-topbar">
+        <div class="fos-topbar-start">
+          <button type="button" class="fos-sidebar-toggle" id="btnSidebarToggle" aria-label="Sol menüyü daralt" aria-expanded="true" title="Menüyü daralt / genişlet">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M14 10l-3 2 3 2"/></svg>
+          </button>
+          <nav class="fos-breadcrumb">
+            <span>Stok</span>
+            <span>/</span>
+            <strong>Stok hareketleri</strong>
+          </nav>
+        </div>
+        <div class="fos-topbar-actions">
+          <div class="fos-lang">
+            <button type="button" class="active" lang="tr">TR</button>
+            <button type="button" lang="en">EN</button>
+            <button type="button" lang="ru">RU</button>
+            <button type="button" lang="uz">UZ</button>
+          </div>
+          <div class="fos-avatar" title="Yönetici">AD</div>
+        </div>
+      </header>
+
+      <div class="fos-content">
+        <div class="fos-design-note">
+          <strong>FactoryOS V3</strong> — Bu sayfa Gate 1 <em>Central UI</em> örneğidir: AppShell, token renkler, DataTable kaydırma, Badge, Modal.
+          Sistem ana dili <strong>Türkçe</strong>; metinler UTF-8 ve i18n ile yönetilir.
+        </div>
+
+        <div class="fos-demo-bar">
+          <span><strong>Önizleme:</strong> Ana ekran aşağıdadır. Modal ve toast isteğe bağlı açılır.</span>
+          <button type="button" class="fos-btn fos-btn-secondary" id="btnShowModal">Modal örneği</button>
+          <button type="button" class="fos-btn fos-btn-secondary" id="btnShowToast">Toast örneği</button>
+        </div>
+
+        <header class="fos-page-header">
+          <div>
+            <h1>Stok hareketleri</h1>
+            <p>Depo bazlı bakiye · unit_cost FIFO · UZS / USD ayrı kayıt</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="fos-btn fos-btn-secondary">Dışa aktar</button>
+            <button type="button" class="fos-btn fos-btn-primary">+ Stok girişi</button>
+          </div>
+        </header>
+
+        <section class="fos-kpi-grid">
+          <article class="fos-card fos-kpi">
+            <div class="fos-kpi-label">FIFO stok değeri</div>
+            <div class="fos-kpi-value">1,24 Mrd</div>
+            <div class="fos-kpi-meta">UZS · unit_cost</div>
+          </article>
+          <article class="fos-card fos-kpi">
+            <div class="fos-kpi-label">Açık hareket</div>
+            <div class="fos-kpi-value">38</div>
+            <div class="fos-kpi-meta up">↑ 4 bu hafta</div>
+          </article>
+          <article class="fos-card fos-kpi">
+            <div class="fos-kpi-label">Bekleyen maliyet</div>
+            <div class="fos-kpi-value">12</div>
+            <div class="fos-kpi-meta">pending_cost (satınalma)</div>
+          </article>
+          <article class="fos-card fos-kpi">
+            <div class="fos-kpi-label">Raporlama (USD)</div>
+            <div class="fos-kpi-value">$ 98,4K</div>
+            <div class="fos-kpi-meta">base_reporting_currency</div>
+          </article>
+        </section>
+
+        <section class="fos-card fos-table-panel">
+          <div class="fos-filter-bar">
+            <div class="fos-field">
+              <label for="f-depo">Depo</label>
+              <select id="f-depo"><option>Tüm depolar</option><option>Ana depo</option></select>
+            </div>
+            <div class="fos-field">
+              <label for="f-tarih">Tarih</label>
+              <input id="f-tarih" type="date" value="2026-05-01" />
+            </div>
+            <div class="fos-field">
+              <label for="f-pb">Para birimi</label>
+              <select id="f-pb"><option>UZS (yerel)</option><option>USD</option></select>
+            </div>
+            <div class="fos-field">
+              <label for="f-ara">Ara</label>
+              <input id="f-ara" type="search" placeholder="Ürün, fiş no…" style="min-width:200px" />
+            </div>
+            <button type="button" class="fos-btn fos-btn-primary" style="height:38px">Filtrele</button>
+          </div>
+
+          <div class="fos-table-wrap">
+            <table class="fos-table">
+              <thead>
+                <tr>
+                  <th>Fiş</th>
+                  <th>Tarih</th>
+                  <th>Ürün</th>
+                  <th>Depo</th>
+                  <th>Miktar</th>
+                  <th>Birim maliyet</th>
+                  <th>Toplam</th>
+                  <th>PB</th>
+                  <th>Proje</th>
+                  <th>Durum</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">IN-2026-0142</td>
+                  <td>18.05.2026</td>
+                  <td><strong>MDF 18mm Beyaz</strong></td>
+                  <td>Ana depo</td>
+                  <td class="mono">120 ADET</td>
+                  <td class="mono">425 000</td>
+                  <td class="mono">51 000 000</td>
+                  <td>UZS</td>
+                  <td>PRJ-104</td>
+                  <td><span class="fos-badge fos-badge-success">Giriş</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">OUT-2026-0089</td>
+                  <td>17.05.2026</td>
+                  <td><strong>Laminat 8mm</strong></td>
+                  <td>Kesimhane</td>
+                  <td class="mono">48 M2</td>
+                  <td class="mono">12,50</td>
+                  <td class="mono">600,00</td>
+                  <td>USD</td>
+                  <td>PRJ-098</td>
+                  <td><span class="fos-badge fos-badge-info">Çıkış</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">GR-PUR-0331</td>
+                  <td>16.05.2026</td>
+                  <td><strong>Vida 4x40</strong></td>
+                  <td>Ana depo</td>
+                  <td class="mono">5 000 ADET</td>
+                  <td class="mono fos-dash">—</td>
+                  <td class="mono fos-dash">—</td>
+                  <td>UZS</td>
+                  <td class="fos-dash">—</td>
+                  <td><span class="fos-badge fos-badge-warning">pending_cost</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="fos-table-foot">
+            <span>1–3 / 248 kayıt</span>
+            <nav class="fos-pagination" aria-label="Sayfalama">
+              <button type="button" aria-label="Önceki">‹</button>
+              <button type="button" class="active">1</button>
+              <button type="button">2</button>
+              <button type="button">3</button>
+              <button type="button" aria-label="Sonraki">›</button>
+            </nav>
+          </footer>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="fos-toast-demo" aria-hidden="true">
+    <div class="fos-toast">
+      <div class="fos-toast-icon">✓</div>
+      <div>
+        <strong>Stok girişi kaydedildi</strong>
+        <span>FIFO katmanı oluşturuldu · UZS korundu</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="fos-modal-backdrop" id="demoModal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="fos-modal">
+      <header class="fos-modal-header">
+        <h2 id="modal-title">Stok girişi onayı</h2>
+        <button type="button" class="fos-btn fos-btn-ghost" id="btnCloseModal" style="padding:4px 8px" aria-label="Kapat">✕</button>
+      </header>
+      <div class="fos-modal-body">
+        <p style="margin-bottom:16px;color:var(--fos-text-secondary)">
+          <strong>120 ADET</strong> MDF 18mm · Ana depo · Proje PRJ-104
+        </p>
+        <div class="fos-field" style="margin-bottom:12px">
+          <label for="f-maliyet">Birim maliyet (UZS)</label>
+          <input id="f-maliyet" type="text" value="425 000" style="width:100%;height:40px" />
+        </div>
+        <p style="font-size:12px;color:var(--fos-text-muted)">USD kayıtlar otomatik UZS'ye dönüştürülmez.</p>
+      </div>
+      <footer class="fos-modal-footer">
+        <button type="button" class="fos-btn fos-btn-secondary" id="btnCancelModal">İptal</button>
+        <button type="button" class="fos-btn fos-btn-primary">Onayla ve kaydet</button>
+      </footer>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var modal = document.getElementById('demoModal');
+      var toast = document.querySelector('.fos-toast-demo');
+
+      function openModal() {
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeModal() {
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.style.overflow = '';
+      }
+
+      document.getElementById('btnShowModal').addEventListener('click', openModal);
+      document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+      document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+      });
+
+      document.getElementById('btnShowToast').addEventListener('click', function () {
+        toast.classList.add('is-visible');
+        setTimeout(function () { toast.classList.remove('is-visible'); }, 4000);
+      });
+
+      /* Sayfa açılışında modal kapalı */
+      closeModal();
+
+      var navKey = 'factoryos-v3-nav-collapsed';
+      var sidebarBtn = document.getElementById('btnSidebarToggle');
+      function setNavCollapsed(collapsed) {
+        document.body.classList.toggle('fos-nav-collapsed', collapsed);
+        if (!sidebarBtn) return;
+        sidebarBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        sidebarBtn.setAttribute('aria-label', collapsed ? 'Sol menüyü genişlet' : 'Sol menüyü daralt');
+        sidebarBtn.title = collapsed ? 'Menüyü genişlet' : 'Menüyü daralt';
+      }
+      setNavCollapsed(localStorage.getItem(navKey) === '1');
+      if (sidebarBtn) {
+        sidebarBtn.addEventListener('click', function () {
+          var collapsed = !document.body.classList.contains('fos-nav-collapsed');
+          setNavCollapsed(collapsed);
+          localStorage.setItem(navKey, collapsed ? '1' : '0');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

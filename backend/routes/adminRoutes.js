@@ -29,6 +29,17 @@ const {
   deleteBrandLogo,
 } = require('../controllers/brandLogoController');
 const { getTunnelStatus, postTunnelStart, postTunnelStop } = require('../controllers/adminTunnelController');
+const {
+  getActivityLogs,
+  getActivityLogDetail,
+  getActivityLogsMeta,
+} = require('../controllers/adminActivityLogController');
+const {
+  getBackupRuns,
+  postBackupRun,
+  getBackupDownload,
+  deleteBackupRun,
+} = require('../controllers/adminBackupController');
 const { UPLOADS_ROOT } = require('../utils/paths');
 const { jsonError } = require('../utils/apiResponse');
 
@@ -98,5 +109,14 @@ router.delete('/settings/brand-logo', deleteBrandLogo);
 router.get('/tunnel/status', getTunnelStatus);
 router.post('/tunnel/start', postTunnelStart);
 router.post('/tunnel/stop', postTunnelStop);
+
+router.get('/activity-logs/meta', getActivityLogsMeta);
+router.get('/activity-logs', getActivityLogs);
+router.get('/activity-logs/:id', getActivityLogDetail);
+
+router.get('/backup/runs', getBackupRuns);
+router.post('/backup/runs', postBackupRun);
+router.get('/backup/runs/:id/download', getBackupDownload);
+router.delete('/backup/runs/:id', deleteBackupRun);
 
 module.exports = router;

@@ -1,0 +1,844 @@
+{
+  "version": "1.0.0",
+  "status": "TASLAK / TEST FIXTURE",
+  "source": "FactoryOS V3 Gate 0 HR-TST",
+  "minimum_required": 20,
+  "h1_model": "C+B (recommended)",
+  "reference_docs": [
+    "docs/v3-spec/06-hr-full-blueprint.md",
+    "docs/v3-spec/v2-reference-index.md",
+    "docs/v3-spec/00-gate0-open-decisions.md"
+  ],
+  "notes": "Gate 0 test verisi; AttendanceEngine hedef davranışı. Ana model: start_datetime/end_datetime + shift_id. safeEndMinutes yalnız V2 import fallback (AT-05).",
+  "vectors": [
+    {
+      "id": "AT-01",
+      "title": "Normal gündüz vardiyası 08:00–17:00",
+      "description": "Tek gün; mola hariç 8 saat normal dakika.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-07T08:00:00",
+        "planned_end_datetime": "2026-04-07T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-07",
+        "start_datetime": "2026-04-07T08:00:00",
+        "end_datetime": "2026-04-07T17:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 540,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "C_plus_B_model",
+        "break_deduction",
+        "attendance_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "AT-02",
+      "title": "Mola düşülerek normal dakika",
+      "description": "9 saat fiili; 60 dk mola → 480 normal.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-08T08:00:00",
+        "planned_end_datetime": "2026-04-08T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-08",
+        "start_datetime": "2026-04-08T08:00:00",
+        "end_datetime": "2026-04-08T17:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 540,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "break_deduction",
+        "attendance_engine_only"
+      ],
+      "notes": "total = end − start; normal = total − break."
+    },
+    {
+      "id": "AT-03",
+      "title": "Gece aşan çalışma 20:00–04:00",
+      "description": "crosses_midnight=true; tek attendance kaydı datetime aralığı.",
+      "shift": {
+        "shift_code": "NIGHT-A",
+        "planned_start_datetime": "2026-04-09T20:00:00",
+        "planned_end_datetime": "2026-04-10T04:00:00",
+        "crosses_midnight": true,
+        "break_minutes": 30,
+        "day_type_rule": "weekday",
+        "overtime_rule": "shift_rules"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-09",
+        "start_datetime": "2026-04-09T20:00:00",
+        "end_datetime": "2026-04-10T04:00:00",
+        "break_minutes": 30,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 2
+      },
+      "expected_result": {
+        "total_minutes": 450,
+        "normal_minutes": 420,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "C_plus_B_model",
+        "crosses_midnight",
+        "attendance_engine_only"
+      ],
+      "notes": "H1 önerilen C+B; work_date = başlangıç günü."
+    },
+    {
+      "id": "AT-04",
+      "title": "Ertesi güne taşan bitiş datetime ile hesap",
+      "description": "start 08:00 bugün, end 04:00 ertesi gün → 1200 dk brüt, mola sonrası net.",
+      "shift": {
+        "shift_code": "LONG-PROD",
+        "planned_start_datetime": "2026-04-10T08:00:00",
+        "planned_end_datetime": "2026-04-11T04:00:00",
+        "crosses_midnight": true,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "shift_rules"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-10",
+        "start_datetime": "2026-04-10T08:00:00",
+        "end_datetime": "2026-04-11T04:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 3
+      },
+      "expected_result": {
+        "total_minutes": 1140,
+        "normal_minutes": 1080,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "crosses_midnight",
+        "attendance_engine_only"
+      ],
+      "notes": "20 saat üretim örneği; gün bölme Gate 2.1+ (segment) ayrı vektör seti."
+    },
+    {
+      "id": "AT-05",
+      "title": "safeEndMinutes ana model değil — fallback notu",
+      "description": "V2 time-only + end<start +1440 yalnız import; V3 birincil datetime.",
+      "shift": {
+        "shift_code": "V2-FALLBACK",
+        "planned_start_datetime": null,
+        "planned_end_datetime": null,
+        "crosses_midnight": true,
+        "break_minutes": 0,
+        "day_type_rule": "weekday",
+        "overtime_rule": "legacy_safe_end_minutes"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-11",
+        "start_datetime": "2026-04-11T22:00:00",
+        "end_datetime": "2026-04-12T06:00:00",
+        "break_minutes": 0,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": null,
+        "v2_import_mode": true,
+        "legacy_start_time": "22:00",
+        "legacy_end_time": "06:00"
+      },
+      "expected_result": {
+        "total_minutes": 480,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": false,
+        "audit_required": false,
+        "fallback_used": "safeEndMinutes_only_on_v2_import"
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "attendance_engine_only"
+      ],
+      "notes": "Gate 2 MVP'de shift_id zorunlu; import hariç AT-18."
+    },
+    {
+      "id": "AT-06",
+      "title": "Vardiya dışı fazla çalışma raw_overtime",
+      "description": "Planlanan 17:00; fiili 19:00 çıkış → 120 dk raw FM.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-12T08:00:00",
+        "planned_end_datetime": "2026-04-12T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-12",
+        "start_datetime": "2026-04-12T08:00:00",
+        "end_datetime": "2026-04-12T19:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 660,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 120,
+        "payable_overtime_minutes": 120,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "raw_vs_payable_overtime",
+        "attendance_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "AT-07",
+      "title": "overtime_eligible=true → payable_overtime",
+      "description": "raw 90 dk; eligible true → payable 90.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-13T08:00:00",
+        "planned_end_datetime": "2026-04-13T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-13",
+        "start_datetime": "2026-04-13T08:00:00",
+        "end_datetime": "2026-04-13T18:30:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 570,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 90,
+        "payable_overtime_minutes": 90,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "raw_vs_payable_overtime",
+        "attendance_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "AT-08",
+      "title": "overtime_eligible=false → payable=0",
+      "description": "raw 120 dk performans; ödeme sıfır.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-14T08:00:00",
+        "planned_end_datetime": "2026-04-14T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-14",
+        "start_datetime": "2026-04-14T08:00:00",
+        "end_datetime": "2026-04-14T19:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": false,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 660,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 120,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "raw_vs_payable_overtime",
+        "attendance_engine_only"
+      ],
+      "notes": "WT-07 ile çapraz."
+    },
+    {
+      "id": "AT-09",
+      "title": "leave status + saat girişi reddedilir",
+      "description": "H5 varsayılan red; override yok.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-15T08:00:00",
+        "planned_end_datetime": "2026-04-15T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-15",
+        "start_datetime": "2026-04-15T08:00:00",
+        "end_datetime": "2026-04-15T12:00:00",
+        "break_minutes": 0,
+        "work_status": "leave",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": true,
+        "rejected": true,
+        "rejection_reason": "H5_LEAVE_WITH_HOURS_DEFAULT_REJECT",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "leave_absent_reject",
+        "override_required",
+        "attendance_engine_only"
+      ],
+      "notes": "H5 önerisi."
+    },
+    {
+      "id": "AT-10",
+      "title": "absent status + saat girişi reddedilir",
+      "description": "Devamsız günde check-in/out kabul edilmez.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-16T08:00:00",
+        "planned_end_datetime": "2026-04-16T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-16",
+        "start_datetime": "2026-04-16T09:00:00",
+        "end_datetime": "2026-04-16T10:00:00",
+        "break_minutes": 0,
+        "work_status": "absent",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": true,
+        "rejected": true,
+        "rejection_reason": "H5_ABSENT_WITH_HOURS_DEFAULT_REJECT",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "leave_absent_reject",
+        "override_required",
+        "attendance_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "AT-11",
+      "title": "sick_leave + saat — policy red veya override",
+      "description": "Varsayılan red; override olmadan kayıt oluşmaz.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-17T08:00:00",
+        "planned_end_datetime": "2026-04-17T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-17",
+        "start_datetime": "2026-04-17T08:00:00",
+        "end_datetime": "2026-04-17T12:00:00",
+        "break_minutes": 0,
+        "work_status": "sick_leave",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": true,
+        "rejected": true,
+        "rejection_reason": "H5_SICK_WITH_HOURS_DEFAULT_REJECT",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "leave_absent_reject",
+        "override_required",
+        "attendance_engine_only"
+      ],
+      "notes": "İstisna AT-12."
+    },
+    {
+      "id": "AT-12",
+      "title": "Override ile leave gününde çalışma kabul",
+      "description": "override_reason + approved_by dolu → worked gibi hesaplanır.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-18T08:00:00",
+        "planned_end_datetime": "2026-04-18T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-18",
+        "start_datetime": "2026-04-18T08:00:00",
+        "end_datetime": "2026-04-18T17:00:00",
+        "break_minutes": 60,
+        "work_status": "leave",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "override_reason": "Acil üretim — yönetici onayı",
+        "override_approved_by": 42,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 540,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": true
+      },
+      "rules_checked": [
+        "override_required",
+        "leave_absent_reject",
+        "attendance_engine_only"
+      ],
+      "notes": "hr.attendance.override permission Gate 2."
+    },
+    {
+      "id": "AT-13",
+      "title": "Pazar günü default unpaid",
+      "description": "day_type=sunday; çalışma kaydı var; premium yok.",
+      "shift": {
+        "shift_code": "SUN-PASSIVE",
+        "planned_start_datetime": "2026-04-19T08:00:00",
+        "planned_end_datetime": "2026-04-19T12:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 0,
+        "day_type_rule": "sunday_unpaid_default",
+        "overtime_rule": "sunday_rule"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-19",
+        "start_datetime": "2026-04-19T08:00:00",
+        "end_datetime": "2026-04-19T12:00:00",
+        "break_minutes": 0,
+        "work_status": "worked",
+        "day_type": "sunday",
+        "overtime_eligible": true,
+        "shift_id": 4
+      },
+      "expected_result": {
+        "total_minutes": 240,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "sunday_minutes_unpaid": 240,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "attendance_engine_only"
+      ],
+      "notes": "WT-12 ile çapraz."
+    },
+    {
+      "id": "AT-14",
+      "title": "Pazar override ile çalışma kabul",
+      "description": "Pazar premium veya normal dakika override ile.",
+      "shift": {
+        "shift_code": "SUN-OVERRIDE",
+        "planned_start_datetime": "2026-04-26T08:00:00",
+        "planned_end_datetime": "2026-04-26T16:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 30,
+        "day_type_rule": "sunday_override_allowed",
+        "overtime_rule": "sunday_rule"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-26",
+        "start_datetime": "2026-04-26T08:00:00",
+        "end_datetime": "2026-04-26T16:00:00",
+        "break_minutes": 30,
+        "work_status": "worked",
+        "day_type": "sunday",
+        "overtime_eligible": true,
+        "override_reason": "Pazar vardiyası planlı",
+        "override_approved_by": 7,
+        "shift_id": 5
+      },
+      "expected_result": {
+        "total_minutes": 480,
+        "normal_minutes": 450,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "sunday_minutes_paid": 450,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": true
+      },
+      "rules_checked": [
+        "override_required",
+        "attendance_engine_only"
+      ],
+      "notes": "WT-13 ile çapraz."
+    },
+    {
+      "id": "AT-15",
+      "title": "Tatil günü özel day_type rule",
+      "description": "day_type=holiday; holiday_rate_multiplier uygulanır.",
+      "shift": {
+        "shift_code": "HOL-STD",
+        "planned_start_datetime": "2026-05-01T08:00:00",
+        "planned_end_datetime": "2026-05-01T14:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 30,
+        "day_type_rule": "holiday_premium",
+        "overtime_rule": "holiday_rule"
+      },
+      "attendance_input": {
+        "work_date": "2026-05-01",
+        "start_datetime": "2026-05-01T08:00:00",
+        "end_datetime": "2026-05-01T14:00:00",
+        "break_minutes": 30,
+        "work_status": "worked",
+        "day_type": "holiday",
+        "overtime_eligible": true,
+        "shift_id": 6
+      },
+      "expected_result": {
+        "total_minutes": 360,
+        "normal_minutes": 330,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "holiday_minutes": 330,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "attendance_engine_only"
+      ],
+      "notes": "WT-14 ile çapraz."
+    },
+    {
+      "id": "AT-16",
+      "title": "Negatif veya sıfır süre reddedilir",
+      "description": "start_datetime = end_datetime veya end < start (datetime olmadan).",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-20T08:00:00",
+        "planned_end_datetime": "2026-04-20T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-20",
+        "start_datetime": "2026-04-20T17:00:00",
+        "end_datetime": "2026-04-20T17:00:00",
+        "break_minutes": 0,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": 0,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": true,
+        "rejection_reason": "api.hr.attendance_time_order_invalid",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "attendance_engine_only"
+      ],
+      "notes": "V2 hrService aynı hata kodu referansı."
+    },
+    {
+      "id": "AT-17",
+      "title": "start/end datetime eksik — red",
+      "description": "Zorunlu alanlar boş; kayıt oluşturulmaz.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-21T08:00:00",
+        "planned_end_datetime": "2026-04-21T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-21",
+        "start_datetime": null,
+        "end_datetime": null,
+        "break_minutes": 0,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": true,
+        "rejection_reason": "api.hr.attendance_time_required",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "attendance_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "AT-18",
+      "title": "shift_id Gate 2 MVP zorunlu",
+      "description": "Yeni kayıtta shift_id null → validation error (import hariç).",
+      "shift": {
+        "shift_code": null,
+        "planned_start_datetime": null,
+        "planned_end_datetime": null,
+        "crosses_midnight": false,
+        "break_minutes": 0,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-22",
+        "start_datetime": "2026-04-22T08:00:00",
+        "end_datetime": "2026-04-22T17:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": null
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": true,
+        "rejection_reason": "api.hr.shift_id_required",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "H1_shift_datetime_model",
+        "C_plus_B_model",
+        "attendance_engine_only"
+      ],
+      "notes": "H1 önerilen karar; AT-05 import istisnası."
+    },
+    {
+      "id": "AT-19",
+      "title": "Ay kilitliyse puantaj değişikliği reddedilir",
+      "description": "month_key=2026-04 locked; POST/PUT attendance → 409.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-01T08:00:00",
+        "planned_end_datetime": "2026-04-01T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-01",
+        "start_datetime": "2026-04-01T08:00:00",
+        "end_datetime": "2026-04-01T17:00:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1,
+        "month_key": "2026-04",
+        "month_locked": true
+      },
+      "expected_result": {
+        "total_minutes": null,
+        "normal_minutes": 0,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "requires_override": false,
+        "rejected": true,
+        "rejection_reason": "api.hr.attendance_month_locked",
+        "shift_id_required": true,
+        "audit_required": false
+      },
+      "rules_checked": [
+        "monthly_lock_policy",
+        "attendance_engine_only"
+      ],
+      "notes": "V2 attendance_month_locks referansı."
+    },
+    {
+      "id": "AT-20",
+      "title": "Ay kilidi açma — yetkili override + audit",
+      "description": "Kilit açma super_admin veya hr.attendance.monthUnlock + reason; sonra düzeltme; yeniden kilitle snapshot.",
+      "shift": {
+        "shift_code": "DAY-STD",
+        "planned_start_datetime": "2026-04-02T08:00:00",
+        "planned_end_datetime": "2026-04-02T17:00:00",
+        "crosses_midnight": false,
+        "break_minutes": 60,
+        "day_type_rule": "weekday",
+        "overtime_rule": "after_planned_end"
+      },
+      "attendance_input": {
+        "work_date": "2026-04-02",
+        "start_datetime": "2026-04-02T08:00:00",
+        "end_datetime": "2026-04-02T17:30:00",
+        "break_minutes": 60,
+        "work_status": "worked",
+        "day_type": "weekday",
+        "overtime_eligible": true,
+        "shift_id": 1,
+        "month_key": "2026-04",
+        "month_locked": false,
+        "unlock_action": {
+          "performed_by": 1,
+          "reason": "Yanlış çıkış saati düzeltmesi",
+          "permission": "hr.attendance.monthUnlock"
+        }
+      },
+      "expected_result": {
+        "total_minutes": 570,
+        "normal_minutes": 480,
+        "raw_overtime_minutes": 30,
+        "payable_overtime_minutes": 30,
+        "requires_override": false,
+        "rejected": false,
+        "rejection_reason": null,
+        "shift_id_required": true,
+        "audit_required": true,
+        "relock_snapshot_required": true
+      },
+      "rules_checked": [
+        "monthly_lock_policy",
+        "override_required",
+        "attendance_engine_only"
+      ],
+      "notes": "Kilit açma nadir; her unlock audit log + activity."
+    }
+  ]
+}

@@ -1,0 +1,1008 @@
+{
+  "version": "1.0.0",
+  "status": "TASLAK / TEST FIXTURE",
+  "source": "FactoryOS V3 Gate 0 HR-TST",
+  "minimum_required": 20,
+  "reference_docs": [
+    "docs/v3-spec/06-hr-full-blueprint.md",
+    "docs/v3-spec/v2-reference-index.md",
+    "docs/v3-spec/00-gate0-open-decisions.md"
+  ],
+  "v2_behavior_reference_only": [
+    "backend/scripts/wage-breakdown-smoke.js"
+  ],
+  "notes": "Gate 0 test verisi; runtime kodu değildir. V2 computeWageBreakdown kodu kopyalanmaz. Onay sonrası WageEngine implementasyonu bu vektörlerle doğrulanır.",
+  "vectors": [
+    {
+      "id": "WT-01",
+      "title": "UZS tam maaş, normal ay, fazla mesai yok",
+      "description": "Tek para birimi UZS; tam ay çalışma; payable overtime sıfır.",
+      "employee_profile": {
+        "salary_amount": 12000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 3000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 9000000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 3000000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 9000000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 12000000, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "salary_currency_preserved",
+        "official_unofficial_split",
+        "overtime_eligible_rule",
+        "raw_vs_payable_overtime",
+        "paid_leave_policy",
+        "unpaid_leave_policy",
+        "backend_wage_engine_only"
+      ],
+      "notes": "Temel UZS bordro; FM yok."
+    },
+    {
+      "id": "WT-02",
+      "title": "USD tam maaş, normal ay, fazla mesai yok",
+      "description": "Toplam ve resmi/gayri resmi USD; kur dönüşümü yalnız raporlama için opsiyonel.",
+      "employee_profile": {
+        "salary_amount": 5000,
+        "salary_currency": "USD",
+        "official_salary_amount": 1500,
+        "official_salary_currency": "USD",
+        "unofficial_salary_amount": 3500,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": 12500
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 1500, "currency": "USD" },
+        "unofficial_pay_transaction": { "amount": 3500, "currency": "USD" },
+        "total_pay_transaction": { "amount": 5000, "currency": "USD" },
+        "transaction_currency": "USD",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "salary_currency_preserved",
+        "official_unofficial_split",
+        "backend_wage_engine_only"
+      ],
+      "notes": "V2 smoke senaryo 1 ile uyumlu davranış referansı."
+    },
+    {
+      "id": "WT-03",
+      "title": "USD maaş + UZS resmi maaş karma senaryo",
+      "description": "Toplam USD; resmi kısım UZS; official_salary_fx_rate zorunlu.",
+      "employee_profile": {
+        "salary_amount": 5000,
+        "salary_currency": "USD",
+        "official_salary_amount": 12500000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": null,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 12500,
+        "payroll_usd_uzs_rate": 12500
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 12500000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 4000, "currency": "USD" },
+        "total_pay_transaction": { "amount": 5000, "currency": "USD" },
+        "transaction_currency": "USD",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "salary_currency_preserved",
+        "official_unofficial_split",
+        "backend_wage_engine_only"
+      ],
+      "notes": "Unofficial = total − official (UZS→USD). V2 smoke senaryo 3 referansı."
+    },
+    {
+      "id": "WT-04",
+      "title": "Official/unofficial split toplam maaşa eşit",
+      "description": "Resmi + gayri resmi toplam salary_amount ile tutarlı; isValid=true.",
+      "employee_profile": {
+        "salary_amount": 10000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 2500000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 7500000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 120,
+        "payable_overtime_minutes": 120,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 120,
+        "official_pay_transaction": { "amount": 2500000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 7500000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 10000000, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "validation": { "is_valid": true, "split_matches_total": true },
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "official_unofficial_split",
+        "salary_currency_preserved",
+        "overtime_eligible_rule",
+        "raw_vs_payable_overtime",
+        "backend_wage_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "WT-05",
+      "title": "Official/unofficial split toplam maaştan farklı — uyarı",
+      "description": "Resmi kısım toplamı aşıyor veya split tutarsız; motor uyarı/hata üretir.",
+      "employee_profile": {
+        "salary_amount": 1000,
+        "salary_currency": "USD",
+        "official_salary_amount": 50000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": null,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 12500,
+        "payroll_usd_uzs_rate": 12500
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": null,
+        "unofficial_pay_transaction": null,
+        "total_pay_transaction": null,
+        "transaction_currency": "USD",
+        "validation": {
+          "is_valid": false,
+          "warning_codes": ["SPLIT_EXCEEDS_TOTAL", "NEGATIVE_UNOFFICIAL"]
+        },
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "official_unofficial_split",
+        "salary_currency_preserved",
+        "backend_wage_engine_only"
+      ],
+      "notes": "V2 smoke senaryo 7 referansı; negatif unofficial."
+    },
+    {
+      "id": "WT-06",
+      "title": "Fazla mesai eligible=true, payable overtime hesaplanır",
+      "description": "raw_overtime > 0 ve overtime_eligible=true → payable_overtime bordroya girer.",
+      "employee_profile": {
+        "salary_amount": 8000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 2000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 6000000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 10080,
+        "raw_overtime_minutes": 480,
+        "payable_overtime_minutes": 480,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10080,
+        "payable_overtime_minutes": 480,
+        "official_pay_transaction": { "amount": 2000000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 6000000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 8000000, "currency": "UZS" },
+        "overtime_pay_uzs": ">0",
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "overtime_eligible_rule",
+        "raw_vs_payable_overtime",
+        "backend_wage_engine_only"
+      ],
+      "notes": "FM tutarı WageEngine iç formülü Gate 2'de netleşir; vektör payable>0 şartını doğrular."
+    },
+    {
+      "id": "WT-07",
+      "title": "Fazla mesai eligible=false, raw var payable=0",
+      "description": "Performans saati saklanır; bordro FM ödemesi üretilmez.",
+      "employee_profile": {
+        "salary_amount": 6000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 6000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": false,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 600,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 6000000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 6000000, "currency": "UZS" },
+        "overtime_pay_uzs": 0,
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "overtime_eligible_rule",
+        "raw_vs_payable_overtime",
+        "backend_wage_engine_only"
+      ],
+      "notes": "§3 V2 kuralı: payable_overtime_minutes=0."
+    },
+    {
+      "id": "WT-08",
+      "title": "Ücretsiz izin günü maaştan düşer",
+      "description": "unpaid_leave_days > 0 → günlük ücret kesintisi uygulanır.",
+      "employee_profile": {
+        "salary_amount": 11000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 2750000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 8250000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 9600,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 2,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 9600,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 2500000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 7500000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 10000000, "currency": "UZS" },
+        "deduction_applied": true,
+        "deduction_reason": "unpaid_leave_days",
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "unpaid_leave_policy",
+        "paid_leave_policy",
+        "backend_wage_engine_only"
+      ],
+      "notes": "Kesinti oranı Gate 2 WageEngine formülünde sabitlenir."
+    },
+    {
+      "id": "WT-09",
+      "title": "Ücretli izin günü maaştan düşmez",
+      "description": "paid_leave_days > 0; tam günlük ücret korunur.",
+      "employee_profile": {
+        "salary_amount": 10000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 2500000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 7500000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 9120,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 3,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 2500000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 7500000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 10000000, "currency": "UZS" },
+        "deduction_applied": false,
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "paid_leave_policy",
+        "unpaid_leave_policy",
+        "backend_wage_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "WT-10",
+      "title": "Hastalık/rapor günü policy'ye göre işlenir",
+      "description": "sick_leave_days; varsayılan kesinti veya tam ücret hr_settings politikasına bağlı.",
+      "employee_profile": {
+        "salary_amount": 9000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 9000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "sick_leave_pay_policy": "partial_or_full_per_settings"
+      },
+      "attendance_summary": {
+        "normal_minutes": 9120,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 3,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10080,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 8775000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 8775000, "currency": "UZS" },
+        "sick_leave_policy_applied": true,
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "paid_leave_policy",
+        "unpaid_leave_policy",
+        "backend_wage_engine_only"
+      ],
+      "notes": "Kesinti yüzdesi Gate 2'de hr_settings ile sabitlenir; vektör policy bayrağını doğrular."
+    },
+    {
+      "id": "WT-11",
+      "title": "Devamsızlık maaştan düşer",
+      "description": "absent_days > 0 → günlük kesinti.",
+      "employee_profile": {
+        "salary_amount": 10000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 10000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 9120,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 2,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 9120,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": { "amount": 9090909, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 9090909, "currency": "UZS" },
+        "deduction_applied": true,
+        "deduction_reason": "absent_days",
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "unpaid_leave_policy",
+        "backend_wage_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "WT-12",
+      "title": "Pazar çalışması default unpaid",
+      "description": "sunday_work_minutes > 0; day_type=sunday; override yok → ek ödeme yok.",
+      "employee_profile": {
+        "salary_amount": 7000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 7000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "sunday_pay_policy": "unpaid_by_default"
+      },
+      "attendance_summary": {
+        "normal_minutes": 10080,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 480,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10080,
+        "payable_overtime_minutes": 0,
+        "sunday_premium_pay": 0,
+        "official_pay_transaction": { "amount": 7000000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 7000000, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only"
+      ],
+      "notes": "Pazar dakikası performans raporunda görülebilir; ödeme ayrı kural."
+    },
+    {
+      "id": "WT-13",
+      "title": "Pazar override ile ödeme üretir",
+      "description": "hr.attendance.override + audit ile pazar çalışması premium veya normal FM olarak işlenir.",
+      "employee_profile": {
+        "salary_amount": 7000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 7000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "sunday_pay_policy": "override_allows_pay"
+      },
+      "attendance_summary": {
+        "normal_minutes": 10080,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 480,
+        "holiday_work_minutes": 0,
+        "sunday_override_applied": true
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10080,
+        "payable_overtime_minutes": 0,
+        "sunday_premium_pay": ">0",
+        "official_pay_transaction": { "amount": 7159091, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 7159091, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only"
+      ],
+      "notes": "H5 override ile uyumlu."
+    },
+    {
+      "id": "WT-14",
+      "title": "Tatil çalışması özel rate gerektirir",
+      "description": "holiday_work_minutes; day_type=holiday; premium çarpan uygulanır.",
+      "employee_profile": {
+        "salary_amount": 8000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 2000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 6000000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "holiday_rate_multiplier": 2.0
+      },
+      "attendance_summary": {
+        "normal_minutes": 9600,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 480
+      },
+      "expected_result": {
+        "payable_normal_minutes": 9600,
+        "payable_overtime_minutes": 0,
+        "holiday_premium_pay": ">0",
+        "official_pay_transaction": { "amount": 2181818, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 6000000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 8363636, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only"
+      ],
+      "notes": "Tatil çarpanı hr_settings.day_type_rules ile bağlanır."
+    },
+    {
+      "id": "WT-15",
+      "title": "Ay ortasında işe giriş — prorated",
+      "description": "hire_date ayın 15'i; çalışılan gün oranına göre maaş.",
+      "employee_profile": {
+        "salary_amount": 12000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 3000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 9000000,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176,
+        "hire_date": "2026-04-15"
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-15",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "proration_method": "calendar_days_in_month"
+      },
+      "attendance_summary": {
+        "normal_minutes": 5280,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 5280,
+        "payable_overtime_minutes": 0,
+        "proration_factor": 0.5333,
+        "official_pay_transaction": { "amount": 1600000, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 4800000, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 6400000, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only"
+      ],
+      "notes": "16/30 gün örnek oran; Gate 2'de kesin formül."
+    },
+    {
+      "id": "WT-16",
+      "title": "Ay ortasında işten çıkış — prorated",
+      "description": "termination_date ayın 20'si; kalan günler ödenir.",
+      "employee_profile": {
+        "salary_amount": 10000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 10000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176,
+        "termination_date": "2026-04-20"
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null,
+        "proration_method": "calendar_days_in_month"
+      },
+      "attendance_summary": {
+        "normal_minutes": 7200,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 7200,
+        "payable_overtime_minutes": 0,
+        "proration_factor": 0.6667,
+        "official_pay_transaction": { "amount": 6666667, "currency": "UZS" },
+        "unofficial_pay_transaction": { "amount": 0, "currency": "UZS" },
+        "total_pay_transaction": { "amount": 6666667, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only"
+      ],
+      "notes": null
+    },
+    {
+      "id": "WT-17",
+      "title": "Payroll snapshot sonrası maaş değişmez",
+      "description": "Ay kilitlendi; snapshot yazıldı; sonradan compensation revizyonu geçmiş ayı etkilemez.",
+      "employee_profile": {
+        "salary_amount": 5000,
+        "salary_currency": "USD",
+        "official_salary_amount": 1500,
+        "official_salary_currency": "USD",
+        "unofficial_salary_amount": 3500,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-05-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": 12800,
+        "month_key": "2026-04",
+        "month_locked": true,
+        "snapshot_generation": 1
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 120,
+        "payable_overtime_minutes": 120,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 120,
+        "official_pay_transaction": { "amount": 1500, "currency": "USD" },
+        "unofficial_pay_transaction": { "amount": 3500, "currency": "USD" },
+        "total_pay_transaction": { "amount": 5000, "currency": "USD" },
+        "transaction_currency": "USD",
+        "redaction_required": false,
+        "snapshot_required": true,
+        "snapshot_immutable": true,
+        "live_compensation_ignored_for_locked_month": true
+      },
+      "rules_checked": [
+        "snapshot_freeze",
+        "backend_wage_engine_only"
+      ],
+      "notes": "HT-25; yeni maaş Mayıs'tan geçerli."
+    },
+    {
+      "id": "WT-18",
+      "title": "Compensation history yeni dönemi etkiler",
+      "description": "Revizyon effective_from gelecek ay; açık ay canlı motor; kilitli ay snapshot.",
+      "employee_profile": {
+        "salary_amount": 6000000,
+        "salary_currency": "UZS",
+        "official_salary_amount": 6000000,
+        "official_salary_currency": "UZS",
+        "unofficial_salary_amount": 0,
+        "unofficial_salary_currency": "UZS",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_history": [
+          { "effective_from": "2026-04-01", "salary_amount": 6000000, "salary_currency": "UZS" },
+          { "effective_from": "2026-05-01", "salary_amount": 6500000, "salary_currency": "UZS" }
+        ],
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": null
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "month_2026_04_total_pay": { "amount": 6000000, "currency": "UZS" },
+        "month_2026_05_total_pay": { "amount": 6500000, "currency": "UZS" },
+        "transaction_currency": "UZS",
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "snapshot_freeze",
+        "backend_wage_engine_only"
+      ],
+      "notes": "H3 revision-only; employees cache senkron."
+    },
+    {
+      "id": "WT-19",
+      "title": "Maaş permission yok — redacted",
+      "description": "Çağıran kullanıcıda hr.salary.view_group yok; API salary alanları null.",
+      "employee_profile": {
+        "salary_amount": 5000,
+        "salary_currency": "USD",
+        "official_salary_amount": 1500,
+        "official_salary_currency": "USD",
+        "unofficial_salary_amount": 3500,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": 12500
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 0,
+        "payable_overtime_minutes": 0,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 0,
+        "official_pay_transaction": null,
+        "unofficial_pay_transaction": null,
+        "total_pay_transaction": null,
+        "transaction_currency": null,
+        "redaction_required": true,
+        "redacted_fields": [
+          "salary_amount",
+          "official_salary_amount",
+          "unofficial_salary_amount",
+          "total_pay_transaction"
+        ],
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "salary_redaction",
+        "backend_wage_engine_only"
+      ],
+      "notes": "Motor iç hesap yapabilir; response redact edilir."
+    },
+    {
+      "id": "WT-20",
+      "title": "Frontend maaş hesaplamaz",
+      "description": "API WageEngine çıktısı tek kaynak; UI yalnızca gösterir.",
+      "employee_profile": {
+        "salary_amount": 4000,
+        "salary_currency": "USD",
+        "official_salary_amount": 1000,
+        "official_salary_currency": "USD",
+        "unofficial_salary_amount": 3000,
+        "unofficial_salary_currency": "USD",
+        "overtime_eligible": true,
+        "monthly_work_days": 22,
+        "monthly_work_hours": 176
+      },
+      "salary_model": {
+        "compensation_effective_from": "2026-04-01",
+        "official_salary_fx_rate": 1,
+        "payroll_usd_uzs_rate": 12500
+      },
+      "attendance_summary": {
+        "normal_minutes": 10560,
+        "raw_overtime_minutes": 60,
+        "payable_overtime_minutes": 60,
+        "absent_days": 0,
+        "paid_leave_days": 0,
+        "unpaid_leave_days": 0,
+        "sick_leave_days": 0,
+        "sunday_work_minutes": 0,
+        "holiday_work_minutes": 0
+      },
+      "expected_result": {
+        "payable_normal_minutes": 10560,
+        "payable_overtime_minutes": 60,
+        "official_pay_transaction": { "amount": 1000, "currency": "USD" },
+        "unofficial_pay_transaction": { "amount": 3000, "currency": "USD" },
+        "total_pay_transaction": { "amount": 4000, "currency": "USD" },
+        "transaction_currency": "USD",
+        "source": "backend_wage_engine_api_only",
+        "frontend_calculation_allowed": false,
+        "redaction_required": false,
+        "snapshot_required": false
+      },
+      "rules_checked": [
+        "backend_wage_engine_only",
+        "salary_redaction"
+      ],
+      "notes": "V2 hr-payroll.js / hr-employee-form.js frontend hesap TEKNIK_TERS_ORNEK. HT-26."
+    }
+  ]
+}

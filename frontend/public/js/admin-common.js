@@ -1,6 +1,6 @@
 /**
  * Süper yönetim modülü hızlı menü: <div id="navSlot"></div> + initAdminPageNav(activeKey)
- * Anahtarlar: home | new-user | users | perms | settings
+ * Anahtarlar: home | new-user | users | perms | settings | logs | backup
  */
 const ADMIN_NAV_FALLBACK_TR = {
   'admin.title': 'Süper yönetim',
@@ -9,6 +9,8 @@ const ADMIN_NAV_FALLBACK_TR = {
   'nav.admin.users': 'Kullanıcılar',
   'nav.admin.perms': 'Rol yetkileri / ek yetkiler',
   'nav.admin.settings': 'Sistem ayarları',
+  'nav.admin.logs': 'Denetim günlüğü',
+  'nav.admin.backup': 'Yedekleme',
 };
 
 function tAdminNav(k) {
@@ -28,6 +30,8 @@ function adminModuleNavHTML(active) {
     { href: '/admin-users.html', key: 'users', i18n: 'nav.admin.users' },
     { href: '/admin-permissions.html', key: 'perms', i18n: 'nav.admin.perms' },
     { href: '/admin-settings.html', key: 'settings', i18n: 'nav.admin.settings' },
+    { href: '/admin-logs.html', key: 'logs', i18n: 'nav.admin.logs' },
+    { href: '/admin-backup.html', key: 'backup', i18n: 'nav.admin.backup' },
   ];
   return `<nav class="stock-nav app-sub-nav" aria-label="Admin">
     ${items

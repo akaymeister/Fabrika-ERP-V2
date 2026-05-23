@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="admin.logs.title">Denetim günlüğü — Fabrika ERP V2</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="app-shell app-master-page app-ui-v3" data-admin-nav="logs">
+  <div class="container app-layout-v3">
+    <div class="app-sidebar">
+      <div class="app-sidebar-brand app-master-brand" aria-label="Brand">
+        <span class="app-master-logo">AHK</span>
+        <strong>Fabrika ERP V2</strong>
+      </div>
+      <div id="globalNavSlot"></div>
+      <aside class="app-master-sidebar">
+        <div id="navSlot" class="app-master-subtabs"></div>
+      </aside>
+    </div>
+    <div class="app-main-wrap">
+      <header class="topbar dashboard-topbar">
+        <div class="topbar-left app-toolbar-left app-toolbar-stack">
+          <h1 class="app-page-title" data-i18n="admin.logs.title">Denetim günlüğü</h1>
+          <p class="subtitle app-muted-text" data-i18n="admin.logs.subtitle">Sistemdeki kritik işlem kayıtları</p>
+        </div>
+        <div class="topbar-right app-toolbar-right">
+          <select id="languageSelect" class="app-select app-topbar-lang" aria-label="Language">
+            <option value="tr">Türkçe</option>
+            <option value="uz">O‘zbekcha</option>
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+          </select>
+          <a data-topbar-persist="1" href="/admin.html" class="btn btn-secondary" data-i18n="nav.admin.home">Süper yönetim</a>
+        </div>
+      </header>
+      <div class="app-content">
+        <main class="app-master-main">
+          <p id="adminErr" class="login-error app-error-state is-hidden"></p>
+          <section class="card app-card erp-card admin-section">
+            <div class="admin-logs-filter-panel">
+              <div class="admin-logs-filter-grid">
+                <div class="form-field">
+                  <label class="app-label" for="logFilterFrom" data-i18n="admin.logs.filter.from">Başlangıç tarihi</label>
+                  <input type="date" id="logFilterFrom" class="app-input" />
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterTo" data-i18n="admin.logs.filter.to">Bitiş tarihi</label>
+                  <input type="date" id="logFilterTo" class="app-input" />
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterUserId" data-i18n="admin.logs.filter.userId">Kullanıcı ID</label>
+                  <input type="number" id="logFilterUserId" class="app-input" min="1" />
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterUsername" data-i18n="admin.logs.filter.username">Kullanıcı adı</label>
+                  <input type="text" id="logFilterUsername" class="app-input" />
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterModule" data-i18n="admin.logs.filter.module">Modül</label>
+                  <select id="logFilterModule" class="app-select"><option value="">—</option></select>
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterAction" data-i18n="admin.logs.filter.action">İşlem türü</label>
+                  <select id="logFilterAction" class="app-select"><option value="">—</option></select>
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterTable" data-i18n="admin.logs.filter.table">Tablo</label>
+                  <input type="text" id="logFilterTable" class="app-input" />
+                </div>
+                <div class="form-field">
+                  <label class="app-label" for="logFilterRecordId" data-i18n="admin.logs.filter.recordId">Kayıt ID</label>
+                  <input type="text" id="logFilterRecordId" class="app-input" />
+                </div>
+                <div class="form-field admin-logs-filter-q">
+                  <label class="app-label" for="logFilterQ" data-i18n="admin.logs.filter.q">Açıklamada ara</label>
+                  <input type="search" id="logFilterQ" class="app-input" />
+                </div>
+                <div class="admin-logs-filter-actions">
+                  <button type="button" class="btn btn-primary" id="btnLogFilter" data-i18n="admin.logs.filter.apply">Filtrele</button>
+                  <button type="button" class="btn btn-secondary" id="btnLogReset" data-i18n="admin.logs.filter.reset">Sıfırla</button>
+                </div>
+              </div>
+            </div>
+            <div class="admin-users-table-wrap">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="admin.logs.col.date">Tarih</th>
+                    <th data-i18n="admin.logs.col.user">Kullanıcı</th>
+                    <th data-i18n="admin.logs.col.module">Modül</th>
+                    <th data-i18n="admin.logs.col.action">İşlem</th>
+                    <th data-i18n="admin.logs.col.table">Tablo</th>
+                    <th data-i18n="admin.logs.col.record">Kayıt</th>
+                    <th data-i18n="admin.logs.col.description">Açıklama</th>
+                    <th class="app-table-col-action" data-i18n="admin.logs.col.detail">Detay</th>
+                  </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+              </table>
+              <p id="logEmpty" class="app-muted-text is-hidden" data-i18n="admin.logs.empty">Kayıt bulunamadı.</p>
+            </div>
+            <div class="admin-users-pagination">
+              <span id="logPaginationInfo" class="app-muted-text"></span>
+              <div id="logPaginationBtns" class="admin-users-page-list"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </div>
+  <dialog id="logDetailDialog" class="admin-log-detail-dialog">
+    <div class="card app-card">
+      <h3 data-i18n="admin.logs.detail.title">Kayıt detayı</h3>
+      <pre id="logDetailMeta" class="admin-log-detail-meta"></pre>
+      <h4 data-i18n="admin.logs.detail.old">Önceki veri</h4>
+      <pre id="logDetailOld" class="admin-log-detail-json"></pre>
+      <h4 data-i18n="admin.logs.detail.new">Yeni veri</h4>
+      <pre id="logDetailNew" class="admin-log-detail-json"></pre>
+      <div class="app-form-actions">
+        <button type="button" class="btn btn-secondary" id="btnLogDetailClose" data-i18n="admin.logs.detail.close">Kapat</button>
+      </div>
+    </div>
+  </dialog>
+  <script src="/js/i18n.js" defer></script>
+  <script src="/js/auth-context.js" defer></script>
+  <script src="/js/navigation.js" defer></script>
+  <script src="/js/admin-common.js" defer></script>
+  <script src="/js/admin-logs.js" defer></script>
+</body>
+</html>

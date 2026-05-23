@@ -7,10 +7,13 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const { createSessionMiddleware } = require('./config/session');
 const { requirePageAuth, serveLoginOrRedirectToDashboard } = require('./middlewares/requirePageAuth');
-const { FRONTEND_PUBLIC, UPLOADS_ROOT } = require('./utils/paths');
+const { FRONTEND_PUBLIC, UPLOADS_ROOT, BACKUP_ROOT } = require('./utils/paths');
 
 if (!fs.existsSync(UPLOADS_ROOT)) {
   fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+}
+if (!fs.existsSync(BACKUP_ROOT)) {
+  fs.mkdirSync(BACKUP_ROOT, { recursive: true });
 }
 
 const authRoutes = require('./routes/authRoutes');
@@ -231,6 +234,8 @@ app.get('/admin-users.html', requirePageSuperAdmin, sendPage('admin-users.html')
 app.get('/admin-settings.html', requirePageSuperAdmin, sendPage('admin-settings.html'));
 app.get('/admin-permissions.html', requirePageSuperAdmin, sendPage('admin-permissions.html'));
 app.get('/admin-user-new.html', requirePageSuperAdmin, sendPage('admin-user-new.html'));
+app.get('/admin-logs.html', requirePageSuperAdmin, sendPage('admin-logs.html'));
+app.get('/admin-backup.html', requirePageSuperAdmin, sendPage('admin-backup.html'));
 app.get('/my-profile.html', requirePageAuth, sendPage('my-profile.html'));
 
 // --- Statik: index otomatik kapalı ---
