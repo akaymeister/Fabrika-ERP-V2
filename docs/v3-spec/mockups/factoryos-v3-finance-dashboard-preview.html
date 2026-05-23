@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Language" content="tr" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FactoryOS V3 — Finance Modülü Önizleme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --fos-primary: #0d6e7a; --fos-primary-hover: #0a5862; --fos-primary-muted: #e6f4f6;
+      --fos-accent: #e85d2c; --fos-bg: #f4f6f9; --fos-surface: #fff; --fos-border: #e2e8f0;
+      --fos-border-strong: #cbd5e1; --fos-text: #0f172a; --fos-text-secondary: #64748b;
+      --fos-text-muted: #94a3b8; --fos-sidebar: #0f172a; --fos-sidebar-text: #94a3b8;
+      --fos-sidebar-active: #1e293b; --fos-sidebar-accent: #2dd4bf;
+      --fos-success: #059669; --fos-warning: #d97706; --fos-danger: #dc2626; --fos-info: #0284c7;
+      --fos-radius-sm: 6px; --fos-radius: 10px; --fos-shadow-sm: 0 1px 2px rgba(15,23,42,.05);
+      --fos-font: "DM Sans", system-ui, sans-serif; --fos-mono: "JetBrains Mono", monospace;
+      --fos-sidebar-w: 252px; --fos-sidebar-w-collapsed: 72px; --fos-topbar-h: 56px;
+    }
+    body.fos-nav-collapsed { --fos-sidebar-w: var(--fos-sidebar-w-collapsed); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--fos-font); background: var(--fos-bg); color: var(--fos-text); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+    .fos-app { display: flex; min-height: 100vh; }
+    .fos-sidebar { width: var(--fos-sidebar-w); background: var(--fos-sidebar); color: #f1f5f9; display: flex; flex-direction: column; position: fixed; inset: 0 auto 0 0; z-index: 100; transition: width .22s; overflow: hidden; }
+    .fos-brand { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .fos-brand-mark { display: flex; align-items: center; gap: 10px; }
+    .fos-brand-icon { width: 38px; height: 38px; background: linear-gradient(135deg, var(--fos-primary), var(--fos-sidebar-accent)); border-radius: var(--fos-radius-sm); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; }
+    .fos-brand-text strong { display: block; font-size: 14px; }
+    .fos-brand-text span { font-size: 10px; color: var(--fos-sidebar-text); }
+    .fos-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+    .fos-nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--fos-sidebar-text); padding: 8px 10px 4px; font-weight: 600; }
+    .fos-nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--fos-radius-sm); color: var(--fos-sidebar-text); font-weight: 500; font-size: 12px; margin-bottom: 1px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+    .fos-nav-item:hover { background: var(--fos-sidebar-active); color: #f1f5f9; }
+    .fos-nav-item.active { background: var(--fos-sidebar-active); color: #fff; box-shadow: inset 3px 0 0 var(--fos-sidebar-accent); }
+    .fos-nav-item .badge-count { margin-left: auto; background: var(--fos-danger); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 700; }
+    body.fos-nav-collapsed .fos-brand-text, body.fos-nav-collapsed .fos-nav-label, body.fos-nav-collapsed .fos-sidebar-foot, body.fos-nav-collapsed .fos-nav-item span:not(.badge-count) { display: none; }
+    body.fos-nav-collapsed .fos-nav-item { justify-content: center; }
+    .fos-sidebar-foot { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.06); font-size: 10px; color: var(--fos-sidebar-text); }
+    .fos-main { flex: 1; margin-left: var(--fos-sidebar-w); display: flex; flex-direction: column; min-width: 0; transition: margin-left .22s; }
+    .fos-topbar { height: var(--fos-topbar-h); background: var(--fos-surface); border-bottom: 1px solid var(--fos-border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .fos-topbar-start { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .fos-sidebar-toggle { width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; border: 1px solid var(--fos-border-strong); border-radius: var(--fos-radius-sm); background: var(--fos-surface); cursor: pointer; }
+    .fos-breadcrumb { font-size: 12px; color: var(--fos-text-secondary); }
+    .fos-breadcrumb strong { color: var(--fos-text); }
+    .fos-search input { width: 100%; max-width: 280px; padding: 8px 12px; border: 1px solid var(--fos-border-strong); border-radius: var(--fos-radius-sm); font-family: inherit; font-size: 13px; background: var(--fos-bg); }
+    .fos-topbar-end { display: flex; align-items: center; gap: 10px; }
+    .fos-lang { display: flex; background: var(--fos-bg); border-radius: var(--fos-radius-sm); padding: 2px; border: 1px solid var(--fos-border); }
+    .fos-lang button { border: none; background: transparent; padding: 5px 8px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .fos-lang button.active { background: var(--fos-surface); color: var(--fos-primary); }
+    .fos-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--fos-primary-muted); color: var(--fos-primary); font-weight: 700; font-size: 12px; display: grid; place-items: center; border: 2px solid var(--fos-border); }
+    .fos-content { padding: 20px; flex: 1; }
+    .fos-preview-ribbon { position: fixed; top: 10px; right: 10px; background: var(--fos-accent); color: #fff; font-size: 10px; font-weight: 700; padding: 5px 10px; border-radius: 999px; z-index: 500; }
+    .fos-view { display: none; animation: fosFade .2s ease; }
+    .fos-view.active { display: block; }
+    @keyframes fosFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .fos-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .fos-page-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 2px; }
+    .fos-page-header p { color: var(--fos-text-secondary); font-size: 12px; max-width: 640px; }
+    .fos-callout { background: linear-gradient(90deg, var(--fos-primary-muted), #fff); border: 1px solid #b8e0e6; border-left: 4px solid var(--fos-primary); border-radius: var(--fos-radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--fos-text-secondary); }
+    .fos-callout strong { color: var(--fos-primary); display: block; margin-bottom: 4px; font-size: 13px; }
+    .fos-kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .fos-kpi { background: var(--fos-surface); border: 1px solid var(--fos-border); border-radius: var(--fos-radius-sm); padding: 14px; }
+    .fos-kpi-label { font-size: 10px; font-weight: 600; color: var(--fos-text-secondary); text-transform: uppercase; margin-bottom: 6px; }
+    .fos-kpi-value { font-size: 17px; font-weight: 700; }
+    .fos-kpi-sub { font-size: 11px; color: var(--fos-text-muted); margin-top: 4px; font-family: var(--fos-mono); }
+    .fos-kpi.warn { border-color: #fcd34d; background: #fffbeb; }
+    .fos-kpi.danger { border-color: #fca5a5; background: #fef2f2; }
+    .fos-card { background: var(--fos-surface); border: 1px solid var(--fos-border); border-radius: var(--fos-radius); box-shadow: var(--fos-shadow-sm); margin-bottom: 16px; }
+    .fos-card-head { padding: 12px 16px; border-bottom: 1px solid var(--fos-border); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .fos-card-head h2 { font-size: 14px; font-weight: 700; }
+    .fos-card-head .hint { font-size: 11px; color: var(--fos-text-muted); font-weight: 400; }
+    .fos-card-body { padding: 16px; }
+    .fos-card-body.flush { padding: 0; }
+    .fos-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--fos-radius-sm); font-size: 12px; font-weight: 600; font-family: inherit; border: 1px solid transparent; cursor: pointer; }
+    .fos-btn-primary { background: var(--fos-primary); color: #fff; }
+    .fos-btn-secondary { background: var(--fos-surface); border-color: var(--fos-border-strong); color: var(--fos-text); }
+    .fos-btn-danger { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .fos-btn-sm { padding: 5px 10px; font-size: 11px; }
+    .fos-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; padding: 12px; background: var(--fos-surface); border: 1px solid var(--fos-border); border-radius: var(--fos-radius-sm); }
+    .fos-toolbar select, .fos-toolbar input { padding: 7px 10px; border: 1px solid var(--fos-border-strong); border-radius: var(--fos-radius-sm); font-family: inherit; font-size: 12px; background: var(--fos-bg); }
+    .fos-table-wrap { overflow-x: auto; }
+    .fos-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
+    .fos-table th { text-align: left; padding: 10px 12px; background: var(--fos-bg); font-size: 10px; text-transform: uppercase; color: var(--fos-text-secondary); border-bottom: 1px solid var(--fos-border); white-space: nowrap; }
+    .fos-table td { padding: 10px 12px; border-bottom: 1px solid var(--fos-border); vertical-align: middle; }
+    .fos-table tbody tr:hover { background: #fafbfc; }
+    .fos-table .mono { font-family: var(--fos-mono); font-size: 11px; }
+    .fos-badge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+    .fos-badge-warning { background: #fef3c7; color: #92400e; }
+    .fos-badge-success { background: #d1fae5; color: #065f46; }
+    .fos-badge-info { background: #e0f2fe; color: #075985; }
+    .fos-badge-neutral { background: var(--fos-bg); color: var(--fos-text-secondary); }
+    .fos-badge-danger { background: #fee2e2; color: #991b1b; }
+    .fos-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .fos-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 1100px) { .fos-grid-2, .fos-grid-3 { grid-template-columns: 1fr; } }
+    .fos-account-card { border: 1px solid var(--fos-border); border-radius: var(--fos-radius-sm); padding: 14px; cursor: pointer; transition: border-color .15s; }
+    .fos-account-card:hover { border-color: var(--fos-primary); }
+    .fos-account-card.official { border-left: 3px solid var(--fos-primary); }
+    .fos-account-card.unofficial { border-left: 3px solid var(--fos-warning); }
+    .fos-split { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+    @media (max-width: 1100px) { .fos-split { grid-template-columns: 1fr; } }
+    .fos-detail-panel { background: var(--fos-bg); border: 1px solid var(--fos-border); border-radius: var(--fos-radius-sm); padding: 16px; }
+    .fos-detail-panel h3 { font-size: 13px; margin-bottom: 12px; }
+    .fos-detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--fos-border); font-size: 12px; }
+    .fos-detail-row span:first-child { color: var(--fos-text-secondary); }
+    .fos-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .fos-form-grid { grid-template-columns: 1fr; } }
+    .fos-field label { display: block; font-size: 11px; font-weight: 600; color: var(--fos-text-secondary); margin-bottom: 4px; text-transform: uppercase; }
+    .fos-field input, .fos-field select, .fos-field textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--fos-border-strong); border-radius: var(--fos-radius-sm); font-family: inherit; font-size: 13px; }
+    .fos-field { margin-bottom: 12px; }
+    .fos-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--fos-border); margin-bottom: 16px; flex-wrap: wrap; }
+    .fos-tab { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--fos-text-secondary); background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-family: inherit; }
+    .fos-tab.active { color: var(--fos-primary); border-bottom-color: var(--fos-primary); }
+    .fos-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; margin-top: 8px; }
+    .fos-flow span { background: var(--fos-surface); border: 1px solid var(--fos-border); padding: 4px 8px; border-radius: 4px; font-family: var(--fos-mono); }
+    .fos-foot-note { font-size: 11px; color: var(--fos-text-muted); padding: 10px 16px; border-top: 1px solid var(--fos-border); background: var(--fos-bg); }
+    .fos-chart-placeholder { height: 180px; background: linear-gradient(180deg, var(--fos-primary-muted), var(--fos-bg)); border-radius: var(--fos-radius-sm); display: flex; align-items: flex-end; justify-content: space-around; padding: 16px; gap: 8px; }
+    .fos-bar { width: 28px; background: var(--fos-primary); border-radius: 4px 4px 0 0; opacity: .85; }
+    .fos-report-tile { padding: 16px; border: 1px solid var(--fos-border); border-radius: var(--fos-radius-sm); cursor: pointer; }
+    .fos-report-tile:hover { border-color: var(--fos-primary); }
+    .fos-report-tile h4 { font-size: 13px; margin-bottom: 4px; }
+    .fos-report-tile p { font-size: 11px; color: var(--fos-text-secondary); }
+  </style>
+</head>
+<body>
+  <div class="fos-preview-ribbon">Mockup · Tıklayarak gezin</div>
+  <div class="fos-app">
+    <aside class="fos-sidebar">
+      <div class="fos-brand">
+        <div class="fos-brand-mark">
+          <div class="fos-brand-icon">F</div>
+          <div class="fos-brand-text"><strong>FactoryOS V3</strong><span>Finance / Muhasebe</span></div>
+        </div>
+      </div>
+      <nav class="fos-nav" id="fosNav">
+        <div class="fos-nav-label">Modül</div>
+        <button type="button" class="fos-nav-item active" data-view="dashboard"><span>Finance Dashboard</span></button>
+        <button type="button" class="fos-nav-item" data-view="accounts"><span>Hesaplar / Kasalar</span></button>
+        <button type="button" class="fos-nav-item" data-view="movements"><span>Finans Hareketleri</span></button>
+        <button type="button" class="fos-nav-item" data-view="approvals"><span>Ödeme Onayları</span><span class="badge-count">4</span></button>
+        <button type="button" class="fos-nav-item" data-view="purchasing"><span>Satınalma Bildirimleri</span></button>
+        <div class="fos-nav-label">Operasyon</div>
+        <button type="button" class="fos-nav-item" data-view="advances"><span>Avanslar</span></button>
+        <button type="button" class="fos-nav-item" data-view="debts"><span>Borçlar / Maaş Kesintisi</span></button>
+        <button type="button" class="fos-nav-item" data-view="parties"><span>Cari / Tedarikçi</span></button>
+        <button type="button" class="fos-nav-item" data-view="petty"><span>Küçük Kasa</span></button>
+        <button type="button" class="fos-nav-item" data-view="vehicle"><span>Araç / Nakliye</span></button>
+        <button type="button" class="fos-nav-item" data-view="projects"><span>Proje Giderleri</span></button>
+        <div class="fos-nav-label">Dönem</div>
+        <button type="button" class="fos-nav-item" data-view="closing"><span>Aylık Kapanış</span></button>
+        <button type="button" class="fos-nav-item" data-view="reports"><span>Raporlar</span></button>
+        <button type="button" class="fos-nav-item" data-view="settings"><span>Finance Ayarları</span></button>
+      </nav>
+      <div class="fos-sidebar-foot">Sol menüden ekran seçin</div>
+    </aside>
+
+    <div class="fos-main">
+      <header class="fos-topbar">
+        <div class="fos-topbar-start">
+          <button type="button" class="fos-sidebar-toggle" id="fosToggle">☰</button>
+          <div class="fos-breadcrumb">Finance / <strong id="fosCrumb">Dashboard</strong></div>
+          <input type="search" class="fos-search" placeholder="Ara…" id="fosSearch" />
+        </div>
+        <div class="fos-topbar-end">
+          <div class="fos-lang"><button class="active">TR</button><button>EN</button></div>
+          <div class="fos-avatar">MK</div>
+        </div>
+      </header>
+
+      <main class="fos-content">
+
+        <!-- DASHBOARD -->
+        <section class="fos-view active" id="view-dashboard" data-title="Dashboard">
+          <header class="fos-page-header">
+            <div><h1>Finance Dashboard</h1><p>Operasyonel finans özeti · Satınalma onayı → kasa düşümü finance’de</p></div>
+          </header>
+          <div class="fos-callout"><strong>Satınalma tamamlar, finance onaylar, kasa finance onayıyla düşer.</strong> Satınalma kesin kasa düşümü yapmaz.</div>
+          <div class="fos-kpi-grid">
+            <div class="fos-kpi"><div class="fos-kpi-label">Toplam bakiye</div><div class="fos-kpi-value">312.450.000</div><div class="fos-kpi-sub">yerel PB</div></div>
+            <div class="fos-kpi warn"><div class="fos-kpi-label">Onay bekleyen</div><div class="fos-kpi-value">4</div></div>
+            <div class="fos-kpi danger"><div class="fos-kpi-label">Belge eksik</div><div class="fos-kpi-value">6</div></div>
+            <div class="fos-kpi"><div class="fos-kpi-label">Bugün çıkış</div><div class="fos-kpi-value">18.240.000</div></div>
+          </div>
+          <div class="fos-grid-2">
+            <div class="fos-card"><div class="fos-card-head"><h2>Son hareketler</h2><button class="fos-btn fos-btn-secondary fos-btn-sm" data-goto="movements">Tümü</button></div>
+              <div class="fos-card-body flush fos-table-wrap"><table class="fos-table"><thead><tr><th>Tarih</th><th>Tip</th><th>Hesap</th><th>Tutar</th><th>Proje</th></tr></thead>
+              <tbody><tr><td>19.05</td><td><span class="fos-badge fos-badge-danger">Çıkış</span></td><td>Banka</td><td class="mono">50.000.000</td><td>FACTORY</td></tr>
+              <tr><td>19.05</td><td><span class="fos-badge fos-badge-success">Giriş</span></td><td>Banka</td><td class="mono">100.000.000</td><td>—</td></tr></tbody></table></div></div>
+            <div class="fos-card"><div class="fos-card-head"><h2>Onay kuyruğu</h2><button class="fos-btn fos-btn-primary fos-btn-sm" data-goto="approvals">Onayla</button></div>
+              <div class="fos-card-body"><p style="font-size:12px;color:var(--fos-text-secondary)">PO-2026-0142 · 897.008 yerel PB<br>PO-2026-0138 · 1.797.600 yerel PB</p></div></div>
+          </div>
+        </section>
+
+        <!-- ACCOUNTS -->
+        <section class="fos-view" id="view-accounts" data-title="Hesaplar / Kasalar">
+          <header class="fos-page-header">
+            <div><h1>Hesaplar / Kasalar</h1><p>Banka, resmi/gayri resmi nakit, kart ve küçük kasa hesapları · Excel’deki ayrı sayfa mantığı</p></div>
+            <button class="fos-btn fos-btn-primary">+ Yeni hesap</button>
+          </header>
+          <div class="fos-toolbar">
+            <select><option>Tüm tipler</option><option>Banka</option><option>Resmi kasa</option><option>Gayri resmi</option><option>Kart</option></select>
+            <select><option>Aktif hesaplar</option><option>Pasif</option></select>
+          </div>
+          <div class="fos-grid-3">
+            <div class="fos-account-card official"><div style="font-size:11px;color:var(--fos-text-secondary)">BANKA · Resmi</div><div style="font-size:18px;font-weight:700;margin:8px 0">156.133.686,00</div><div class="mono" style="font-size:11px">≈ 130.176,73 rapor PB</div><div style="margin-top:8px"><span class="fos-badge fos-badge-success">Aktif</span></div></div>
+            <div class="fos-account-card official"><div style="font-size:11px;color:var(--fos-text-secondary)">KASA · Resmi nakit</div><div style="font-size:18px;font-weight:700;margin:8px 0">41.986.314,00</div><div class="mono" style="font-size:11px">Günlük personel/proje</div></div>
+            <div class="fos-account-card unofficial"><div style="font-size:11px;color:var(--fos-text-secondary)">Satınalma nakit (Murad)</div><div style="font-size:18px;font-weight:700;margin:8px 0">28.500.000,00</div><div class="mono" style="font-size:11px">Avanslı operasyon</div></div>
+            <div class="fos-account-card unofficial"><div style="font-size:11px;color:var(--fos-text-secondary)">Küçük kasa / Mutfak</div><div style="font-size:18px;font-weight:700;margin:8px 0">4.200.000,00</div></div>
+            <div class="fos-account-card"><div style="font-size:11px;color:var(--fos-text-secondary)">Satınalma kartı</div><div style="font-size:18px;font-weight:700;margin:8px 0">18.750.000,00</div><div style="font-size:11px;margin-top:6px">Proje harcama · SATINALAMA KART sayfası</div></div>
+            <div class="fos-account-card"><div style="font-size:11px;color:var(--fos-text-secondary)">Kart mutfak</div><div style="font-size:18px;font-weight:700;margin:8px 0">6.250.000,00</div></div>
+          </div>
+          <div class="fos-card"><div class="fos-card-head"><h2>Hesap hareket özeti (seçili: Banka)</h2></div>
+            <div class="fos-card-body flush fos-table-wrap"><table class="fos-table"><thead><tr><th>Tarih</th><th>Giriş</th><th>Çıkış</th><th>Bakiye</th><th>Açıklama</th></tr></thead>
+            <tbody><tr><td>19.05.2026</td><td class="mono">100.000.000</td><td class="mono">50.000.000</td><td class="mono">156.133.686</td><td>KOC tahsilat / HIGH TECK ödeme</td></tr></tbody></table></div>
+          </div>
+        </section>
+
+        <!-- MOVEMENTS -->
+        <section class="fos-view" id="view-movements" data-title="Finans Hareketleri">
+          <header class="fos-page-header">
+            <div><h1>Finans Hareketleri</h1><p>Tüm giriş/çıkış · Proje, kategori, çift para birimi, belge ve onay durumu</p></div>
+            <button class="fos-btn fos-btn-primary">+ Yeni hareket</button>
+          </header>
+          <div class="fos-toolbar">
+            <input type="date" value="2026-05-01" /> — <input type="date" value="2026-05-19" />
+            <select><option>Tüm hesaplar</option><option>Banka</option><option>Kasa</option></select>
+            <select><option>Tüm tipler</option><option>Giriş</option><option>Çıkış</option></select>
+            <select><option>Tüm projeler</option><option>FACTORY</option><option>GEOLOGY-2</option></select>
+            <button class="fos-btn fos-btn-secondary fos-btn-sm">Filtrele</button>
+            <button class="fos-btn fos-btn-secondary fos-btn-sm">Excel</button>
+          </div>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table">
+              <thead><tr><th>Tarih</th><th>Tip</th><th>Hesap</th><th>Kategori</th><th>Proje</th><th>Kişi/Tedarikçi</th><th>Tutar</th><th>Kur snap.</th><th>Yerel</th><th>Rapor</th><th>Durum</th><th>Belge</th><th>Onay</th></tr></thead>
+              <tbody>
+                <tr><td>19.05</td><td><span class="fos-badge fos-badge-danger">Çıkış</span></td><td>Banka</td><td>Satınalma</td><td>FACTORY</td><td>HIGH TECK</td><td class="mono">50M</td><td class="mono">12.450</td><td class="mono">50M</td><td class="mono">4.016</td><td>Kesin</td><td><span class="fos-badge fos-badge-success">Var</span></td><td>Finance</td></tr>
+                <tr><td>19.05</td><td><span class="fos-badge fos-badge-success">Giriş</span></td><td>Banka</td><td>Tahsilat</td><td>—</td><td>KOC</td><td class="mono">100M</td><td class="mono">12.450</td><td class="mono">100M</td><td class="mono">8.032</td><td>Kesin</td><td>Var</td><td>Finance</td></tr>
+                <tr><td>18.05</td><td><span class="fos-badge fos-badge-danger">Çıkış</span></td><td>Kasa</td><td>Personel</td><td>GEOLOGY 2</td><td>Cemşid T.</td><td class="mono">400K</td><td class="mono">12.450</td><td class="mono">400K</td><td class="mono">32</td><td>Kesin</td><td>—</td><td>Onaylı</td></tr>
+                <tr><td>17.05</td><td><span class="fos-badge fos-badge-danger">Çıkış</span></td><td>Küçük kasa</td><td>Mutfak</td><td>MUTFAK</td><td>Market</td><td class="mono">850K</td><td class="mono">12.450</td><td class="mono">850K</td><td class="mono">68</td><td>Taslak</td><td><span class="fos-badge fos-badge-warning">Yok</span></td><td>—</td></tr>
+              </tbody>
+            </table>
+          </div><p class="fos-foot-note">Kur manuel snapshot · Dashboard kuru otomatik yazılmaz</p></div>
+        </section>
+
+        <!-- PAYMENT APPROVALS -->
+        <section class="fos-view" id="view-approvals" data-title="Ödeme Onayları">
+          <header class="fos-page-header">
+            <div><h1>Ödeme Onayları</h1><p>Satınalma tamamladı → finance onaylar → <code>payment_posted</code> → bakiye güncellenir</p></div>
+          </header>
+          <div class="fos-split">
+            <div>
+              <div class="fos-tabs"><button class="fos-tab active">Bekleyen (4)</button><button class="fos-tab">Onaylanan</button><button class="fos-tab">Reddedilen</button></div>
+              <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+                <table class="fos-table"><thead><tr><th>PO</th><th>Tedarikçi</th><th>Tutar</th><th>Kaynak</th><th></th></tr></thead>
+                <tbody>
+                  <tr style="background:#fffbeb"><td class="mono">PO-0142</td><td>BRO MAX VENT</td><td class="mono">897.008</td><td>Resmi kasa</td><td><button class="fos-btn fos-btn-sm fos-btn-secondary">Seç</button></td></tr>
+                  <tr><td class="mono">PO-0138</td><td>METALLORUKAV</td><td class="mono">1.797.600</td><td>Sat. kartı</td><td><button class="fos-btn fos-btn-sm fos-btn-secondary">Seç</button></td></tr>
+                </tbody></table>
+              </div></div>
+            </div>
+            <div class="fos-detail-panel">
+              <h3>Onay detayı — PO-2026-0142</h3>
+              <div class="fos-detail-row"><span>Satınalmacı tamamlama</span><span>18.05.2026</span></div>
+              <div class="fos-detail-row"><span>accounting_link</span><span>waiting_accounting</span></div>
+              <div class="fos-detail-row"><span>İşlem tutarı</span><span class="mono">897.008,00</span></div>
+              <div class="fos-detail-row"><span>Kur (snapshot)</span><span class="mono">12.450,00</span></div>
+              <div class="fos-detail-row"><span>Rapor PB</span><span class="mono">72,05</span></div>
+              <div class="fos-detail-row"><span>Ödeme kaynağı</span><span>Resmi kasa</span></div>
+              <div class="fos-detail-row"><span>Belge</span><span>Fatura PDF ✓</span></div>
+              <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="fos-btn fos-btn-primary">Onayla ve öde</button>
+                <button class="fos-btn fos-btn-danger">Reddet</button>
+                <button class="fos-btn fos-btn-secondary">Revizyon iste</button>
+              </div>
+              <p style="font-size:11px;color:var(--fos-text-muted);margin-top:12px">Onay sonrası finance_transaction oluşur; satınalma modülü kasa düşmez.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PURCHASING NOTIFICATIONS -->
+        <section class="fos-view" id="view-purchasing" data-title="Satınalma Ödeme Bildirimleri">
+          <header class="fos-page-header">
+            <div><h1>Satınalma Ödeme Bildirimleri</h1><p><code>completed_by_purchasing</code> sonrası düşen kayıtlar · Mal kabul bu modülde yapılmaz</p></div>
+          </header>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Bildirim</th><th>PO</th><th>Proje</th><th>Tutar</th><th>Ödeme kaynağı (öneri)</th><th>Muhasebe durumu</th><th>Mal kabul</th></tr></thead>
+            <tbody>
+              <tr><td>19.05 14:22</td><td class="mono">PO-0142</td><td>FACTORY</td><td class="mono">897.008</td><td>Resmi kasa</td><td><span class="fos-badge fos-badge-warning">Bekliyor</span></td><td><span class="fos-badge fos-badge-neutral">Stok modülü</span></td></tr>
+              <tr><td>18.05 11:05</td><td class="mono">PO-0131</td><td>FACTORY</td><td class="mono">6.102.600</td><td>Banka</td><td><span class="fos-badge fos-badge-info">Kaynak seçildi</span></td><td>Kısmi GR</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- ADVANCES -->
+        <section class="fos-view" id="view-advances" data-title="Avanslar">
+          <header class="fos-page-header">
+            <div><h1>Avanslar</h1><p>Personel ve satınalma avansları · HR bordro kesintisi ile bağlantılı</p></div>
+            <button class="fos-btn fos-btn-primary">+ Avans ver</button>
+          </header>
+          <div class="fos-kpi-grid">
+            <div class="fos-kpi"><div class="fos-kpi-label">Açık avans</div><div class="fos-kpi-value">12.800.000</div></div>
+            <div class="fos-kpi"><div class="fos-kpi-label">Bu ay verilen</div><div class="fos-kpi-value">4.200.000</div></div>
+            <div class="fos-kpi"><div class="fos-kpi-label">Bordroya kesilen</div><div class="fos-kpi-value">1.850.000</div></div>
+          </div>
+          <div class="fos-card"><div class="fos-card-head"><h2>Avans listesi</h2></div><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Personel</th><th>Tarih</th><th>Verilen</th><th>Kapanan</th><th>Kalan</th><th>Kaynak hesap</th><th>Bordro ref</th></tr></thead>
+            <tbody>
+              <tr><td>Murat K. (Satınalma)</td><td>25.05</td><td class="mono">4.000.000</td><td class="mono">0</td><td class="mono">4.000.000</td><td>Sat. nakit</td><td>—</td></tr>
+              <tr><td>Sardor A.</td><td>26.06.24</td><td class="mono">1.000.000</td><td class="mono">1.000.000</td><td class="mono">0</td><td>Kasa</td><td>HR-2024-06</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- DEBTS -->
+        <section class="fos-view" id="view-debts" data-title="Borçlar / Maaş Kesintileri">
+          <header class="fos-page-header">
+            <div><h1>Borçlar / Maaş Kesintileri</h1><p>Excel BORCLER mantığı · Qarz alındı / iade · Aylık maaştan kesinti</p></div>
+          </header>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Kişi</th><th>Borç tarihi</th><th>Alınan</th><th>İade/Kesinti</th><th>Kalan</th><th>Son kesinti</th><th>Not</th></tr></thead>
+            <tbody>
+              <tr><td>Caner</td><td>07.08.2024</td><td class="mono">2.500 rapor</td><td class="mono">2.050</td><td class="mono">450</td><td>Şubat 2026 maaş</td><td>Çoklu kesinti</td></tr>
+              <tr><td>Daut</td><td>—</td><td class="mono">3.850</td><td class="mono">3.850</td><td class="mono">0</td><td>Aralık 2025</td><td>Kapandı</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- PARTIES -->
+        <section class="fos-view" id="view-parties" data-title="Cari / Tedarikçi Bakiyeleri">
+          <header class="fos-page-header">
+            <div><h1>Cari / Tedarikçi Bakiyeleri</h1><p>Alacak/borç özeti · Satınalma ve finance ortak party master</p></div>
+          </header>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Cari</th><th>Tip</th><th>Borç (bizden)</th><th>Alacak</th><th>Net</th><th>Son hareket</th></tr></thead>
+            <tbody>
+              <tr><td>OOO «HIGH TECK BIZNES»</td><td>Tedarikçi</td><td class="mono">12.500.000</td><td class="mono">0</td><td class="mono">12.500.000</td><td>19.05 ödeme</td></tr>
+              <tr><td>KOC CONSTRUCTION</td><td>Müşteri</td><td class="mono">0</td><td class="mono">100.000.000</td><td class="mono">-100M</td><td>19.05 tahsilat</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- PETTY CASH -->
+        <section class="fos-view" id="view-petty" data-title="Küçük Kasa">
+          <header class="fos-page-header">
+            <div><h1>Küçük Kasa</h1><p>NAKIT MUTFAK / günlük harcama · Proje veya genel gider</p></div>
+            <button class="fos-btn fos-btn-primary">+ Harcama gir</button>
+          </header>
+          <div class="fos-grid-2">
+            <div class="fos-card"><div class="fos-card-head"><h2>NAKIT MUTFAK — bakiye</h2><span class="mono" style="font-weight:700">4.200.000,00</span></div>
+              <div class="fos-card-body flush fos-table-wrap"><table class="fos-table"><thead><tr><th>Tarih</th><th>Proje</th><th>Açıklama</th><th>Miktar</th><th>Belge</th></tr></thead>
+              <tbody><tr><td>17.05</td><td>MUTFAK</td><td>Market — sebze</td><td class="mono">850.000</td><td><span class="fos-badge fos-badge-warning">Eksik</span></td></tr>
+              <tr><td>16.05</td><td>MUTFAK</td><td>Yumurta 90 adet</td><td class="mono">324.000</td><td>Var</td></tr></tbody></table></div></div>
+            <div class="fos-card"><div class="fos-card-head"><h2>Hızlı giriş</h2></div><div class="fos-card-body">
+              <div class="fos-field"><label>Proje</label><select><option>MUTFAK</option><option>FACTORY</option></select></div>
+              <div class="fos-field"><label>Tutar (yerel)</label><input type="text" value="0,00" /></div>
+              <div class="fos-field"><label>Açıklama</label><input type="text" placeholder="Harcama adı" /></div>
+              <button class="fos-btn fos-btn-primary">Kaydet</button>
+            </div></div>
+          </div>
+        </section>
+
+        <!-- VEHICLE -->
+        <section class="fos-view" id="view-vehicle" data-title="Araç / Nakliye Giderleri">
+          <header class="fos-page-header">
+            <div><h1>Araç / Nakliye Giderleri</h1><p>Isuzu, marshrut, proje nakliye · Excel araç sayfaları</p></div>
+          </header>
+          <div class="fos-tabs"><button class="fos-tab active">Isuzu Korporativ</button><button class="fos-tab">Marshrut</button><button class="fos-tab">Proje nakliye</button></div>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Tarih</th><th>Araç</th><th>Proje</th><th>Gider</th><th>Yerel</th><th>Sürücü</th></tr></thead>
+            <tbody>
+              <tr><td>18.05</td><td>Isuzu 01</td><td>GEOLOGY 2</td><td>Benzin + yol</td><td class="mono">220.000</td><td>Daut M.</td></tr>
+              <tr><td>17.05</td><td>Chin araba</td><td>IT PARK</td><td>Nakliye sandalye</td><td class="mono">300.000</td><td>—</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- PROJECT EXPENSES -->
+        <section class="fos-view" id="view-projects" data-title="Proje Giderleri">
+          <header class="fos-page-header">
+            <div><h1>Proje Giderleri</h1><p>Proje bazlı gider özeti · Bu ay / seçili dönem</p></div>
+          </header>
+          <div class="fos-chart-placeholder" title="Proje gider dağılımı mockup">
+            <div class="fos-bar" style="height:70%"></div><div class="fos-bar" style="height:45%"></div><div class="fos-bar" style="height:90%"></div><div class="fos-bar" style="height:35%"></div><div class="fos-bar" style="height:55%"></div>
+          </div>
+          <p style="text-align:center;font-size:11px;color:var(--fos-text-muted);margin:-8px 0 16px">FACTORY · GEOLOGY-2 · IT PARK · PHARMA · TRILLIANT</p>
+          <div class="fos-card"><div class="fos-card-body flush fos-table-wrap">
+            <table class="fos-table"><thead><tr><th>Proje</th><th>Bu ay gider</th><th>Malzeme</th><th>Personel/yemek</th><th>Nakliye</th><th>Diğer</th></tr></thead>
+            <tbody>
+              <tr><td><strong>FACTORY</strong></td><td class="mono">89.200.000</td><td class="mono">72M</td><td class="mono">8M</td><td class="mono">5M</td><td class="mono">4.2M</td></tr>
+              <tr><td><strong>GEOLOGY-2</strong></td><td class="mono">42.100.000</td><td class="mono">28M</td><td class="mono">9M</td><td class="mono">3M</td><td class="mono">2.1M</td></tr>
+            </tbody></table>
+          </div></div>
+        </section>
+
+        <!-- MONTHLY CLOSE -->
+        <section class="fos-view" id="view-closing" data-title="Aylık Kapanış">
+          <header class="fos-page-header">
+            <div><h1>Aylık Kapanış</h1><p>Banka + Kasa açılış/kapanış bakiyesi · Excel aylık sayfa mantığı (HAZIRAN, OCAK 2026…)</p></div>
+            <button class="fos-btn fos-btn-primary">Mayıs 2026 kapat</button>
+          </header>
+          <div class="fos-grid-2">
+            <div class="fos-card"><div class="fos-card-head"><h2>Mayıs 2026 — özet</h2><span class="fos-badge fos-badge-warning">Açık dönem</span></div>
+              <div class="fos-card-body">
+                <div class="fos-detail-row"><span>Banka açılış</span><span class="mono">298.450.000</span></div>
+                <div class="fos-detail-row"><span>Toplam giriş</span><span class="mono">185.000.000</span></div>
+                <div class="fos-detail-row"><span>Toplam çıkış</span><span class="mono">142.780.000</span></div>
+                <div class="fos-detail-row"><span>Banka kapanış</span><span class="mono">340.670.000</span></div>
+                <div class="fos-detail-row"><span>Belge eksik hareket</span><span>3 adet</span></div>
+              </div></div>
+            <div class="fos-card"><div class="fos-card-head"><h2>Kapanış kontrol listesi</h2></div>
+              <div class="fos-card-body" style="font-size:12px">
+                <label style="display:flex;gap:8px;margin-bottom:8px"><input type="checkbox" checked /> Tüm hareketler onaylı veya açıklamalı</label>
+                <label style="display:flex;gap:8px;margin-bottom:8px"><input type="checkbox" /> Belge eksikleri giderildi veya istisna kayıtlı</label>
+                <label style="display:flex;gap:8px;margin-bottom:8px"><input type="checkbox" checked /> Satınalma ödemeleri mutabık</label>
+                <label style="display:flex;gap:8px"><input type="checkbox" /> Kur snapshot’ları donduruldu</label>
+              </div></div>
+          </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section class="fos-view" id="view-reports" data-title="Raporlar">
+          <header class="fos-page-header">
+            <div><h1>Raporlar</h1><p>Dışa aktarılabilir operasyonel raporlar · Rapor PB ve yerel PB</p></div>
+          </header>
+          <div class="fos-grid-3">
+            <div class="fos-report-tile"><h4>Günlük kasa/banka</h4><p>Giriş-çıkış listesi</p></div>
+            <div class="fos-report-tile"><h4>Proje gider özeti</h4><p>Dönem bazlı</p></div>
+            <div class="fos-report-tile"><h4>Satınalma ödeme</h4><p>Onaylanan PO listesi</p></div>
+            <div class="fos-report-tile"><h4>Avans bakiye</h4><p>Personel bazlı</p></div>
+            <div class="fos-report-tile"><h4>Cari ekstre</h4><p>Tedarikçi/müşteri</p></div>
+            <div class="fos-report-tile"><h4>Belge eksik</h4><p>Audit listesi</p></div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="fos-view" id="view-settings" data-title="Finance Ayarları">
+          <header class="fos-page-header">
+            <div><h1>Finance Ayarları</h1><p>Yerel/rapor para birimi, hesap tipleri, onay politikaları</p></div>
+            <button class="fos-btn fos-btn-primary">Kaydet</button>
+          </header>
+          <div class="fos-card"><div class="fos-card-body">
+            <div class="fos-form-grid">
+              <div class="fos-field"><label>Yerel para birimi (config)</label><input type="text" value="so'm (UZS örnek)" readonly style="background:var(--fos-bg)" /></div>
+              <div class="fos-field"><label>Rapor para birimi</label><input type="text" value="USD (seçilebilir)" readonly style="background:var(--fos-bg)" /></div>
+              <div class="fos-field"><label>Dashboard kuru kaynağı</label><select><option>Bilgi amaçlı — işleme yazılmaz</option></select></div>
+              <div class="fos-field"><label>Belge zorunlu eşik</label><input type="text" value="500.000 yerel PB üstü" /></div>
+              <div class="fos-field"><label>Çift onay eşiği</label><input type="text" value="10.000.000 yerel PB" /></div>
+              <div class="fos-field"><label>Varsayılan ödeme hesabı</label><select><option>Banka (resmi)</option></select></div>
+            </div>
+            <p style="font-size:11px;color:var(--fos-text-muted);margin-top:12px">[05-country-currency-language.md](../05-country-currency-language.md) ile uyumlu · Hard-code yok</p>
+          </div></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var views = document.querySelectorAll('.fos-view');
+      var navItems = document.querySelectorAll('.fos-nav-item[data-view]');
+      var crumb = document.getElementById('fosCrumb');
+      var searchPlaceholders = {
+        dashboard: 'Özet ara…',
+        accounts: 'Hesap ara…',
+        movements: 'Hareket, proje, tedarikçi…',
+        approvals: 'PO, tedarikçi…',
+        purchasing: 'Bildirim ara…',
+        advances: 'Personel avans…',
+        debts: 'Borç kaydı…',
+        parties: 'Cari adı…',
+        petty: 'Küçük kasa harcama…',
+        vehicle: 'Araç, nakliye…',
+        projects: 'Proje kodu…',
+        closing: 'Dönem…',
+        reports: 'Rapor…',
+        settings: 'Ayar…'
+      };
+
+      function showView(id) {
+        views.forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + id); });
+        navItems.forEach(function (n) { n.classList.toggle('active', n.getAttribute('data-view') === id); });
+        var active = document.getElementById('view-' + id);
+        if (active && crumb) crumb.textContent = active.getAttribute('data-title') || id;
+        var search = document.getElementById('fosSearch');
+        if (search) search.placeholder = searchPlaceholders[id] || 'Ara…';
+        window.scrollTo(0, 0);
+      }
+
+      navItems.forEach(function (btn) {
+        btn.addEventListener('click', function () { showView(btn.getAttribute('data-view')); });
+      });
+
+      document.querySelectorAll('[data-goto]').forEach(function (el) {
+        el.addEventListener('click', function () { showView(el.getAttribute('data-goto')); });
+      });
+
+      document.getElementById('fosToggle')?.addEventListener('click', function () {
+        document.body.classList.toggle('fos-nav-collapsed');
+      });
+
+      document.querySelectorAll('.fos-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var parent = tab.closest('.fos-view') || tab.parentElement;
+          parent.querySelectorAll('.fos-tab').forEach(function (t) { t.classList.remove('active'); });
+          tab.classList.add('active');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

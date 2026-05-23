@@ -2,7 +2,7 @@
 
 **Ürün:** FactoryOS V3  
 **Otorite:** [`../FactoryOS-V3-Gate-Kabul-Kriterleri.md`](../FactoryOS-V3-Gate-Kabul-Kriterleri.md)  
-**Durum:** Gate 0 ☐ PASS | Gate 1 kod ☐ başlamadı  
+**Durum:** Gate 0 ☑ **PASS ADAYI** · USER FINAL APPROVAL PENDING | Gate 1 kod ☐ başlamadı  
 **Versiyon:** 1.0.0  
 **Son güncelleme:** 19.05.2026
 

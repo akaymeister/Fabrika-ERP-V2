@@ -1,13 +1,15 @@
 # FactoryOS V3 — Finance Tracking Data Contract
 
 **Belge türü:** Gate 0 platform / domain sözleşmesi  
-**Durum:** ☐ TASLAK | ☑ İNCELEME | ☐ FROZEN  
-**Versiyon:** 1.1.0  
-**Son güncelleme:** 19.05.2026 (F1–F6 önerilen kararlar)  
+**Modül adı:** **Finans Kontrol** / **Operational Finance Control**  
+**Operasyonel tanım (Gate 0 otorite):** [09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md)  
+**Durum:** ☑ **Gate 0 KABUL (PASS adayı)** | ☐ FROZEN  
+**Versiyon:** 1.2.0  
+**Son güncelleme:** 19.05.2026 (Gate 0 kapanış; operasyonel finans kararları)  
 **Uygulama gate:** Gate 5 (kod); Gate 0 yalnızca sözleşme  
 **Ürün:** FactoryOS V3 · V2 referans only (kod kopyalanmaz)
 
-**Önemli:** Bu modül **resmi muhasebe değildir**. Operasyonel finans takip katmanıdır; ileride muhasebe entegrasyonu için veri sözleşmesi kurar.
+**Önemli:** Bu modül **resmi muhasebe defteri değildir**. Operasyonel kasa, banka, kart, nakit, gayri resmi kasa, avans, ödeme onayı, proje gideri, genel gider ve kur kontrol modülüdür. İleride resmi muhasebe entegrasyonu için veri sözleşmesi kurar.
 
 **Platform bağımlılıkları:**
 
@@ -40,6 +42,19 @@ FactoryOS V3 **Finance Tracking** şunları kapsar:
 **Değildir:** TFRS/UFRS defter, e-defter, vergi beyanı, tam çift taraflı muhasebe fişi (Gate 0 kapsam dışı).
 
 **Gate 0 çıktısı:** Bu belge FROZEN olmadan Gate 5 finance migration ve API **yazılmaz**.
+
+### 1.1 Gate 0 operasyonel kararlar (özet)
+
+Tam metin: [09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md).
+
+| Karar | Özet |
+|--------|------|
+| Satınalma → finans | Satınalma tamamlanınca kasa düşmez; ödeme yükümlülüğü/talep; Finance onayı → `finance_transaction` |
+| Hesap türleri | Resmi banka/kasa, gayri resmi nakit, kart, petty cash, avans kasası, proje küçük gider kasası — ayrı |
+| Ödeme vs gider | Ödeme yöntemi ≠ gider nedeni |
+| Landed cost | İthalat kalemleri ayrı bağlantı; nakitleştirme komisyonu ayrı hareket |
+| Kur | İşlem snapshot; dashboard bilgi amaçlı |
+| Ay kapanışı | Operasyonel kilitleme; kapanmış aya sessiz düzeltme yok; adjustment sonraki ay |
 
 ---
 
@@ -686,7 +701,9 @@ Resmi kapanış: FROZEN öncesi inceleme onayı.
 
 ## 23. Kabul kriterleri (Gate 0)
 
-- [ ] Finance tracking’in **resmi muhasebe olmadığı** onaylandı (§1, §3)
+**Gate 0 PASS adayı (19.05.2026):** Operasyonel finans kararları [09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md) §2–§7 ile kapatıldı. **FROZEN** kullanıcı onayı bekleniyor.
+
+- [x] Finance tracking’in **resmi muhasebe olmadığı** onaylandı (§1, §3; operasyonel blueprint §1)
 - [ ] Money model transaction/local/base onaylandı (§4, [05](./05-country-currency-language.md))
 - [ ] Party modeli onaylandı (§6)
 - [ ] Supplier–party bağlantısı onaylandı (§7)
@@ -702,7 +719,7 @@ Resmi kapanış: FROZEN öncesi inceleme onayı.
 - [ ] F4 iki aşamalı price finalization onaylandı (§5.12)
 - [ ] F5 basit avans Gate 5 MVP onaylandı (§13)
 - [ ] F6 minimal bank_accounts Gate 5 MVP onaylandı (§5.13)
-- [ ] **Durum: FROZEN** (henüz değil)
+- [ ] **Durum: FROZEN** (kullanıcı nihai onayı bekleniyor)
 
 **Gate 0 kuralı:** Bu belge **FROZEN** olmadan finance modül kodu **yazılmaz**.
 
@@ -710,6 +727,6 @@ Resmi kapanış: FROZEN öncesi inceleme onayı.
 
 ## 24. Belge durumu
 
-**Durum: TASLAK / İNCELEME** — Henüz FROZEN değil.
+**Durum: Gate 0 KABUL (PASS adayı)** — Henüz **FROZEN değil**. Operasyonel kararlar: [09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md).
 
 **Sonraki önerilen spec:** [11-v2-carry-and-drop.md](./11-v2-carry-and-drop.md) (entegrasyon: [10](./10-integration-map.md))

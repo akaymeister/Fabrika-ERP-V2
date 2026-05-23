@@ -12,7 +12,7 @@
 | Metrik | Değer |
 |--------|--------|
 | UI görsel yön | ☑ **FROZEN** |
-| Gate 0 genel | ☐ **DEVAM EDİYOR** |
+| Gate 0 genel | ☑ **PASS ADAYI** (USER FINAL APPROVAL PENDING) |
 | FROZEN spec sayısı (01–12) | 0 / 12 |
 | Gate 1 kod | ☐ Yasak (Gate 0 PASS bekleniyor) |
 

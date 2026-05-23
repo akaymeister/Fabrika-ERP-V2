@@ -9,6 +9,7 @@ Tarayıcıda doğrudan açılabilir statik HTML önizlemeleri. Gate 1 `@factoryo
 | [factoryos-v3-home-preview.html](factoryos-v3-home-preview.html) | Ana sayfa |
 | [factoryos-v3-design-preview.html](factoryos-v3-design-preview.html) | Stok modülü örneği |
 | [factoryos-v3-admin-preview.html](factoryos-v3-admin-preview.html) | Yönetim paneli |
+| [../v3-spec/mockups/factoryos-v3-finance-dashboard-preview.html](../v3-spec/mockups/factoryos-v3-finance-dashboard-preview.html) | Finance / Muhasebe kontrol dashboard (Gate 0 mockup) |
 
 **Ortak:** sol menü aç/kapa (`localStorage`: `factoryos-v3-nav-collapsed`), UTF-8 Türkçe, sayfalar arası alt bağlantılar.
 

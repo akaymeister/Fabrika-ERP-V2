@@ -2,8 +2,8 @@
 
 **Belge türü:** Gate 0 platform spec  
 **Durum:** ☐ TASLAK | ☑ İNCELEME | ☐ FROZEN  
-**Versiyon:** 1.0.0  
-**Son güncelleme:** 19.05.2026  
+**Versiyon:** 1.1.0  
+**Son güncelleme:** 21.05.2026  
 **Ürün:** FactoryOS V3 · V2 referans only (kod kopyalanmaz)
 
 **İlişkili belgeler:**
@@ -21,12 +21,14 @@ FactoryOS V3’te **ülke, para birimi, dil ve raporlama para birimi** kararlar�
 
 | Hedef | Açıklama |
 |-------|----------|
-| Hardcoded para yok | `UZS`, `USD`, `EUR` kaynak kodda sabitlenmez |
-| Orijinal işlem parası korunur | USD maaş USD kalır; UZS ödeme UZS kalır |
-| Raporlama snapshot | `local` ve `base` türev alanlar işlem anı kuru ile |
-| Tek config API | Formlar, tablolar, raporlar `public/config` + domain servis |
-| Tek dil zinciri | tr / en / ru / uz — hardcoded UI metni yok |
-| Ülke profili | UZ, TR ile başlar; genişletilebilir |
+| Hardcoded para/ülke yok | `UZS salary`, `USD only` gibi ifadeler **yasak**; `local_currency` / `reporting_currency` |
+| Orijinal işlem parası korunur | `transaction_currency` + `amount_transaction` kaynak doğru |
+| FX snapshot | İşlem anı kuru dondurulur; dashboard kuru geçmişi **değiştirmez** |
+| Tek config API | [02-admin](./02-admin-control-system.md) system settings + `GET /api/public/config` |
+| Tek dil zinciri | tr / en / ru / uz — ham i18n key yok |
+| Veri girişi Latin | Cyrillic giriş backend’de **engellenir** |
+| Merkezi format | `formatMoney` / `formatNumber` — modül bazlı format yasak |
+| Ülke profili | Admin’den seçilir; UZ, TR seed; genişletilebilir |
 
 **Gate 0 çıktısı:** Bu belge FROZEN olmadan Gate 1 `country_profiles`, `CurrencyField`, `Money` value object ve `public/config` **yazılmaz**.
 
@@ -39,14 +41,14 @@ FactoryOS V3’te **ülke, para birimi, dil ve raporlama para birimi** kararlar�
 | `country_code` | `CHAR(2)` ISO 3166-1 | Aktif operasyon ülkesi (`UZ`, `TR`) |
 | `default_locale` | `tr` \| `en` \| `ru` \| `uz` | Sistem varsayılan UI dili |
 | `supported_locales` | JSON dizi | İzin verilen UI dilleri |
-| `local_currency` | `CHAR(3)` ISO 4217 | Ülke operasyon para birimi (ör. `UZS`, `TRY`) |
-| `base_reporting_currency` | `CHAR(3)` | Konsolide raporlama (varsayılan `USD`) |
+| `local_currency` | `CHAR(3)` ISO 4217 | **Operasyonel yerel para birimi** — sistem ayarlarından; ülke önerir, Admin değiştirebilir (C1) |
+| `reporting_currency` | `CHAR(3)` | **Yönetim raporlama para birimi** — ayrı seçilir; şema alanı: `base_reporting_currency` (C1) |
 | `transaction_currency` | `CHAR(3)` | İşlemin **orijinal** para birimi |
 | `fx_rate` | `DECIMAL(18,8)` | İşlem anı: 1 birim `transaction_currency` = X `local_currency` |
 | `fx_rate_to_base` | `DECIMAL(18,8)` | İşlem anı: 1 birim `local` veya `transaction` → `base` (politika §4) |
 | `amount_transaction` | `DECIMAL(18,4)` | Orijinal tutar |
 | `amount_local` | `DECIMAL(18,4)` | `local_currency` cinsinden snapshot |
-| `amount_base` | `DECIMAL(18,4)` | `base_reporting_currency` cinsinden snapshot |
+| `amount_base` | `DECIMAL(18,4)` | `reporting_currency` (`base_reporting_currency`) cinsinden snapshot |
 | **currency snapshot** | Yukarıdaki alanların seti | Kayıt anında dondurulur; geçmiş rapor bozulmaz |
 
 **Money value object (domain):**
@@ -91,7 +93,24 @@ Sistem **ilk kurulumda** UZ profiline göre seed edilebilir; değerler **veritab
 
 **Kural:** Yeni ülke = yeni `country_profiles` satırı + seed; kod değişikliği gerekmez.
 
-### 3.3 Yasak
+### 3.4 C1 — Local currency / reporting currency (Gate 0 KABUL)
+
+| Karar | Politika |
+|-------|----------|
+| Ülke seçimi | [02-admin](./02-admin-control-system.md) **System Settings** — `active_country_code` |
+| Local currency önerisi | Ülke profili `country_profiles.local_currency` **önerir** (ör. UZ→UZS, TR→TRY) |
+| Local currency değişimi | **Süper Yönetim / Admin** onayı ile değiştirilebilir; canlı değişim runbook + audit (§13.2) |
+| Local currency tanımı | Sistemin **operasyonel yerel** para birimi; günlük işlem, maaş yerel kırılımı, stok local snapshot |
+| Reporting currency | Yönetim raporları için **ayrı** seçilir; `reporting_currency` (DB: `base_reporting_currency`) |
+| İlk faz seçenekleri | Sınırlı liste yeterli (ör. USD, EUR, TRY); yapı **genişletilebilir** (`allowed_reporting_currencies` JSON) |
+| Modül dili | “UZS maaş” **yasak** → “yerel para birimi maaşı” / `amount_local` + `local_currency` |
+| Hard-code | Kaynak kod, i18n, API response’da `UZS`/`USD` **sabit etiket yok** — config’ten gelir |
+
+**Uygulama Gate’i:** Gate 1 — `country_profiles`, admin UI, `public/config`; politika Gate 0 **KABUL**.
+
+**Test:** CT-01, CT-15, CT-16, CT-17.
+
+### 3.5 Yasak
 
 ```javascript
 // YASAK örnekler
@@ -129,22 +148,38 @@ Kayıt oluşturma / onay anında doldurulur:
 | `fx_rate_to_base` | local→base veya transaction→base (tek politika) |
 | `amount_base` | Raporlama tutarı |
 
-**Önerilen politika (V3):**
+**Gate 0 KABUL — dönüşüm zinciri (tek yol):**
 
 ```text
-amount_local  = convert(amount_transaction, transaction_currency → local_currency, fx_date)
-amount_base   = convert(amount_local, local_currency → base_reporting_currency, fx_date)
+amount_local  = convert(amount_transaction, transaction_currency → local_currency, fx_snapshot_at)
+amount_base   = convert(amount_local, local_currency → reporting_currency, fx_snapshot_at)
 ```
 
-Alternatif: transaction→base doğrudan — domain spec’te tek yol seçilir; **karıştırılmaz**.
+`transaction → reporting` doğrudan atlanmaz; tutarlılık ve audit için **local üzerinden** reporting üretilir.
 
-### 4.3 FX kaynağı
+### 4.3 C2 — FX / kur mantığı (Gate 0 KABUL)
 
-| Kaynak | Gate 1 | Gate 0 karar |
-|--------|--------|----------------|
-| `fx_rates` tablosu (tarih + currency_pair) | Manuel admin giriş | Onaylı |
-| Harici API | Sonraki faz | Açık karar |
-| Eksik kur | Kayıt **blok** veya onaylı “son bilinen kur” (risk dokümante) | Gate 1 |
+| Kavram | Davranış |
+|--------|----------|
+| **Dashboard güncel kur** | Gösterilebilir (Google veya başka kaynak); **yalnızca bilgilendirme** |
+| **İşlem kuru** | Maaş, satınalma, muhasebe, stok maliyeti — **manuel tablo veya onaylı snapshot** |
+| Geçmiş işlem | Dashboard kuru değişince **güncellenmez** |
+| Her finansal kayıt | `fx_rate_to_local`, `fx_rate_to_base`, `fx_snapshot_at`, `fx_source` zorunlu set |
+| Kur değişikliği | Admin `fx_rates` INSERT/UPDATE → **audit log** (`FX_RATE_CHANGE` veya eşdeğer) |
+| Otomatik feed → işlem | **Yasak** — feed yalnızca dashboard / öneri; posting ayrı onay |
+| Eksik kur (yeni işlem) | Varsayılan: kayıt **blok**; istisna: son **manuel** kur + uyarı + yüksek yetki (Gate 1 UI) |
+
+| Kaynak | Rol | Gate |
+|--------|-----|------|
+| `fx_rates` (manuel) | İşlem / bordro / mal kabul snapshot | Gate 1 |
+| Harici API (Google vb.) | Dashboard bilgi; isteğe bağlı “önerilen kur” | Gate 1–2 |
+| Bordro kilit kuru | Dönem snapshot — [06-hr](./06-hr-full-blueprint.md) §15B | Gate 2 |
+
+**İzin verilen işlem paraları (eski C2 alt kararı — KABUL):** `allowed_transaction_currencies` — country profile + admin; ilk faz ör. UZS, USD, TRY; liste genişletilebilir.
+
+**Uygulama Gate’i:** Gate 1 `fx_rates` + `MoneyService`; dashboard feed Gate 1–2.
+
+**Test:** CT-13, CT-18, CT-19, CT-20, CT-21.
 
 ---
 
@@ -289,6 +324,24 @@ Her hareket (cari, fatura, ödeme, tahsilat):
 
 ## 10. Dil sistemi
 
+### 10.0 C3 — Dil / alfabe / i18n (Gate 0 KABUL)
+
+| Karar | Politika |
+|-------|----------|
+| Sistem native / default dil | **Türkçe (`tr`)** — `country_profiles.default_locale` veya system settings |
+| Kullanıcı dili | Login sonrası seçilen dil **tüm sayfalarda** (AppShell + modüller) |
+| Desteklenen UI dilleri | `tr`, `en`, `ru`, `uz` |
+| i18n | Merkezi `i18n/*.json` + `i18n.js`; modül namespace; **ham key kullanıcıya gösterilmez** |
+| Font | Seçilen dil ve ülke karakterlerini destekler (Latin + Türkçe + Kiril **görüntüleme** RU için) |
+| **Veri girişi alfabesi** | **Latin** zorunlu — ad, adres, ürün adı, not vb. |
+| Cyrillic giriş | **Backend’de reddedilir** (`textNormalize` / validation); API 400 |
+| Görüntüleme vs kayıt | UI RU olabilir; kayıt metni Latin standardında kalır |
+| Persist | `users.preferred_locale` veya eşdeğer; oturum boyunca tutarlı |
+
+**Uygulama Gate’i:** Gate 1 locale zinciri + validation middleware; Gate 2 modül formları.
+
+**Test:** CT-08, CT-09, CT-10, CT-22, CT-23.
+
 ### 10.1 Desteklenen diller
 
 | Kod | Dil |
@@ -343,7 +396,7 @@ Her hareket (cari, fatura, ödeme, tahsilat):
 | `country_code` | PK `UZ`, `TR` |
 | `name_i18n_key` | |
 | `local_currency` | |
-| `base_reporting_currency` | |
+| `base_reporting_currency` | Şema adı; politika: `reporting_currency` (C1) |
 | `default_locale` | |
 | `supported_locales` | JSON |
 | `phone_country_code` | `+998`, `+90` |
@@ -369,21 +422,39 @@ Her hareket (cari, fatura, ödeme, tahsilat):
 | `TR` | Seed zorunlu |
 | Diğer | Sonradan admin |
 
-**Aktif profil:** `system_settings.active_country_code` veya tek satırlık tenant config — Gate 1 karar.
+**Aktif profil (C1/C4 — KABUL):** `system_settings.active_country_code` — tek tenant; çoklu ülke eşzamanlı operasyon Gate 2+.
 
 ---
 
 ## 12. Tarih, sayı ve format kuralları
 
+### 12.1 C4 — Sayı, para, format ve hassasiyet (Gate 0 KABUL)
+
+| Karar | Politika |
+|-------|----------|
+| Merkezi formatter | `formatMoney`, `formatNumber`, `formatDate` — `@factoryos/ui` veya `MoneyFormatService` |
+| Ülke/dil/currency | `country_profiles.number_locale`, `moneyFormat` config (§13.3) |
+| Örnek gösterim (UZ) | `1.000.000,00` + `local_currency` sembolü (config’ten) |
+| Örnek gösterim (USD rapor) | `1,000.00` veya locale’e göre `1.000,00` + reporting sembolü |
+| Hesaplama hassasiyeti | DB: kur ve birim maliyet **`DECIMAL(18,6)`** veya eşdeğer **6 ondalık** saklama |
+| Ekran gösterimi | Genelde **2 ondalık**; modül özel istisna yok (yuvarlama tek servis) |
+| Frontend ↔ backend | Aynı `MoneyService.round` politikası; client **format** yapar, **hesaplamaz** |
+| Yasak | Modül içi `toFixed`, hard-code `$` / `soʻm`, sayfa bazlı para formatı |
+| Yuvarlama | half-up (veya tek politika dokümante); modül başına farklı kural **yok** |
+
+**Uygulama Gate’i:** Gate 1 shared format helpers; Gate 2 modül ekranları migrate.
+
+**Test:** CT-11, CT-12, CT-24, CT-25.
+
+### 12.2 Genel kurallar
+
 | Konu | Kural |
 |------|--------|
 | DB tarih | `DATE` / `DATETIME` ISO; timezone UTC veya tenant TZ (tek politika) |
-| UI tarih | `Intl` / merkezi `formatDate(value, locale)` |
-| DB sayı | `DECIMAL`; float yasak para için |
-| UI sayı | `formatNumber(value, locale)` — `@factoryos/ui` veya shared util |
-| UI para | `formatMoney(amount, currency, locale)` — sembol konumu locale’e göre |
-| Yuvarlama | Banker’s / half-up — modül başına **tek** `MoneyService.round` |
-| Yasak | Sayfa içi `toLocaleString` kopyası |
+| UI tarih | `formatDate(value, locale)` |
+| DB sayı / para | `DECIMAL`; float **yasak** |
+| UI sayı | `formatNumber(value, locale)` |
+| UI para | `formatMoney(amount, currencyCode, locale)` — sembol `moneyFormat` config’ten |
 
 **Frontend:** Yalnızca helper çağırır; kur çarpımı yapmaz (CT-13).
 
@@ -397,9 +468,9 @@ Her hareket (cari, fatura, ödeme, tahsilat):
 |------|------------------------|-----|
 | `default_locale` | Evet (kontrollü) | Oturum + config yenile |
 | `supported_locales` | Evet | |
-| `active_country_code` | Hayır (Gate 1) / çok kontrollü | Veri migrasyonu gerekir |
-| `local_currency` | **Hayır (Gate 1)** | Sadece kurulum / super_admin + runbook |
-| `base_reporting_currency` | Hayır (Gate 1) | Finansal tarihsel bütünlük |
+| `active_country_code` | Süper Yönetim / Admin (kontrollü) | C1: ülke seçimi; audit + migrasyon runbook |
+| `local_currency` | Admin değiştirilebilir (C1) | Ülke önerisi; canlı değişim riski §13.2 |
+| `reporting_currency` | Admin seçilebilir (C1) | İlk faz sınırlı liste; genişletilebilir yapı |
 | `currency_list` | Salt okunur + izin verilen işlem paraları | |
 | `fx_rate_source_policy` | Evet (manuel / gelecek API) | |
 
@@ -419,6 +490,7 @@ Canlı sistemde `UZS` → `TRY` değişimi:
 {
   "countryCode": "UZ",
   "localCurrency": "UZS",
+  "reportingCurrency": "USD",
   "baseReportingCurrency": "USD",
   "defaultLocale": "tr",
   "supportedLocales": ["tr", "en", "ru", "uz"],
@@ -473,6 +545,8 @@ Canlı sistemde `UZS` → `TRY` değişimi:
 | Eksik i18n raw key | Fallback zinciri |
 | USD → local sessiz overwrite | Snapshot + ayrı kolonlar |
 | `default_currency` serbest metin | Enum + profil |
+| Cyrillic veri girişi | Latin + backend validation (C3) |
+| Modül bazlı para formatı | Merkezi formatter (C4) |
 
 ---
 
@@ -495,6 +569,16 @@ Canlı sistemde `UZS` → `TRY` değişimi:
 | CT-13 | Frontend kur | API’den gelen snapshot; client çarpım yok |
 | CT-14 | Admin local_currency edit | Gate 1: reddedilir veya disabled |
 | CT-15 | UZ vs TR profil | Ayrı `country_profiles` satırları |
+| CT-16 | Ülke seçimi → local öneri | TR seçilince TRY önerilir; Admin override edebilir |
+| CT-17 | Hard-code etiket taraması | Kaynakta `UZS salary` / sabit USD yok |
+| CT-18 | Dashboard kur değişimi | Geçmiş `fx_snapshot` değişmez |
+| CT-19 | Yeni maaş kaydı | Manuel/snapshot kur; dashboard feed kullanılmaz |
+| CT-20 | FX rate admin değişimi | Audit log satırı |
+| CT-21 | Eksik kur yeni işlem | Blok veya yetkili istisna; sessiz son kur yok (varsayılan politika) |
+| CT-22 | Cyrillic veri girişi | API 400; Latin kabul |
+| CT-23 | Login sonrası dil | Tüm sayfalar seçili locale |
+| CT-24 | 6 ondalık saklama | Kur/maliyet DB; ekran 2 ondalık |
+| CT-25 | formatMoney merkezi | Modül içi duplicate formatter yok |
 
 ---
 
@@ -509,38 +593,52 @@ Canlı sistemde `UZS` → `TRY` değişimi:
 | local_currency canlı değişim | Tarihsel rapor kafa karışıklığı | Read-only Gate 1 |
 | Eksik FX | Blok kayıt | fx_rates zorunluluğu |
 | m² legacy taşınması | Stok hatalı | 07-stock spec ile birlikte audit |
+| Dashboard kur → posting | Yanlış geçmiş bordro | C2: feed bilgi only |
+| Cyrillic kayıt | Arama/rapor bozulması | C3: backend red |
+| 6 vs 2 ondalık karışımı | Tutarsız toplam | C4: tek MoneyService |
 
 ---
 
 ## 19. Kabul kriterleri (Gate 0)
 
 - [ ] Currency kavramları (§2) onaylandı
-- [ ] local / base / transaction ayrımı (§4) onaylandı
-- [ ] USD kuralı (§5) onaylandı
-- [ ] HR currency kuralı (§6) onaylandı
-- [ ] Satınalma currency / fx / pending_cost (§7) onaylandı
-- [ ] Stok unit_cost currency; m² legacy yok (§8) onaylandı
-- [ ] Finance tracking currency (§9) onaylandı
-- [ ] Dil ve fallback (§10) onaylandı
+- [ ] **C1 KABUL** — local_currency + reporting_currency; ülke önerisi; Admin override; hard-code yok (§3.4)
+- [ ] **C2 KABUL** — FX snapshot; dashboard bilgi; geçmiş değişmez; audit (§4.3)
+- [ ] **C3 KABUL** — TR default; login sonrası dil; Latin giriş; Cyrillic red (§10.0)
+- [ ] **C4 KABUL** — merkezi format; 6 ondalık saklama; 2 ondalık gösterim (§12.1)
+- [ ] local → reporting dönüşüm zinciri (§4.2) onaylandı
+- [ ] transaction_currency korunumu (§4–§5) onaylandı
+- [ ] HR / satınalma / stok / finance currency (§6–§9) onaylandı
 - [ ] Country profile UZ + TR (§11) onaylandı
-- [ ] Format helper kuralları (§12) onaylandı
-- [ ] Admin policy local_currency (§13) onaylandı
-- [ ] CT-01…CT-15 Gate 1 test planına aktarıldı
-- [ ] V2 taşınmayacaklar listesi (§16) onaylandı
-- [ ] **Durum: FROZEN** (henüz değil — inceleme devam)
+- [ ] System settings ülke ve para birimi (§13) onaylandı
+- [ ] CT-01…CT-25 Gate 1 test planına aktarıldı
+- [ ] V2 taşınmayacaklar (§16) onaylandı
+- [ ] Terminoloji [06-hr](./06-hr-full-blueprint.md), [07-stock](./07-stock-full-blueprint.md) ile uyumlu
+- [ ] **Durum: FROZEN** (henüz değil — kullanıcı onayı bekler)
 
 **Gate 0 kuralı:** Bu belge **FROZEN** olmadan Gate 1 currency / config / `Money` kodu **yazılmayacak**.
 
 ---
 
-## 20. Açık kararlar (inceleme)
+## 20. Açık kararlar — C1–C4 kapanışı
 
-| # | Karar | Seçenekler |
-|---|--------|------------|
-| C1 | `amount_base` hesap yolu | local→base vs transaction→base |
-| C2 | İzin verilen işlem paraları | UZS, USD, TRY, EUR? |
-| C3 | FX eksikte davranış | Blok / son kur |
-| C4 | Aktif ülke değiştirme | Tek tenant / çoklu (ileride) |
+Gate 0’da **KABUL**; “daha sonra bakılacak” yok. Uygulama Gate 1/2/3 ayrıdır.
+
+| # | Gate 0 karar (özet) | Uygulama Gate | Bölüm |
+|---|---------------------|---------------|--------|
+| **C1** | **KABUL** — System settings ülke seçimi; `local_currency` operasyonel (ülke önerir, Admin değiştirir); `reporting_currency` ayrı seçilir; modül hard-code yok | Gate 1 admin + config | §3.4 |
+| **C2** | **KABUL** — Dashboard kur bilgi; işlem manuel/snapshot; geçmiş değişmez; FX audit; yeni işlemde eksik kur blok (istisna yetkili) | Gate 1–2 `fx_rates`, dashboard | §4.3 |
+| **C3** | **KABUL** — Native `tr`; login sonrası dil tüm sayfalarda; TR/EN/RU/UZ i18n; Latin veri girişi; Cyrillic backend red | Gate 1 locale + validation | §10.0 |
+| **C4** | **KABUL** — Merkezi formatMoney/Number; ülke/dil config; 6 ondalık hesap saklama; 2 ondalık UI; modül format yasak | Gate 1 shared UI util | §12.1 |
+
+### 20.1 Eski alt kararlar (C1–C4 kapsamında kapatıldı)
+
+| Eski konu | Gate 0 kapanış |
+|-----------|----------------|
+| `amount_base` yolu | **KABUL:** `transaction → local → reporting` (§4.2) |
+| İzin verilen işlem paraları | **KABUL:** `allowed_transaction_currencies` — profile + admin; genişletilebilir (§4.3) |
+| FX eksikte davranış | **KABUL:** yeni işlem blok; dashboard feed posting’e girmez (§4.3) |
+| Aktif ülke değiştirme | **KABUL:** tek tenant `active_country_code`; çoklu ülke Gate 2+ (§11, §13) |
 
 ---
 
@@ -557,6 +655,25 @@ Canlı sistemde `UZS` → `TRY` değişimi:
 
 ## 22. Belge durumu
 
-**Durum: TASLAK / İNCELEME** — Henüz FROZEN değil.
+**Versiyon:** 1.1.0 (21.05.2026)
 
-**Sonraki önerilen spec:** [02-admin-control-system.md](./02-admin-control-system.md) (detay genişletme) veya domain: [06-hr-full-blueprint.md](./06-hr-full-blueprint.md)
+**Önceki:** 1.0.0 — platform currency/dil taslağı.
+
+**Bu sürüm:** C1–C4 Gate 0 **KABUL**; local/reporting currency; FX snapshot vs dashboard; Latin giriş / Cyrillic red; merkezi format ve hassasiyet; CT-16…CT-25.
+
+**Durum: İNCELEMEDE** — Henüz FROZEN değil (FROZEN kararı kullanıcıya aittir).
+
+Gate 0 ülke/para birimi/dil kararları C1–C4 ile netleştirildi; hard-code yasağı, FX snapshot ve merkezi format politikası kilitlendi. **FROZEN** proje onayı sonrası.
+
+**Sonraki önerilen spec:** [08-purchasing-full-blueprint.md](./08-purchasing-full-blueprint.md) (satınalma currency / pending_cost hizalama)
+
+### Uygulama Gate özeti (karar KABUL — kod sonra)
+
+| Konu | Gate |
+|------|------|
+| `country_profiles`, `public/config` | Gate 1 |
+| `MoneyService`, `fx_rates`, snapshot | Gate 1 |
+| Dashboard kur feed (bilgi) | Gate 1–2 |
+| Latin validation middleware | Gate 1 |
+| `formatMoney` / `formatNumber` paket | Gate 1 |
+| Modül ekran migrate | Gate 2–3 |

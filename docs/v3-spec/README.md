@@ -16,8 +16,10 @@
 | Alan | Durum |
 |------|--------|
 | UI görsel yön | ☑ **FROZEN** |
-| Gate 0 genel | ☐ Devam |
-| Gate 1 kod | ☐ Yasak |
+| Gate 0 genel | ☑ **PASS ADAYI** · USER FINAL APPROVAL PENDING |
+| Domain spec FROZEN | ☐ Kullanıcı onayı bekleniyor |
+| Gate 1 kod | ☐ Yasak (nihai PASS sonrası) |
+| V3 iskelet | ☑ [FactoryOS-V3/](../../FactoryOS-V3/) hazırlık (kod yok) |
 
 ---
 
@@ -28,7 +30,9 @@
 | 0a | [00-ui-design-direction-freeze.md](./00-ui-design-direction-freeze.md) | UI görsel yön + mockup referansı | ☑ FROZEN |
 | 0b | [00-gate0-required-documents.md](./00-gate0-required-documents.md) | PASS öncesi zorunlu tüm belgeler | ☑ Liste |
 | 0c | [00-gate0-remaining-spec-checklist.md](./00-gate0-remaining-spec-checklist.md) | Kalan spec takibi | ☑ Aktif |
-| 0d | [00-gate0-checklist.md](./00-gate0-checklist.md) | Master checklist + onay | ☐ |
+| 0d | [00-gate0-checklist.md](./00-gate0-checklist.md) | Master checklist + onay | ☑ PASS adayı |
+| 0f | [00-gate0-pass-candidate.md](./00-gate0-pass-candidate.md) | Gate 0 kapanış kararları | ☑ |
+| 0g | [00-factoryos-v3-repo-bootstrap.md](./00-factoryos-v3-repo-bootstrap.md) | V3 repo iskelet hazırlığı | ☑ |
 | 0e | [00-gate0-open-decisions.md](./00-gate0-open-decisions.md) | Açık kararlar konsolide (~48) | ☐ İnceleme |
 | — | [fixtures/](./fixtures/) | HR-TST: wage + attendance vektörleri (20+20) | ☐ İnceleme |
 | 13 | [13-gate1-core-system-architecture.md](./13-gate1-core-system-architecture.md) | Gate 1 hedef mimari (kod yok) | ☑ Taslak |
@@ -51,7 +55,7 @@ Her madde için ilgili spec **DURUM: FROZEN** olmalı ve sorumlu onayı işlenme
 | 6 | [06-hr-full-blueprint.md](./06-hr-full-blueprint.md) | HR domain | ☐ İnceleme |
 | 7 | [07-stock-full-blueprint.md](./07-stock-full-blueprint.md) | Stock domain | ☐ İnceleme |
 | 8 | [08-purchasing-full-blueprint.md](./08-purchasing-full-blueprint.md) | Purchasing domain | ☐ İnceleme |
-| 9 | [09-finance-data-contract.md](./09-finance-data-contract.md) | Finance domain | ☐ İnceleme |
+| 9 | [09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md) · [09-finance-data-contract.md](./09-finance-data-contract.md) | Finans Kontrol | ☑ Gate 0 KABUL (PASS adayı) |
 | 10 | [10-integration-map.md](./10-integration-map.md) | Mimari | ☐ İnceleme |
 | 11 | [11-v2-carry-and-drop.md](./11-v2-carry-and-drop.md) | Tüm ekip | ☐ İnceleme |
 | 12 | [12-modal-flow-inventory.md](./12-modal-flow-inventory.md) | UX + Modül | ☐ İnceleme |

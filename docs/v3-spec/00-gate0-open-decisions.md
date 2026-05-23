@@ -403,8 +403,27 @@ Tüm Gate 0 açık kararları tek tabloda (durumlar 19.05.2026 spec taramasına 
 
 **Durum: TASLAK / İNCELEME** — Bu belge **FROZEN yapılmayacak**; kararlar kapatıldıkça güncellenir.
 
+## 17. Gate 0 PASS adayı — kapatılan kritik kararlar (19.05.2026)
+
+Kaynak: [00-gate0-pass-candidate.md](./00-gate0-pass-candidate.md)
+
+| ID | Karar | PASS adayı durumu |
+|----|--------|-------------------|
+| — | Gate 0 genel | **PASS ADAYI** |
+| UI | Görsel yön | **FROZEN** (00-ui) |
+| C1–C4 | Para / dil / format | **KAPANDI** ([05](./05-country-currency-language.md) v1.1.0) |
+| — | Admin / registry / permission yaklaşımı | **KAPANDI** (Gate 0 yeterli) |
+| — | HR / Stock / Purchasing blueprint | **KAPANDI** (detay modül gate) |
+| — | Finance = Finans Kontrol | **KAPANDI** ([09-finance-operational-control-blueprint.md](./09-finance-operational-control-blueprint.md)) |
+| S1, P5, S2–S4 | Stok kritik | **KAPANDI** ([07](./07-stock-full-blueprint.md)) |
+| P-01…P-10 | Satınalma kritik | **KAPANDI** ([08](./08-purchasing-full-blueprint.md)) |
+
+**Açık kalan (nihai PASS sonrası veya modül gate):** M1–M6 modal UX detayları, V2C1/V2C3/V2C4 test verisi, G1-1/G1-2 Gate 1 teknik seçimler, HR-TST fixture resmi onayı.
+
+---
+
 **Sonraki önerilen adım:**
 
-1. HR-TST fixture onayı → **KAPANDI** ([fixtures/hr-wage-vectors.json](./fixtures/hr-wage-vectors.json), [hr-attendance-vectors.json](./fixtures/hr-attendance-vectors.json))
-2. [00-gate0-checklist.md](./00-gate0-checklist.md) PASS değerlendirmesi — §12 kritik kararların **KAPANDI** işaretlenmesi
-3. V2C1 / V2C3 / V2C4 kapatma (test verisi, paralel UAT, demo seed)
+1. Kullanıcı **USER FINAL APPROVAL** → nihai Gate 0 PASS
+2. [00-factoryos-v3-repo-bootstrap.md](./00-factoryos-v3-repo-bootstrap.md) — ayrı git repo + ilk commit
+3. Gate 1 core skeleton — [13-gate1-core-system-architecture.md](./13-gate1-core-system-architecture.md)
